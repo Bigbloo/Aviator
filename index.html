@@ -32,6 +32,24 @@
             text-align: center;
             margin-bottom: 30px;
         }
+
+        .header-top {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+        }
+
+        .dark-mode-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            font-weight: bold;
+        }
+
+        .dark-mode-toggle input {
+            cursor: pointer;
+        }
         
         .logo {
             width: 120px;
@@ -245,11 +263,42 @@
                 font-size: 1.3rem;
             }
         }
+
+        body.dark-mode {
+            background: #1a1a2e;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .container {
+            background-color: rgba(0, 0, 0, 0.65);
+        }
+
+        body.dark-mode .faq-item {
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+
+        body.dark-mode .faq-question {
+            background-color: rgba(0, 0, 0, 0.45);
+        }
+
+        body.dark-mode .faq-question:hover {
+            background-color: rgba(0, 0, 0, 0.55);
+        }
+
+        body.dark-mode .highlight {
+            color: #e0e0e0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
+            <div class="header-top">
+                <label class="dark-mode-toggle" for="dark-mode-toggle">
+                    <input type="checkbox" id="dark-mode-toggle" aria-label="Mode sombre">
+                    <span>Mode sombre</span>
+                </label>
+            </div>
             <img src="assets/Logo.jpg" alt="Casino Bleu Logo" class="logo">
             <h1>Casino Bleu</h1>
         </header>
@@ -393,6 +442,23 @@
     
     <script>
         // JavaScript pour le carousel automatique
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const darkModeStorageKey = 'casinoBleuDarkMode';
+
+        function applyDarkMode(isEnabled) {
+            document.body.classList.toggle('dark-mode', isEnabled);
+            darkModeToggle.checked = isEnabled;
+        }
+
+        const savedDarkMode = localStorage.getItem(darkModeStorageKey) === 'true';
+        applyDarkMode(savedDarkMode);
+
+        darkModeToggle.addEventListener('change', () => {
+            const isEnabled = darkModeToggle.checked;
+            applyDarkMode(isEnabled);
+            localStorage.setItem(darkModeStorageKey, String(isEnabled));
+        });
+
         const carousel = document.querySelector('.carousel');
         let scrollAmount = 0;
         const scrollStep = 1;
