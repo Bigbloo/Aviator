@@ -1,0 +1,76 @@
+# ========================
+# Système d'exploitation
+# ========================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Windows
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ========================
+# Éditeurs & IDEs
+# ========================
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# JetBrains (WebStorm, etc.)
+.idea/
+*.iml
+
+# Vim / Emacs
+*.swp
+*.swo
+*.bak
+*~
+
+# ========================
+# Logs & fichiers temporaires
+# ========================
+
+*.log
+*.tmp
+*.temp
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ========================
+# Dépendances (si ajoutées plus tard)
+# ========================
+
+node_modules/
+.npm/
+
+# ========================
+# Variables d'environnement
+# ========================
+
+.env
+.env.local
+.env.*.local
+
+# ========================
+# Build / dist (si ajoutés plus tard)
+# ========================
+
+dist/
+build/
+.cache/
+
+# ========================
+# Divers
+# ========================
+
+*.zip
+*.tar.gz
