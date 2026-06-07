@@ -10,7 +10,8 @@ import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useGameStore } from '@/store/gameStore';
 
-const SOCKET_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/^http:/, 'ws:').replace(/^https:/, 'wss:');
+// Socket.IO needs the HTTP(S) origin, NOT ws://. The client upgrades internally.
+const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export const useSocket = () => {
   const socketRef = useRef<Socket | null>(null);
@@ -25,7 +26,7 @@ export const useSocket = () => {
   useEffect(() => {
     // Connect to backend Socket.IO
     const socket = io(SOCKET_URL, {
-      transports: ['polling'], // ← ONLY polling, no WebSocket
+      transports: ['websocket', 'polling'], // WS first, fallback to polling
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
     });
