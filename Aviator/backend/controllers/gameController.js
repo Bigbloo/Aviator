@@ -1,5 +1,5 @@
 const db = require('../db');
-const { startRound, getCurrentRound, getRoundById, getCurrentMultiplier } = require('../services/roundService');
+const { getCurrentRound, getCurrentRoundState } = require('../services/roundService');
 
 function ensureUser(userId) {
   const existing = db.prepare('SELECT user_id FROM users WHERE user_id = ?').get(userId);
@@ -31,31 +31,16 @@ exports.withdraw = (req, res) => {
   res.json({ success: true, message, balance: Number(updated.balance.toFixed(2)) });
 };
 
-exports.startRound = (req, res) => {
-  const round = startRound();
-  res.json({ roundId: round.id });
-};
-
-exports.roundMultiplier = (req, res) => {
-  const roundId = Number(req.params.roundId);
-  const round = getRoundById(roundId);
-  if (!round) return res.status(404).json({ error: 'Round not found' });
-
-  if (round.status !== 'running') {
-    return res.json({ multiplier: round.crash_point, crashed: true, crashPoint: round.crash_point });
-  }
-
-  const currentRound = getCurrentRound();
-  const multiplier = getCurrentMultiplier(currentRound);
-  const crashed = multiplier >= currentRound.crashPoint;
-
-  res.json({ multiplier, crashed, crashPoint: crashed ? currentRound.crashPoint : null });
+exports.getCurrentRound = (req, res) => {
+  const state = getCurrentRoundState();
+  if (!state) return res.status(404).json({ error: 'No active round' });
+  res.json(state);
 };
 
 exports.bet = (req, res) => {
-  const { userId, betAmount, cashoutMultiplier } = req.body;
-  if (!userId || !betAmount || !cashoutMultiplier) {
-    return res.status(400).json({ error: 'userId, betAmount and cashoutMultiplier are required' });
+  const { userId, betAmount } = req.body;
+  if (!userId || !betAmount) {
+    return res.status(400).json({ error: 'userId and betAmount are required' });
   }
 
   ensureUser(userId);
@@ -68,22 +53,14 @@ exports.bet = (req, res) => {
 
   db.prepare('UPDATE users SET balance = balance - ? WHERE user_id = ?').run(betAmount, userId);
 
-  const won = cashoutMultiplier <= round.crashPoint;
-  const payout = won ? Number((betAmount * cashoutMultiplier).toFixed(2)) : 0;
-
-  if (won) {
-    db.prepare('UPDATE users SET balance = balance + ? WHERE user_id = ?').run(payout, userId);
-  }
-
   db.prepare('INSERT INTO bets (user_id, round_id, bet_amount, cashout_multiplier, won, payout) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(userId, round.id, betAmount, cashoutMultiplier, won ? 1 : 0, payout);
+    .run(userId, round.id, betAmount, 0, 0, 0);
 
   const updated = db.prepare('SELECT balance FROM users WHERE user_id = ?').get(userId);
 
   res.json({
-    won,
-    payout,
-    crashPoint: round.crashPoint,
+    accepted: true,
+    roundId: round.id,
     balance: Number(updated.balance.toFixed(2))
   });
 };

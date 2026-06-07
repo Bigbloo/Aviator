@@ -12,9 +12,9 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS rounds (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  crash_point REAL NOT NULL,
-  started_at INTEGER NOT NULL,
-  ended_at INTEGER,
+  crashPoint REAL NOT NULL,
+  startTime INTEGER NOT NULL,
+  endTime INTEGER,
   status TEXT NOT NULL DEFAULT 'running'
 );
 

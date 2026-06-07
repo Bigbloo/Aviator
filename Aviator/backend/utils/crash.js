@@ -1,13 +1,5 @@
 function generateCrashPoint() {
-  const u = Math.random();
-  const lambda = 0.7;
-  const crash = Math.max(1.01, Number((1 + (-Math.log(1 - u) / lambda)).toFixed(2)));
-  return crash;
+  const raw = 1.0 / (1.0 - Math.random()) ** 0.8;
+  return Math.min(1000, Number(Math.max(1.0, raw).toFixed(2)));
 }
-
-function calculateMultiplier(elapsedMs) {
-  const seconds = elapsedMs / 1000;
-  return Number((1 + 0.15 * seconds + 0.05 * seconds * seconds).toFixed(2));
-}
-
-module.exports = { generateCrashPoint, calculateMultiplier };
+module.exports = { generateCrashPoint };
