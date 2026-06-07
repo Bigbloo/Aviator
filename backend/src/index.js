@@ -13,24 +13,37 @@ const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const gameRoutes = require('./routes/gameRoutes');
-const { generateCrashPoint } = require('./controllers/gameController');
+const { generateCrashPoint, setLiveState } = require('./controllers/gameController');
 const db = require('./db/database');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const server = http.createServer(app);
 
+// ── Allowed origins ───────────────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  'https://frontend-wine-six-11.vercel.app',
+  'http://localhost:3000',
+];
+const corsOptions = {
+  origin: (origin, cb) => {
+    // Allow no-origin (curl, mobile) and any *.vercel.app preview deploy
+    if (!origin || ALLOWED_ORIGINS.includes(origin) || /\.vercel\.app$/.test(origin)) {
+      return cb(null, true);
+    }
+    return cb(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+};
+
 // ── Socket.IO setup ───────────────────────────────────────────────────────────
 const io = new Server(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST', 'OPTIONS'],
-  },
+  cors: corsOptions,
   transports: ['websocket', 'polling'],
 });
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
-app.use(cors({ origin: '*' }));
+app.use(cors(corsOptions));
 
 // ── Stripe webhook needs raw body ─────────────────────────────────────────────
 app.use('/api/webhook', express.raw({ type: 'application/json' }));
@@ -95,6 +108,7 @@ const startNewRound = () => {
     currentMultiplier: 1.0,
     startTime: Date.now(),
   };
+  setLiveState(gameState); // keep controller in sync with current round
 
   console.log(`[Round ${roundId}] Flying — crash at x${crashPoint}`);
   io.emit('round:start', { roundId, startedAt: gameState.startTime });

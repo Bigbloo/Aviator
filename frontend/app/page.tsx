@@ -6,16 +6,18 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { createUser, getBalance } from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
 import Header from '@/components/Header';
 import AviatorCanvas from '@/components/AviatorCanvas';
 import BetPanel from '@/components/BetPanel';
+import DepositModal from '@/components/DepositModal';
 
 export default function Home() {
-  const { setUserId, setBalance, userId } = useGameStore();
+  const { setUserId, setBalance, userId, balance } = useGameStore();
+  const [showDeposit, setShowDeposit] = useState(false);
 
   // Connect to backend Socket.IO
   useSocket();
@@ -61,10 +63,18 @@ export default function Home() {
         </div>
 
         {/* Bet panel */}
-        <div className="w-full lg:w-72">
+        <div className="w-full lg:w-72 space-y-3">
+          <button
+            onClick={() => setShowDeposit(true)}
+            className="w-full py-2.5 rounded-xl font-bold text-white bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 transition active:scale-95"
+          >
+            💳 Déposer des fonds
+          </button>
           <BetPanel />
         </div>
       </main>
+
+      {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
     </div>
   );
 }

@@ -8,7 +8,7 @@
 
 import { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import { placeBet } from '@/lib/api';
+import { placeBet, cashout } from '@/lib/api';
 
 const BetPanel = () => {
   const {
@@ -33,22 +33,34 @@ const BetPanel = () => {
   const canBet = phase === 'flying' && !hasBet && !cashedOut && balance >= betAmount;
   const canCashout = phase === 'flying' && hasBet && !cashedOut;
 
-  const handleBet = () => {
+  const handleBet = async () => {
     if (!canBet || !userId || !roundId) return;
-    setHasBet(true);
-    setLastResult(null);
+    setLoading(true);
+    try {
+      const result = await placeBet(userId, roundId, betAmount);
+      setHasBet(true);
+      setBalance(result.balance);
+      setLastResult(null);
+    } catch (err) {
+      console.error('[Bet Error]', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCashout = async () => {
     if (!canCashout || !userId || !roundId) return;
     setLoading(true);
     try {
-      const result = await placeBet(userId, roundId, betAmount, currentMultiplier);
+      const result = await cashout(userId, roundId);
       setCashedOut(true);
       setBalance(result.balance);
-      setLastResult({ result: result.result, payout: result.payout });
+      setLastResult({ result: 'won', payout: result.payout });
     } catch (err) {
       console.error('[Cashout Error]', err);
+      // If cashout failed because it crashed, the bet is lost server-side
+      setCashedOut(true);
+      setLastResult({ result: 'lost', payout: 0 });
     } finally {
       setLoading(false);
     }
@@ -89,7 +101,10 @@ const BetPanel = () => {
           min={1}
           max={balance}
           value={betAmount}
-          onChange={(e) => setBetAmount(Number(e.target.value))}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            setBetAmount(Number.isFinite(v) && v > 0 ? v : 1);
+          }}
           disabled={hasBet}
           className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-center font-bold focus:outline-none focus:border-orange-500"
         />

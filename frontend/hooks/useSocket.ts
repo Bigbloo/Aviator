@@ -10,7 +10,7 @@ import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useGameStore } from '@/store/gameStore';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const SOCKET_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/^http:/, 'ws:').replace(/^https:/, 'wss:');
 
 export const useSocket = () => {
   const socketRef = useRef<Socket | null>(null);
@@ -25,7 +25,7 @@ export const useSocket = () => {
   useEffect(() => {
     // Connect to backend Socket.IO
     const socket = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling'], // ← ONLY polling, no WebSocket
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
     });

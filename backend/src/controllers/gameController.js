@@ -2,51 +2,31 @@
  * gameController.js
  * Handles game rounds and bet resolution.
  * Crash point is generated server-side using an exponential distribution.
+ *
+ * Bet flow (fixed):
+ *  1. POST /api/bet            → place a bet (debits balance, status 'pending')
+ *  2. POST /api/cashout        → cash out (validates against LIVE multiplier server-side)
+ *  On crash, server marks remaining pending bets as 'lost'.
  */
 
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db/database');
 
+// Shared live game state reference (set by index.js via setGameState)
+let liveState = null;
+const setLiveState = (stateRef) => { liveState = stateRef; };
+
 /**
  * Generates a provably fair crash point using exponential distribution.
- * E[X] ≈ 2.0 (house edge ~5%)
- * Min crash = 1.00
  */
 const generateCrashPoint = () => {
   const houseEdge = 0.05;
   const r = Math.random();
-  if (r < houseEdge) return 1.0; // instant crash (house edge)
+  if (r < houseEdge) return 1.0;
   const crash = Math.max(1.0, 0.99 / (1 - r));
-  return Math.round(crash * 100) / 100; // 2 decimal places
+  return Math.round(crash * 100) / 100;
 };
 
-/**
- * POST /api/round/start
- * Starts a new game round. Generates and stores the crash point server-side.
- * Returns roundId (crash point is hidden from client until crash).
- */
-const startRound = (req, res) => {
-  // Mark any active rounds as crashed (cleanup)
-  db.prepare(
-    "UPDATE rounds SET status = 'crashed', ended_at = strftime('%s', 'now') WHERE status = 'active'"
-  ).run();
-
-  const roundId = uuidv4();
-  const crashPoint = generateCrashPoint();
-
-  db.prepare(
-    'INSERT INTO rounds (id, crash_point, status) VALUES (?, ?, ?)'
-  ).run(roundId, crashPoint, 'active');
-
-  console.log(`[Round ${roundId}] Started — crash at x${crashPoint}`);
-
-  return res.json({ roundId, startedAt: Date.now() });
-};
-
-/**
- * GET /api/round/:roundId
- * Returns round info. Crash point is revealed only after crash.
- */
 const getRound = (req, res) => {
   const { roundId } = req.params;
   const round = db.prepare('SELECT * FROM rounds WHERE id = ?').get(roundId);
@@ -57,78 +37,96 @@ const getRound = (req, res) => {
     status: round.status,
     startedAt: round.started_at,
   };
-
-  // Reveal crash point only after crash
-  if (round.status === 'crashed') {
-    response.crashPoint = round.crash_point;
-  }
-
+  if (round.status === 'crashed') response.crashPoint = round.crash_point;
   return res.json(response);
 };
 
 /**
  * POST /api/bet
- * Body: { userId, roundId, betAmount, cashoutMultiplier }
- * Resolves a bet: checks if cashoutMultiplier <= crashPoint.
- * Updates user balance and returns result.
+ * Body: { userId, roundId, betAmount }
+ * Places a bet: debits balance immediately, creates a 'pending' bet.
+ * NO cashoutMultiplier here — cashout is a separate, server-validated action.
  */
 const placeBet = (req, res) => {
-  const { userId, roundId, betAmount, cashoutMultiplier } = req.body;
+  const { userId, roundId, betAmount } = req.body;
 
-  if (!userId || !roundId || !betAmount || betAmount <= 0) {
+  const amount = Number(betAmount);
+  if (!userId || !roundId || !Number.isFinite(amount) || amount <= 0) {
     return res.status(400).json({ error: 'Invalid bet parameters' });
+  }
+
+  // Must bet on the CURRENT flying round
+  if (!liveState || liveState.roundId !== roundId || liveState.phase !== 'flying') {
+    return res.status(400).json({ error: 'Round not accepting bets' });
   }
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
   if (!user) return res.status(404).json({ error: 'User not found' });
-  if (user.balance < betAmount) return res.status(400).json({ error: 'Insufficient balance' });
+  if (user.balance < amount) return res.status(400).json({ error: 'Insufficient balance' });
 
-  const round = db.prepare('SELECT * FROM rounds WHERE id = ?').get(roundId);
-  if (!round) return res.status(404).json({ error: 'Round not found' });
+  // Prevent double-betting on the same round
+  const existing = db
+    .prepare("SELECT id FROM bets WHERE user_id = ? AND round_id = ?")
+    .get(userId, roundId);
+  if (existing) return res.status(400).json({ error: 'Already bet on this round' });
 
-  // Deduct bet from balance immediately
-  db.prepare('UPDATE users SET balance = balance - ? WHERE id = ?').run(betAmount, userId);
+  // Debit immediately
+  db.prepare('UPDATE users SET balance = balance - ? WHERE id = ?').run(amount, userId);
   db.prepare(
     'INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)'
-  ).run(uuidv4(), userId, 'bet', -betAmount);
+  ).run(uuidv4(), userId, 'bet', -amount);
 
   const betId = uuidv4();
-
-  // If cashoutMultiplier provided → player cashed out before crash
-  if (cashoutMultiplier && cashoutMultiplier >= 1.0) {
-    const won = cashoutMultiplier <= round.crash_point;
-
-    if (won) {
-      const payout = Math.round(betAmount * cashoutMultiplier * 100) / 100;
-      db.prepare('UPDATE users SET balance = balance + ? WHERE id = ?').run(payout, userId);
-      db.prepare(
-        'INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)'
-      ).run(uuidv4(), userId, 'win', payout);
-
-      db.prepare(
-        'INSERT INTO bets (id, user_id, round_id, bet_amount, cashout_multiplier, payout, status) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).run(betId, userId, roundId, betAmount, cashoutMultiplier, payout, 'won');
-
-      const updated = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
-      return res.json({ result: 'won', payout, balance: updated.balance });
-    } else {
-      // Cashed out after crash — lost
-      db.prepare(
-        'INSERT INTO bets (id, user_id, round_id, bet_amount, cashout_multiplier, payout, status) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).run(betId, userId, roundId, betAmount, cashoutMultiplier, 0, 'lost');
-
-      const updated = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
-      return res.json({ result: 'lost', payout: 0, balance: updated.balance });
-    }
-  }
-
-  // No cashout → player lost (didn't cash out before crash)
   db.prepare(
-    'INSERT INTO bets (id, user_id, round_id, bet_amount, payout, status) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(betId, userId, roundId, betAmount, 0, 'lost');
+    "INSERT INTO bets (id, user_id, round_id, bet_amount, status) VALUES (?, ?, ?, ?, 'pending')"
+  ).run(betId, userId, roundId, amount);
 
   const updated = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
-  return res.json({ result: 'lost', payout: 0, balance: updated.balance });
+  return res.json({ betId, balance: updated.balance, status: 'pending' });
 };
 
-module.exports = { startRound, getRound, placeBet, generateCrashPoint };
+/**
+ * POST /api/cashout
+ * Body: { userId, roundId }
+ * Cashes out using the LIVE server-side multiplier (anti-cheat).
+ * Client cannot pick its own multiplier.
+ */
+const cashout = (req, res) => {
+  const { userId, roundId } = req.body;
+  if (!userId || !roundId) {
+    return res.status(400).json({ error: 'Invalid cashout request' });
+  }
+
+  // Round must still be flying server-side
+  if (!liveState || liveState.roundId !== roundId || liveState.phase !== 'flying') {
+    return res.status(400).json({ error: 'Too late — round already crashed' });
+  }
+
+  const bet = db
+    .prepare("SELECT * FROM bets WHERE user_id = ? AND round_id = ? AND status = 'pending'")
+    .get(userId, roundId);
+  if (!bet) return res.status(404).json({ error: 'No active bet found' });
+
+  // Use the LIVE multiplier from the server — NOT a client value
+  const multiplier = liveState.currentMultiplier;
+
+  // Safety: live multiplier must be below crash point (it always is while flying)
+  if (multiplier >= liveState.crashPoint) {
+    return res.status(400).json({ error: 'Too late — crashed' });
+  }
+
+  const payout = Math.round(bet.bet_amount * multiplier * 100) / 100;
+
+  db.prepare('UPDATE users SET balance = balance + ? WHERE id = ?').run(payout, userId);
+  db.prepare(
+    'INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)'
+  ).run(uuidv4(), userId, 'win', payout);
+  db.prepare(
+    "UPDATE bets SET status = 'won', cashout_multiplier = ?, payout = ? WHERE id = ?"
+  ).run(multiplier, payout, bet.id);
+
+  const updated = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
+  return res.json({ result: 'won', multiplier, payout, balance: updated.balance });
+};
+
+module.exports = { getRound, placeBet, cashout, generateCrashPoint, setLiveState };

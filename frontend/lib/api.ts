@@ -58,20 +58,41 @@ export const simulateDeposit = async (
 };
 
 /**
- * Places a bet and resolves it with a cashout multiplier.
+ * Places a bet (debits balance, creates pending bet).
  */
 export const placeBet = async (
   userId: string,
   roundId: string,
-  betAmount: number,
-  cashoutMultiplier: number
-): Promise<{ result: 'won' | 'lost'; payout: number; balance: number }> => {
+  betAmount: number
+): Promise<{ betId: string; balance: number; status: string }> => {
   const res = await fetch(`${BASE_URL}/api/bet`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, roundId, betAmount, cashoutMultiplier }),
+    body: JSON.stringify({ userId, roundId, betAmount }),
   });
-  if (!res.ok) throw new Error('Failed to place bet');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to place bet');
+  }
+  return res.json();
+};
+
+/**
+ * Cashes out — server uses its LIVE multiplier (anti-cheat).
+ */
+export const cashout = async (
+  userId: string,
+  roundId: string
+): Promise<{ result: 'won'; multiplier: number; payout: number; balance: number }> => {
+  const res = await fetch(`${BASE_URL}/api/cashout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, roundId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to cashout');
+  }
   return res.json();
 };
 
