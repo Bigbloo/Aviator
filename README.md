@@ -1,26 +1,16 @@
-# Casino Bleu Landing Page
+# ✈️ Aviator — Landing Page
 
-Une landing page attractive pour Casino Bleu avec un design dégradé bleu-violet, présentant une vidéo tutoriel, des informations sur les bonus, et une section FAQ interactive.
+Page de landing pour le jeu **Aviator**.
 
-## Fonctionnalités
+## 🌐 Accès en ligne
 
-- Design responsive adapté à tous les appareils
-- Fond dégradé bleu-violet attrayant
-- Vidéo intégrée avec lecture automatique lorsqu'elle est visible
-- Carrousel automatique pour les gains récents
-- Section FAQ avec réponses qui apparaissent lorsqu'on clique sur les questions
-- Bouton d'appel à l'action lié à un lien d'affiliation
+👉 [https://bigbloo.github.io/47Billionaire/](https://bigbloo.github.io/47Billionaire/)
 
-## Technologies utilisées
+## 📁 Structure
 
-- HTML5
-- CSS3
-- JavaScript vanilla (sans framework)
-
-## Hébergement
-
-Cette landing page est hébergée sur GitHub Pages.
-
-## Auteur
-
-Casino Bleu
+```
+/
+├── index.html       → Page principale Aviator
+└── assets/
+    └── Video.MP4    → Vidéo de présentation
+```

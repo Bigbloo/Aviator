@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Casino Bleu</title>
+    <title>Aviator - Envole-toi vers les gains !</title>
     <style>
         * {
             margin: 0;
@@ -11,73 +11,163 @@
             box-sizing: border-box;
             font-family: 'Arial', sans-serif;
         }
-        
+
         body {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7303c0 100%);
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
             color: white;
             line-height: 1.6;
             padding: 20px;
+            min-height: 100vh;
         }
-        
+
         .container {
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.6);
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 40px rgba(255, 60, 0, 0.3);
+            border: 1px solid rgba(255, 100, 0, 0.2);
         }
-        
+
         header {
             text-align: center;
             margin-bottom: 30px;
         }
-        
-        .logo {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid #fff;
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
             margin-bottom: 15px;
         }
-        
+
+        .plane-icon {
+            font-size: 3rem;
+            animation: fly 3s ease-in-out infinite;
+        }
+
+        @keyframes fly {
+            0% { transform: translateX(-10px) rotate(-5deg); }
+            50% { transform: translateX(10px) rotate(5deg); }
+            100% { transform: translateX(-10px) rotate(-5deg); }
+        }
+
         h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, #ff6a00, #ee0979, #ff6a00);
+            background-size: 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 2s linear infinite;
+            text-transform: uppercase;
+            letter-spacing: 3px;
         }
-        
-        .intro {
+
+        @keyframes shimmer {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        /* Multiplier display */
+        .multiplier-display {
+            background: linear-gradient(135deg, #1a0a00, #2d1500);
+            border: 2px solid #ff6a00;
+            border-radius: 15px;
+            padding: 30px;
             text-align: center;
-            margin-bottom: 30px;
-            font-size: 1.2rem;
-            font-weight: bold;
+            margin: 25px 0;
+            position: relative;
+            overflow: hidden;
         }
-        
+
+        .multiplier-display::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,106,0,0.1) 0%, transparent 60%);
+            animation: glow-rotate 4s linear infinite;
+        }
+
+        @keyframes glow-rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .multiplier-label {
+            font-size: 0.9rem;
+            color: #ff6a00;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .multiplier-value {
+            font-size: 5rem;
+            font-weight: 900;
+            color: #ff6a00;
+            text-shadow: 0 0 30px rgba(255, 106, 0, 0.8);
+            animation: count-up 3s ease-out infinite;
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes count-up {
+            0% { content: '1.00x'; opacity: 0.7; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.7; transform: scale(0.95); }
+        }
+
+        .multiplier-sub {
+            font-size: 1rem;
+            color: #ffaa55;
+            margin-top: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Alert */
         .alert {
-            color: #ff3b3b;
-            font-size: 1.3rem;
-            margin-bottom: 20px;
+            background: linear-gradient(90deg, rgba(255,60,0,0.2), rgba(255,60,0,0.1));
+            border-left: 4px solid #ff3b00;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin: 20px 0;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #ff8855;
             animation: pulse 2s infinite;
         }
-        
+
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+            0% { transform: scale(1); box-shadow: 0 0 0 rgba(255,60,0,0.4); }
+            50% { transform: scale(1.02); box-shadow: 0 0 15px rgba(255,60,0,0.4); }
+            100% { transform: scale(1); box-shadow: 0 0 0 rgba(255,60,0,0.4); }
         }
-        
+
+        /* Video */
         .video-container {
             position: relative;
             padding-bottom: 56.25%;
             height: 0;
             overflow: hidden;
-            margin-bottom: 30px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            margin: 25px 0;
+            border-radius: 12px;
+            box-shadow: 0 5px 25px rgba(255, 106, 0, 0.4);
+            border: 2px solid rgba(255, 106, 0, 0.3);
         }
-        
+
         .video-container video {
             position: absolute;
             top: 0;
@@ -86,77 +176,226 @@
             height: 100%;
             border-radius: 10px;
         }
-        
+
+        /* Stats bar */
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 106, 0, 0.1);
+            border: 1px solid rgba(255, 106, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 25px 0;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #ff6a00;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* CTA Button */
+        .cta-btn {
+            display: block;
+            width: 90%;
+            margin: 30px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #ff6a00, #ee0979);
+            color: white;
+            text-align: center;
+            font-size: 1.6rem;
+            font-weight: 900;
+            text-decoration: none;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 25px rgba(255, 106, 0, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: cta-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes cta-pulse {
+            0% { box-shadow: 0 8px 25px rgba(255, 106, 0, 0.5); }
+            50% { box-shadow: 0 8px 40px rgba(255, 106, 0, 0.9); transform: translateY(-2px); }
+            100% { box-shadow: 0 8px 25px rgba(255, 106, 0, 0.5); }
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(255, 106, 0, 0.8);
+        }
+
+        /* CTA Image */
         .cta-container {
             text-align: center;
-            margin: 30px 0;
+            margin: 25px 0;
         }
-        
+
         .cta-image {
             max-width: 100%;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
             transition: transform 0.3s;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 5px 20px rgba(255, 106, 0, 0.4);
+            border: 2px solid rgba(255, 106, 0, 0.3);
         }
-        
+
         .cta-image:hover {
             transform: scale(1.03);
         }
-        
+
+        /* Section title */
         .section-title {
             font-size: 1.8rem;
             margin: 40px 0 20px;
             text-align: center;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            color: #ff6a00;
+            text-shadow: 0 0 15px rgba(255, 106, 0, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
-        
-        .carousel {
+
+        /* How it works */
+        .steps {
             display: flex;
-            overflow-x: auto;
-            scroll-snap-type: x mandatory;
-            scroll-behavior: smooth;
-            margin-bottom: 30px;
-            padding: 10px 0;
-            -webkit-overflow-scrolling: touch;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
         }
-        
-        .carousel::-webkit-scrollbar {
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            background: rgba(255, 106, 0, 0.08);
+            border: 1px solid rgba(255, 106, 0, 0.2);
+            border-radius: 12px;
+            padding: 18px;
+            transition: all 0.3s;
+        }
+
+        .step:hover {
+            background: rgba(255, 106, 0, 0.15);
+            border-color: rgba(255, 106, 0, 0.5);
+            transform: translateX(5px);
+        }
+
+        .step-number {
+            background: linear-gradient(135deg, #ff6a00, #ee0979);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .step-content h3 {
+            color: #ff8844;
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+        }
+
+        .step-content p {
+            color: #ccc;
+            font-size: 0.95rem;
+        }
+
+        /* Live wins ticker */
+        .live-wins {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 106, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 25px 0;
+            overflow: hidden;
+        }
+
+        .live-wins-title {
+            font-size: 0.85rem;
+            color: #ff6a00;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .live-dot {
+            width: 8px;
             height: 8px;
+            background: #ff3b00;
+            border-radius: 50%;
+            animation: blink 1s infinite;
         }
-        
-        .carousel::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.5);
-            border-radius: 10px;
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
         }
-        
-        .carousel-item {
-            flex: 0 0 auto;
-            width: 250px;
-            margin-right: 15px;
-            scroll-snap-align: start;
+
+        .wins-ticker {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
-        
-        .carousel-item img {
-            width: 100%;
-            height: auto;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+
+        .win-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(255, 106, 0, 0.08);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            animation: slide-in 0.5s ease;
         }
-        
+
+        @keyframes slide-in {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .win-user { color: #aaa; }
+        .win-multiplier { color: #ff6a00; font-weight: bold; }
+        .win-amount { color: #44ff88; font-weight: bold; }
+
+        /* FAQ */
         .faq-container {
-            margin-bottom: 30px;
+            margin: 20px 0 30px;
         }
-        
+
         .faq-item {
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             border-radius: 10px;
             overflow: hidden;
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: rgba(255, 106, 0, 0.05);
+            border: 1px solid rgba(255, 106, 0, 0.2);
         }
-        
+
         .faq-question {
-            padding: 15px;
+            padding: 15px 18px;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
@@ -164,293 +403,373 @@
             font-weight: bold;
             background-color: rgba(0, 0, 0, 0.3);
             transition: background-color 0.3s;
+            color: #ffaa55;
         }
-        
+
         .faq-question:hover {
-            background-color: rgba(0, 0, 0, 0.4);
+            background-color: rgba(255, 106, 0, 0.15);
         }
-        
+
         .faq-question::after {
             content: '▼';
             font-size: 0.8rem;
             transition: transform 0.3s;
+            color: #ff6a00;
         }
-        
+
         .faq-item.active .faq-question::after {
             transform: rotate(180deg);
         }
-        
+
         .faq-answer {
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.5s ease;
-            padding: 0 15px;
+            padding: 0 18px;
+            color: #ccc;
         }
-        
+
         .faq-item.active .faq-answer {
             max-height: 500px;
-            padding: 15px;
+            padding: 15px 18px;
         }
-        
+
         .highlight {
-            color: #ffcc00;
+            color: #ff8844;
             font-weight: bold;
         }
-        
-        .final-cta {
-            display: block;
-            width: 80%;
-            margin: 40px auto;
-            padding: 15px 20px;
-            background-color: #ff3b3b;
-            color: white;
+
+        .highlight-green {
+            color: #44ff88;
+            font-weight: bold;
+        }
+
+        /* Footer */
+        footer {
             text-align: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-            text-decoration: none;
-            border-radius: 10px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            text-transform: uppercase;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 106, 0, 0.2);
+            color: #555;
+            font-size: 0.8rem;
         }
-        
-        .final-cta:hover {
-            background-color: #ff1a1a;
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-        }
-        
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
-            
-            h1 {
-                font-size: 2rem;
-            }
-            
-            .logo {
-                width: 100px;
-                height: 100px;
-            }
-            
-            .carousel-item {
-                width: 200px;
-            }
-            
-            .final-cta {
-                width: 90%;
-                font-size: 1.3rem;
-            }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            h1 { font-size: 2rem; }
+            .multiplier-value { font-size: 3.5rem; }
+            .cta-btn { font-size: 1.2rem; padding: 15px; }
+            .stats-bar { flex-direction: column; align-items: center; }
         }
     </style>
 </head>
 <body>
     <div class="container">
+
+        <!-- Header -->
         <header>
-            <img src="assets/Logo.jpg" alt="Casino Bleu Logo" class="logo">
-            <h1>Casino Bleu</h1>
+            <div class="logo-container">
+                <span class="plane-icon">✈️</span>
+                <h1>Aviator</h1>
+                <span class="plane-icon">✈️</span>
+            </div>
+            <p class="tagline">Le jeu qui s'envole... retire avant le crash !</p>
         </header>
-        
-        <div class="intro">
-            <p class="alert">🚨 Regarde cette vidéo jusqu'au bout pour comprendre la technique !🚨</p>
-            <p>Avant, regarde cette astuce 100% gagnante ! 🎰</p>
+
+        <!-- Multiplier Display -->
+        <div class="multiplier-display">
+            <div class="multiplier-label">🔴 Multiplicateur en cours</div>
+            <div class="multiplier-value" id="multiplier">1.00x</div>
+            <div class="multiplier-sub">⚡ Retire avant que l'avion s'envole !</div>
         </div>
-        
+
+        <!-- Alert -->
+        <div class="alert">
+            🔥 ALERTE : Des joueurs ont multiplié leur mise par <span class="highlight-green">x127</span> aujourd'hui ! Ne rate pas ta chance !
+        </div>
+
+        <!-- Video -->
         <div class="video-container">
-            <video controls>
+            <video autoplay muted loop playsinline>
                 <source src="assets/Video.MP4" type="video/mp4">
-                Votre navigateur ne supporte pas la lecture de vidéos.
             </video>
         </div>
-        
+
+        <!-- CTA Button -->
+        <a href="https://track.ftdgallery.com/visit/?bta=35794&brand=billionairespin" class="cta-btn" target="_blank">
+            🚀 JOUER MAINTENANT — BONUS x2 !
+        </a>
+
+        <!-- CTA Image -->
         <div class="cta-container">
             <a href="https://track.ftdgallery.com/visit/?bta=35794&brand=billionairespin" target="_blank">
-                <img src="assets/CTA.png" alt="Commencer à jouer" class="cta-image">
+                <img src="assets/CTA.png" alt="Jouer à Aviator" class="cta-image">
             </a>
         </div>
-        
-        <h2 class="section-title">Gains Récents 💸</h2>
-        <div class="carousel">
-            <div class="carousel-item">
-                <img src="assets/IMG-5902.png" alt="Gain récent">
+
+        <!-- Stats -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-value">127x</span>
+                <span class="stat-label">Meilleur multiplicateur</span>
             </div>
-            <div class="carousel-item">
-                <img src="assets/IMG-5914.jpg" alt="Gain récent">
+            <div class="stat-item">
+                <span class="stat-value">4 820€</span>
+                <span class="stat-label">Gain max aujourd'hui</span>
             </div>
-            <div class="carousel-item">
-                <img src="assets/IMG-5935.png" alt="Gain récent">
+            <div class="stat-item">
+                <span class="stat-value">2 341</span>
+                <span class="stat-label">Joueurs actifs</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">20€</span>
+                <span class="stat-label">Dépôt minimum</span>
             </div>
         </div>
-        
-        <h2 class="section-title">Questions Fréquentes ❓</h2>
+
+        <!-- Live Wins -->
+        <div class="live-wins">
+            <div class="live-wins-title">
+                <div class="live-dot"></div>
+                Gains en direct
+            </div>
+            <div class="wins-ticker" id="wins-ticker">
+                <div class="win-item">
+                    <span class="win-user">👤 Karim_92</span>
+                    <span class="win-multiplier">x14.5</span>
+                    <span class="win-amount">+290€</span>
+                </div>
+                <div class="win-item">
+                    <span class="win-user">👤 Sofia_M</span>
+                    <span class="win-multiplier">x8.2</span>
+                    <span class="win-amount">+164€</span>
+                </div>
+                <div class="win-item">
+                    <span class="win-user">👤 Rayan75</span>
+                    <span class="win-multiplier">x32.1</span>
+                    <span class="win-amount">+642€</span>
+                </div>
+                <div class="win-item">
+                    <span class="win-user">👤 Lina_B</span>
+                    <span class="win-multiplier">x5.7</span>
+                    <span class="win-amount">+114€</span>
+                </div>
+                <div class="win-item">
+                    <span class="win-user">👤 Mehdi_Off</span>
+                    <span class="win-multiplier">x21.3</span>
+                    <span class="win-amount">+426€</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- How it works -->
+        <h2 class="section-title">✈️ Comment jouer ?</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>📝 Inscris-toi en 30 secondes</h3>
+                    <p>Crée ton compte gratuitement. Aucune info bancaire requise pour s'inscrire.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>💰 Dépose à partir de 20€</h3>
+                    <p>Ton premier dépôt est <span class="highlight">automatiquement doublé</span>. Tu joues avec 40€ pour 20€ déposés !</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>✈️ Lance l'avion & mise</h3>
+                    <p>Place ta mise, regarde le multiplicateur monter. Retire <span class="highlight">avant le crash</span> pour empocher tes gains !</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>💸 Retire tes gains en 2h</h3>
+                    <p>Virement direct sur ton compte. <span class="highlight-green">Rapide, sécurisé, sans prise de tête.</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Second CTA -->
+        <a href="https://track.ftdgallery.com/visit/?bta=35794&brand=billionairespin" class="cta-btn" target="_blank">
+            🎯 RÉCUPÉRER MON BONUS x2
+        </a>
+
+        <!-- FAQ -->
+        <h2 class="section-title">❓ Questions fréquentes</h2>
         <div class="faq-container">
+
             <div class="faq-item">
-                <div class="faq-question">Y'a un bonus si je dépose ? 💬</div>
+                <div class="faq-question">C'est quoi Aviator ? ✈️</div>
                 <div class="faq-answer">
-                    <p>Oui, et c'est automatique. Dès que tu déposes au moins 10€, ton dépôt est doublé instantanément — pas besoin de code promo.</p>
-                    <p class="highlight">🔥 Tu déposes 20€ ➝ tu joues avec 40€</p>
-                    <p class="highlight">💸 Tu déposes 100€ ➝ tu joues direct avec 200€</p>
-                    <p>✅ Le bonus x2 est garanti à chaque dépôt, peu importe le montant. Et si tu joues dans la foulée, t'as même souvent un petit bonus surprise 🎉</p>
+                    <p>Aviator est le mini-jeu le plus viral du moment !</p>
+                    <p class="highlight">⚡ Un avion décolle et le multiplicateur monte</p>
+                    <p class="highlight">🎯 Tu dois retirer AVANT que l'avion s'envole</p>
+                    <p class="highlight">💸 Plus tu attends, plus tu gagnes... mais attention au crash !</p>
+                    <p>C'est le même jeu que tu vois partout sur TikTok et Instagram 🔥</p>
                 </div>
             </div>
-            
+
             <div class="faq-item">
-                <div class="faq-question">Est-ce qu'on peut retirer l'argent ? 💬</div>
+                <div class="faq-question">Comment retirer mes gains ? 💸</div>
                 <div class="faq-answer">
-                    <p>Bien sûr ! Dès que t'as gagné, tu peux retirer sur ton compte bancaire et tu recevras en 2 jours sur ton compte bancaire comme un virement classique. 💳 ✨ Simple et rapide :</p>
-                    <p class="highlight">🏦 Demande de retrait</p>
-                    <p class="highlight">⏱️ Traitement sous 2h</p>
-                    <p class="highlight">💸 Virement sur ton compte</p>
+                    <p>Super simple :</p>
+                    <p class="highlight">📱 Va dans ton profil</p>
+                    <p class="highlight">💳 Clique sur "Retrait"</p>
+                    <p class="highlight">⏱️ Reçois ton argent en moins de 2h</p>
+                    <p>Virement bancaire direct sur ton compte ✅</p>
                 </div>
             </div>
-            
+
             <div class="faq-item">
-                <div class="faq-question">Où sont les jeux ? 🎮</div>
+                <div class="faq-question">C'est fiable et sécurisé ? 🔒</div>
                 <div class="faq-answer">
-                    <p>Une fois inscrit et connecté, et que ton premier dépôt sera fait :</p>
-                    <p class="highlight">🎲 Accès aux mini-jeux exclusifs</p>
-                    <p class="highlight">🎯 Interface intuitive</p>
-                    <p class="highlight">🌟 Bonus spéciaux débloqués</p>
-                    <p>⚡ Tout est instantané après ton dépôt !</p>
+                    <p>100% certifié et sécurisé !</p>
+                    <p>✅ Plateforme officiellement licenciée</p>
+                    <p>✅ Paiements cryptés et sécurisés</p>
+                    <p>✅ Actif dans plusieurs pays européens</p>
+                    <p class="highlight">🎯 Des milliers de joueurs retirent chaque jour !</p>
                 </div>
             </div>
-            
+
             <div class="faq-item">
-                <div class="faq-question">C'est fiable ? 🔒</div>
+                <div class="faq-question">Quel est le dépôt minimum ? 💰</div>
                 <div class="faq-answer">
-                    <p>Absolument sûr et certifié !</p>
-                    <p>✅ Site de jeu officiellement certifié</p>
-                    <p>✅ Actif dans plusieurs pays</p>
-                    <p>✅ Paiements sécurisés</p>
-                    <p>🎯 Notre philosophie :</p>
-                    <p class="highlight">💫 Tu déposes</p>
-                    <p class="highlight">🎮 Tu joues</p>
-                    <p class="highlight">💸 Tu retires</p>
-                    <p>Simple. Sans prise de tête. ✨</p>
+                    <p>Seulement <span class="highlight">20€ minimum</span> pour commencer !</p>
+                    <p class="highlight">🎁 Bonus : ton dépôt est doublé automatiquement</p>
+                    <p class="highlight">🎮 Accès immédiat à Aviator et tous les jeux</p>
+                    <p>⭐ Notre conseil : commence avec le minimum pour tester !</p>
                 </div>
             </div>
-            
+
             <div class="faq-item">
-                <div class="faq-question">C'est quoi exactement le jeu ? 🎮</div>
+                <div class="faq-question">Ça marche sur téléphone ? 📱</div>
                 <div class="faq-answer">
-                    <p>Mini-jeu ultra rapide et simple :</p>
-                    <p class="highlight">⚡ Quelques clics suffisent</p>
-                    <p class="highlight">💫 Possibilité de doubler instantanément</p>
-                    <p class="highlight">🔥 Le même jeu que tu vois sur TikTok et Insta !</p>
+                    <p>Oui, 100% optimisé mobile !</p>
+                    <p>✨ Interface fluide sur iOS et Android</p>
+                    <p>🚀 Pas besoin d'application à télécharger</p>
+                    <p>💫 Tout se fait depuis ton navigateur en quelques clics</p>
                 </div>
             </div>
-            
+
             <div class="faq-item">
-                <div class="faq-question">Est-ce que ça marche sur téléphone ? 📱</div>
+                <div class="faq-question">Peut-on vraiment gagner gros ? 🤑</div>
                 <div class="faq-answer">
-                    <p>100% compatible mobile !</p>
-                    <p>✨ Optimisé pour ton téléphone</p>
-                    <p>🚀 Interface fluide et intuitive</p>
-                    <p>💫 Pas besoin d'ordinateur</p>
-                    <p>Tout se fait depuis ton tel en quelques clics ! 🎯</p>
+                    <p>Absolument ! Les multiplicateurs peuvent atteindre :</p>
+                    <p class="highlight">🔥 x10, x50, x100... jusqu'à x1000 !</p>
+                    <p class="highlight">💸 Avec 20€ à x100 = 2 000€ de gains</p>
+                    <p>⚡ La stratégie : retirer tôt et régulièrement pour sécuriser ses gains !</p>
                 </div>
             </div>
-            
-            <div class="faq-item">
-                <div class="faq-question">Est-ce que je peux tester sans déposer ? 🔍</div>
-                <div class="faq-answer">
-                    <p>Voici comment ça marche :</p>
-                    <p>✅ Explorer le site : Gratuit</p>
-                    <p>🎮 Accès aux jeux : Après dépôt</p>
-                    <p>💎 Dépôt minimum : 20€</p>
-                    <p>⭐ Notre conseil : Commence avec le minimum pour tester !</p>
-                </div>
-            </div>
-            
-            <div class="faq-item">
-                <div class="faq-question">C'est quoi le minimum pour jouer ? 💫</div>
-                <div class="faq-answer">
-                    <p>Commence avec seulement 20€ !</p>
-                    <p class="highlight">🎯 Parfait pour tester</p>
-                    <p class="highlight">🎁 Bonus doublé automatiquement</p>
-                    <p class="highlight">⭐ Accès à tous les jeux</p>
-                    <p>✨ Pas besoin de mettre plus pour ta première fois !</p>
-                </div>
-            </div>
-            
-            <div class="faq-item">
-                <div class="faq-question">Je trouve pas le bouton pour jouer, il est où ? 🎮</div>
-                <div class="faq-answer">
-                    <p>Super simple à trouver :</p>
-                    <p class="highlight">📱 Fais défiler jusqu'en bas de page</p>
-                    <p class="highlight">🎯 Clique sur le bouton "Commencer à jouer"</p>
-                    <p class="highlight">⚡ Le mini-jeu se lance instantanément</p>
-                    <p>✨ Et c'est parti pour jouer ! 🎲</p>
-                </div>
-            </div>
+
         </div>
-        
-        <a href="https://track.ftdgallery.com/visit/?bta=35794&brand=billionairespin" class="final-cta" target="_blank">COMMENCEZ À JOUER</a>
+
+        <!-- Final CTA -->
+        <a href="https://track.ftdgallery.com/visit/?bta=35794&brand=billionairespin" class="cta-btn" target="_blank">
+            🚀 COMMENCER À JOUER — C'EST GRATUIT !
+        </a>
+
+        <footer>
+            <p>⚠️ Le jeu peut créer une dépendance. Jouez de manière responsable. 18+ uniquement.</p>
+        </footer>
+
     </div>
-    
+
     <script>
-        // JavaScript pour le carousel automatique
-        const carousel = document.querySelector('.carousel');
-        let scrollAmount = 0;
-        const scrollStep = 1;
-        const scrollDelay = 30;
-        
-        function autoScroll() {
-            carousel.scrollLeft += scrollStep;
-            scrollAmount += scrollStep;
-            
-            if (scrollAmount >= carousel.scrollWidth / 2) {
-                carousel.scrollLeft = 0;
-                scrollAmount = 0;
+        // Animated multiplier
+        const multiplierEl = document.getElementById('multiplier');
+        let value = 1.00;
+        let direction = 1;
+        let speed = 0.03;
+        let crashed = false;
+        let crashAt = (Math.random() * 8) + 1.5;
+
+        function animateMultiplier() {
+            if (crashed) {
+                setTimeout(() => {
+                    value = 1.00;
+                    crashed = false;
+                    crashAt = (Math.random() * 10) + 1.5;
+                    multiplierEl.style.color = '#ff6a00';
+                    multiplierEl.style.textShadow = '0 0 30px rgba(255, 106, 0, 0.8)';
+                    animateMultiplier();
+                }, 2000);
+                return;
             }
-            
-            setTimeout(autoScroll, scrollDelay);
+
+            value += speed * (1 + value * 0.05);
+            multiplierEl.textContent = value.toFixed(2) + 'x';
+
+            if (value >= crashAt) {
+                crashed = true;
+                multiplierEl.textContent = '💥 CRASH!';
+                multiplierEl.style.color = '#ff0000';
+                multiplierEl.style.textShadow = '0 0 30px rgba(255, 0, 0, 0.8)';
+            }
+
+            requestAnimationFrame(animateMultiplier);
         }
-        
-        // Démarrer le défilement automatique après un délai
-        setTimeout(autoScroll, 2000);
-        
-        // JavaScript pour les FAQ accordéon
+
+        animateMultiplier();
+
+        // Live wins ticker - add new wins periodically
+        const users = ['Alex_P', 'Nadia_K', 'Omar75', 'Julie_M', 'Samir_B', 'Chloe_R', 'Youssef', 'Emma_L', 'Bilal_93', 'Inès_D'];
+        const ticker = document.getElementById('wins-ticker');
+
+        function addWin() {
+            const user = users[Math.floor(Math.random() * users.length)];
+            const multiplier = (Math.random() * 25 + 1.5).toFixed(1);
+            const bet = [20, 30, 50, 100][Math.floor(Math.random() * 4)];
+            const gain = (bet * multiplier).toFixed(0);
+
+            const item = document.createElement('div');
+            item.className = 'win-item';
+            item.innerHTML = `
+                <span class="win-user">👤 ${user}</span>
+                <span class="win-multiplier">x${multiplier}</span>
+                <span class="win-amount">+${gain}€</span>
+            `;
+
+            ticker.insertBefore(item, ticker.firstChild);
+
+            if (ticker.children.length > 6) {
+                ticker.removeChild(ticker.lastChild);
+            }
+        }
+
+        setInterval(addWin, 3000);
+
+        // FAQ accordion
         const faqItems = document.querySelectorAll('.faq-item');
-        
         faqItems.forEach(item => {
             const question = item.querySelector('.faq-question');
-            
             question.addEventListener('click', () => {
-                // Fermer tous les autres éléments
-                faqItems.forEach(otherItem => {
-                    if (otherItem !== item && otherItem.classList.contains('active')) {
-                        otherItem.classList.remove('active');
-                    }
+                faqItems.forEach(other => {
+                    if (other !== item) other.classList.remove('active');
                 });
-                
-                // Basculer l'état actif de l'élément cliqué
                 item.classList.toggle('active');
             });
         });
-        
-        // Lecture automatique de la vidéo lorsqu'elle est visible
+
+        // Video autoplay on scroll
         const video = document.querySelector('video');
-        const options = {
-            root: null,
-            rootMargin: '0px',
-            threshold: 0.5
-        };
-        
-        const observer = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    video.play();
-                } else {
-                    video.pause();
-                }
-            });
-        }, options);
-        
-        observer.observe(video);
+        if (video) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        video.play();
+                    } else {
+                        video.pause();
+                    }
+                });
+            }, { threshold: 0.5 });
+            observer.observe(video);
+        }
     </script>
 </body>
 </html>
