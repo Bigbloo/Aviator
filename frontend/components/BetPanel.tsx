@@ -30,7 +30,7 @@ const BetPanel = () => {
 
   const [loading, setLoading] = useState(false);
 
-  const canBet = phase === 'flying' && !hasBet && !cashedOut && balance >= betAmount;
+  const canBet = phase === 'betting' && !hasBet && !cashedOut && balance >= betAmount;
   const canCashout = phase === 'flying' && hasBet && !cashedOut;
 
   const handleBet = async () => {
@@ -134,7 +134,11 @@ const BetPanel = () => {
             disabled:opacity-40 disabled:cursor-not-allowed
             active:scale-95"
         >
-          {phase === 'waiting' ? '⏳ Attendre la prochaine manche' : '🎯 MISER'}
+          {phase === 'betting'
+            ? '🎯 MISER'
+            : phase === 'flying'
+            ? '✈️ En vol... (trop tard)'
+            : '⏳ Prochaine manche'}
         </button>
       ) : (
         <button

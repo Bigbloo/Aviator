@@ -73,7 +73,8 @@ let gameState = {
   startTime: null,
 };
 
-const WAITING_DURATION = 5000;   // 5s between rounds
+const WAITING_DURATION = 4000;   // 4s pause after crash (reveal result)
+const BETTING_DURATION = 6000;   // 6s betting window before takeoff
 const TICK_INTERVAL = 100;       // broadcast every 100ms
 const MULTIPLIER_SPEED = 0.00006; // exponential growth factor
 
@@ -101,48 +102,61 @@ const startNewRound = () => {
     roundId, crashPoint, 'active'
   );
 
+  // ── PHASE 1: BETTING (players place bets, plane on the ground) ──
   gameState = {
-    phase: 'flying',
+    phase: 'betting',
     roundId,
     crashPoint,
     currentMultiplier: 1.0,
-    startTime: Date.now(),
+    startTime: null,
   };
-  setLiveState(gameState); // keep controller in sync with current round
+  setLiveState(gameState);
 
-  console.log(`[Round ${roundId}] Flying — crash at x${crashPoint}`);
-  io.emit('round:start', { roundId, startedAt: gameState.startTime });
+  console.log(`[Round ${roundId}] Betting window (${BETTING_DURATION}ms) — crash at x${crashPoint}`);
+  io.emit('round:betting', { roundId, bettingMs: BETTING_DURATION });
 
-  // Tick loop
-  const tick = setInterval(() => {
-    const elapsed = Date.now() - gameState.startTime;
-    const multiplier = calcMultiplier(elapsed);
+  // ── PHASE 2: FLYING (after betting window closes) ──
+  setTimeout(() => {
+    gameState.phase = 'flying';
+    gameState.startTime = Date.now();
+    setLiveState(gameState);
 
-    gameState.currentMultiplier = multiplier;
+    console.log(`[Round ${roundId}] Flying`);
+    io.emit('round:start', { roundId, startedAt: gameState.startTime });
 
-    if (multiplier >= gameState.crashPoint) {
-      // CRASH
-      clearInterval(tick);
-      gameState.phase = 'crashed';
+    // Tick loop
+    const tick = setInterval(() => {
+      const elapsed = Date.now() - gameState.startTime;
+      const multiplier = calcMultiplier(elapsed);
 
-      db.prepare(
-        "UPDATE rounds SET status = 'crashed', ended_at = strftime('%s', 'now') WHERE id = ?"
-      ).run(roundId);
+      gameState.currentMultiplier = multiplier;
 
-      // Mark all pending bets for this round as lost
-      db.prepare(
-        "UPDATE bets SET status = 'lost', payout = 0 WHERE round_id = ? AND status = 'pending'"
-      ).run(roundId);
+      if (multiplier >= gameState.crashPoint) {
+        // CRASH
+        clearInterval(tick);
+        gameState.phase = 'crashed';
+        gameState.currentMultiplier = gameState.crashPoint;
+        setLiveState(gameState);
 
-      console.log(`[Round ${roundId}] CRASHED at x${gameState.crashPoint}`);
-      io.emit('round:crash', { roundId, crashPoint: gameState.crashPoint });
+        db.prepare(
+          "UPDATE rounds SET status = 'crashed', ended_at = strftime('%s', 'now') WHERE id = ?"
+        ).run(roundId);
 
-      // Wait then start new round
-      setTimeout(startNewRound, WAITING_DURATION);
-    } else {
-      io.emit('round:tick', { roundId, multiplier });
-    }
-  }, TICK_INTERVAL);
+        // Mark all pending bets for this round as lost
+        db.prepare(
+          "UPDATE bets SET status = 'lost', payout = 0 WHERE round_id = ? AND status = 'pending'"
+        ).run(roundId);
+
+        console.log(`[Round ${roundId}] CRASHED at x${gameState.crashPoint}`);
+        io.emit('round:crash', { roundId, crashPoint: gameState.crashPoint });
+
+        // Wait then start new round
+        setTimeout(startNewRound, WAITING_DURATION);
+      } else {
+        io.emit('round:tick', { roundId, multiplier });
+      }
+    }, TICK_INTERVAL);
+  }, BETTING_DURATION);
 };
 
 // ── Socket.IO connection handler ──────────────────────────────────────────────

@@ -6,7 +6,7 @@
 
 import { create } from 'zustand';
 
-export type GamePhase = 'waiting' | 'flying' | 'crashed';
+export type GamePhase = 'waiting' | 'betting' | 'flying' | 'crashed';
 
 export interface GameState {
   // User

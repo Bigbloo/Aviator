@@ -40,9 +40,16 @@ export const useSocket = () => {
       setMultiplier(data.currentMultiplier);
     });
 
-    // New round started
-    socket.on('round:start', (data: { roundId: string; startedAt: number }) => {
+    // Betting window opens — players can place bets now
+    socket.on('round:betting', (data: { roundId: string; bettingMs: number }) => {
       resetRound();
+      setRoundId(data.roundId);
+      setPhase('betting');
+      setMultiplier(1.0);
+    });
+
+    // Plane takes off — multiplier starts climbing (cashout phase)
+    socket.on('round:start', (data: { roundId: string; startedAt: number }) => {
       setRoundId(data.roundId);
       setPhase('flying');
       setMultiplier(1.0);

@@ -55,8 +55,8 @@ const placeBet = (req, res) => {
     return res.status(400).json({ error: 'Invalid bet parameters' });
   }
 
-  // Must bet on the CURRENT flying round
-  if (!liveState || liveState.roundId !== roundId || liveState.phase !== 'flying') {
+  // Bets are only accepted during the BETTING window (before takeoff)
+  if (!liveState || liveState.roundId !== roundId || liveState.phase !== 'betting') {
     return res.status(400).json({ error: 'Round not accepting bets' });
   }
 
