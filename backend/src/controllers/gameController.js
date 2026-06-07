@@ -2,6 +2,13 @@
  * gameController.js
  * Handles game rounds and bet resolution.
  * Crash point is generated server-side using an exponential distribution.
+ *
+ * Bet flow (two-phase):
+ *  Phase 1 — POST /api/bet without cashoutMultiplier (or cashoutMultiplier=0):
+ *    → Deducts balance, inserts bet with status='pending'
+ *  Phase 2 — POST /api/bet with cashoutMultiplier > 0:
+ *    → Resolves existing pending bet OR creates+resolves in one call
+ *    → Checks cashoutMultiplier <= crashPoint to determine win/loss
  */
 
 const { v4: uuidv4 } = require('uuid');
@@ -68,67 +75,109 @@ const getRound = (req, res) => {
 
 /**
  * POST /api/bet
- * Body: { userId, roundId, betAmount, cashoutMultiplier }
- * Resolves a bet: checks if cashoutMultiplier <= crashPoint.
- * Updates user balance and returns result.
+ * Body: { userId, roundId, betAmount, cashoutMultiplier? }
+ *
+ * Two modes:
+ *  - cashoutMultiplier = 0 or missing → Place bet (deduct balance, status=pending)
+ *  - cashoutMultiplier > 0 → Cashout: resolve existing pending bet or create+resolve
  */
 const placeBet = (req, res) => {
   const { userId, roundId, betAmount, cashoutMultiplier } = req.body;
 
-  if (!userId || !roundId || !betAmount || betAmount <= 0) {
-    return res.status(400).json({ error: 'Invalid bet parameters' });
+  // Validate required fields
+  if (!userId || !roundId) {
+    return res.status(400).json({ error: 'userId and roundId are required' });
   }
+
+  const parsedBetAmount = parseFloat(betAmount);
+  if (isNaN(parsedBetAmount) || parsedBetAmount <= 0) {
+    return res.status(400).json({ error: 'betAmount must be a positive number' });
+  }
+
+  const parsedCashout = parseFloat(cashoutMultiplier) || 0;
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
   if (!user) return res.status(404).json({ error: 'User not found' });
-  if (user.balance < betAmount) return res.status(400).json({ error: 'Insufficient balance' });
 
   const round = db.prepare('SELECT * FROM rounds WHERE id = ?').get(roundId);
   if (!round) return res.status(404).json({ error: 'Round not found' });
 
-  // Deduct bet from balance immediately
-  db.prepare('UPDATE users SET balance = balance - ? WHERE id = ?').run(betAmount, userId);
-  db.prepare(
-    'INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)'
-  ).run(uuidv4(), userId, 'bet', -betAmount);
-
-  const betId = uuidv4();
-
-  // If cashoutMultiplier provided → player cashed out before crash
-  if (cashoutMultiplier && cashoutMultiplier >= 1.0) {
-    const won = cashoutMultiplier <= round.crash_point;
-
-    if (won) {
-      const payout = Math.round(betAmount * cashoutMultiplier * 100) / 100;
-      db.prepare('UPDATE users SET balance = balance + ? WHERE id = ?').run(payout, userId);
-      db.prepare(
-        'INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)'
-      ).run(uuidv4(), userId, 'win', payout);
-
-      db.prepare(
-        'INSERT INTO bets (id, user_id, round_id, bet_amount, cashout_multiplier, payout, status) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).run(betId, userId, roundId, betAmount, cashoutMultiplier, payout, 'won');
-
-      const updated = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
-      return res.json({ result: 'won', payout, balance: updated.balance });
-    } else {
-      // Cashed out after crash — lost
-      db.prepare(
-        'INSERT INTO bets (id, user_id, round_id, bet_amount, cashout_multiplier, payout, status) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).run(betId, userId, roundId, betAmount, cashoutMultiplier, 0, 'lost');
-
-      const updated = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
-      return res.json({ result: 'lost', payout: 0, balance: updated.balance });
+  // ── Phase 1: Place bet (no cashout yet) ──────────────────────────────────
+  if (parsedCashout === 0) {
+    // Check round is still active
+    if (round.status !== 'active') {
+      return res.status(400).json({ error: 'Round is no longer active' });
     }
+
+    // Check for existing pending bet (prevent double-bet)
+    const existingBet = db.prepare(
+      "SELECT id FROM bets WHERE user_id = ? AND round_id = ? AND status = 'pending'"
+    ).get(userId, roundId);
+    if (existingBet) {
+      const updated = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
+      return res.json({ result: 'pending', payout: 0, balance: updated.balance });
+    }
+
+    if (user.balance < parsedBetAmount) {
+      return res.status(400).json({ error: 'Insufficient balance' });
+    }
+
+    // Deduct bet from balance
+    db.prepare('UPDATE users SET balance = balance - ? WHERE id = ?').run(parsedBetAmount, userId);
+    db.prepare(
+      'INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)'
+    ).run(uuidv4(), userId, 'bet', -parsedBetAmount);
+
+    const betId = uuidv4();
+    db.prepare(
+      'INSERT INTO bets (id, user_id, round_id, bet_amount, payout, status) VALUES (?, ?, ?, ?, ?, ?)'
+    ).run(betId, userId, roundId, parsedBetAmount, 0, 'pending');
+
+    const updated = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
+    console.log(`[Bet] User ${userId} placed ${parsedBetAmount}€ on round ${roundId}`);
+    return res.json({ result: 'pending', payout: 0, balance: updated.balance });
   }
 
-  // No cashout → player lost (didn't cash out before crash)
-  db.prepare(
-    'INSERT INTO bets (id, user_id, round_id, bet_amount, payout, status) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(betId, userId, roundId, betAmount, 0, 'lost');
+  // ── Phase 2: Cashout ──────────────────────────────────────────────────────
+  if (parsedCashout < 1.0) {
+    return res.status(400).json({ error: 'cashoutMultiplier must be >= 1.0' });
+  }
 
-  const updated = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
-  return res.json({ result: 'lost', payout: 0, balance: updated.balance });
+  // Find existing pending bet for this user+round
+  const pendingBet = db.prepare(
+    "SELECT * FROM bets WHERE user_id = ? AND round_id = ? AND status = 'pending'"
+  ).get(userId, roundId);
+
+  if (!pendingBet) {
+    return res.status(400).json({ error: 'No pending bet found for this round' });
+  }
+
+  const won = parsedCashout <= round.crash_point;
+
+  if (won) {
+    const payout = Math.round(parsedBetAmount * parsedCashout * 100) / 100;
+    db.prepare('UPDATE users SET balance = balance + ? WHERE id = ?').run(payout, userId);
+    db.prepare(
+      'INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)'
+    ).run(uuidv4(), userId, 'win', payout);
+
+    db.prepare(
+      "UPDATE bets SET cashout_multiplier = ?, payout = ?, status = 'won' WHERE id = ?"
+    ).run(parsedCashout, payout, pendingBet.id);
+
+    const updated = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
+    console.log(`[Cashout] User ${userId} won ${payout}€ at x${parsedCashout} (crash: x${round.crash_point})`);
+    return res.json({ result: 'won', payout, balance: updated.balance });
+  } else {
+    // Cashed out after crash — lost
+    db.prepare(
+      "UPDATE bets SET cashout_multiplier = ?, payout = 0, status = 'lost' WHERE id = ?"
+    ).run(parsedCashout, pendingBet.id);
+
+    const updated = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
+    console.log(`[Cashout] User ${userId} lost — cashed at x${parsedCashout} but crash was x${round.crash_point}`);
+    return res.json({ result: 'lost', payout: 0, balance: updated.balance });
+  }
 };
 
 module.exports = { startRound, getRound, placeBet, generateCrashPoint };

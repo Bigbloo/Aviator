@@ -2,11 +2,16 @@
  * BetPanel.tsx
  * Bet controls: amount input, bet button, cashout button.
  * Communicates with backend via API calls.
+ *
+ * Flow:
+ *  1. Player clicks "MISER" → POST /api/bet (no cashoutMultiplier) → balance deducted immediately
+ *  2. Player clicks "ENCAISSER" → POST /api/bet with cashoutMultiplier → win/loss resolved
+ *  3. If round crashes before cashout → loss is shown automatically via store resetRound
  */
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { placeBet } from '@/lib/api';
 
@@ -29,21 +34,63 @@ const BetPanel = () => {
   } = useGameStore();
 
   const [loading, setLoading] = useState(false);
+  // Track the roundId at the time of bet placement for cashout
+  const betRoundRef = useRef<string | null>(null);
+  // Track if we already sent the bet to the server
+  const betSentRef = useRef(false);
 
-  const canBet = phase === 'flying' && !hasBet && !cashedOut && balance >= betAmount;
-  const canCashout = phase === 'flying' && hasBet && !cashedOut;
+  // When round crashes and player had an active bet (didn't cash out) → show loss
+  useEffect(() => {
+    if (phase === 'crashed' && hasBet && !cashedOut && betSentRef.current) {
+      setLastResult({ result: 'lost', payout: 0 });
+      // Balance was already deducted at bet time — no further action needed
+    }
+  }, [phase, hasBet, cashedOut]);
 
-  const handleBet = () => {
+  // Reset bet tracking refs when a new round starts
+  useEffect(() => {
+    if (phase === 'flying' && !hasBet) {
+      betSentRef.current = false;
+      betRoundRef.current = null;
+    }
+  }, [phase, hasBet]);
+
+  // Can bet: during flying phase, haven't bet yet, have enough balance
+  const canBet = phase === 'flying' && !hasBet && !cashedOut && balance >= betAmount && betAmount > 0;
+  const canCashout = phase === 'flying' && hasBet && !cashedOut && !loading;
+
+  /**
+   * Place bet: deducts balance immediately via API (no cashout multiplier).
+   * The server records the bet as 'pending'.
+   */
+  const handleBet = async () => {
     if (!canBet || !userId || !roundId) return;
-    setHasBet(true);
-    setLastResult(null);
-  };
-
-  const handleCashout = async () => {
-    if (!canCashout || !userId || !roundId) return;
     setLoading(true);
     try {
-      const result = await placeBet(userId, roundId, betAmount, currentMultiplier);
+      // Send bet without cashoutMultiplier — server deducts balance, records as pending
+      const result = await placeBet(userId, roundId, betAmount, 0);
+      betRoundRef.current = roundId;
+      betSentRef.current = true;
+      setHasBet(true);
+      setBalance(result.balance);
+      setLastResult(null);
+    } catch (err) {
+      console.error('[Bet Error]', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Cash out: sends current multiplier to server for win/loss resolution.
+   */
+  const handleCashout = async () => {
+    if (!canCashout || !userId) return;
+    const activeRoundId = betRoundRef.current || roundId;
+    if (!activeRoundId) return;
+    setLoading(true);
+    try {
+      const result = await placeBet(userId, activeRoundId, betAmount, currentMultiplier);
       setCashedOut(true);
       setBalance(result.balance);
       setLastResult({ result: result.result, payout: result.payout });
@@ -89,9 +136,9 @@ const BetPanel = () => {
           min={1}
           max={balance}
           value={betAmount}
-          onChange={(e) => setBetAmount(Number(e.target.value))}
-          disabled={hasBet}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-center font-bold focus:outline-none focus:border-orange-500"
+          onChange={(e) => setBetAmount(Math.max(1, Number(e.target.value)))}
+          disabled={hasBet || loading}
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-center font-bold focus:outline-none focus:border-orange-500 disabled:opacity-60"
         />
         {/* Preset amounts */}
         <div className="flex gap-2 mt-2">
@@ -99,7 +146,7 @@ const BetPanel = () => {
             <button
               key={p}
               onClick={() => setBetAmount(p)}
-              disabled={hasBet}
+              disabled={hasBet || loading}
               className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs py-1 rounded-md transition disabled:opacity-40"
             >
               {p}€
@@ -112,19 +159,25 @@ const BetPanel = () => {
       {!hasBet ? (
         <button
           onClick={handleBet}
-          disabled={!canBet}
+          disabled={!canBet || loading}
           className="w-full py-3 rounded-xl font-bold text-white text-lg transition-all
             bg-gradient-to-r from-orange-500 to-red-500
             hover:from-orange-400 hover:to-red-400
             disabled:opacity-40 disabled:cursor-not-allowed
             active:scale-95"
         >
-          {phase === 'waiting' ? '⏳ Attendre la prochaine manche' : '🎯 MISER'}
+          {loading
+            ? '⏳ Traitement...'
+            : phase === 'waiting'
+            ? '⏳ Attendre la prochaine manche'
+            : phase === 'crashed'
+            ? '⏳ Prochaine manche...'
+            : '🎯 MISER'}
         </button>
       ) : (
         <button
           onClick={handleCashout}
-          disabled={!canCashout || loading || cashedOut}
+          disabled={!canCashout}
           className="w-full py-3 rounded-xl font-bold text-white text-lg transition-all
             bg-gradient-to-r from-green-500 to-emerald-500
             hover:from-green-400 hover:to-emerald-400
@@ -140,7 +193,7 @@ const BetPanel = () => {
       )}
 
       {/* Potential win */}
-      {hasBet && !cashedOut && (
+      {hasBet && !cashedOut && phase === 'flying' && (
         <div className="text-center text-sm text-gray-400">
           Gain potentiel :{' '}
           <span className="text-green-400 font-bold">

@@ -15,7 +15,9 @@ import AviatorCanvas from '@/components/AviatorCanvas';
 import BetPanel from '@/components/BetPanel';
 
 export default function Home() {
-  const { setUserId, setBalance, userId } = useGameStore();
+  const setUserId = useGameStore((s) => s.setUserId);
+  const setBalance = useGameStore((s) => s.setBalance);
+  const userId = useGameStore((s) => s.userId);
 
   // Connect to backend Socket.IO
   useSocket();
@@ -41,7 +43,7 @@ export default function Home() {
     };
 
     init().catch(console.error);
-  }, []);
+  }, [setUserId, setBalance]);
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col">

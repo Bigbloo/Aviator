@@ -48,7 +48,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: Date.now() 
 // ── Game Loop (Socket.IO) ─────────────────────────────────────────────────────
 /**
  * Game state machine:
- * WAITING (3s) → FLYING (multiplier grows) → CRASHED (reveal) → WAITING ...
+ * WAITING (5s) → FLYING (multiplier grows) → CRASHED (reveal) → WAITING ...
  */
 
 let gameState = {
@@ -122,6 +122,11 @@ const startNewRound = () => {
       console.log(`[Round ${roundId}] CRASHED at x${gameState.crashPoint}`);
       io.emit('round:crash', { roundId, crashPoint: gameState.crashPoint });
 
+      // Transition to waiting state
+      gameState.phase = 'waiting';
+      gameState.roundId = null;
+      gameState.currentMultiplier = 1.0;
+
       // Wait then start new round
       setTimeout(startNewRound, WAITING_DURATION);
     } else {
@@ -139,6 +144,7 @@ io.on('connection', (socket) => {
     phase: gameState.phase,
     roundId: gameState.roundId,
     currentMultiplier: gameState.currentMultiplier,
+    startTime: gameState.startTime,
   });
 
   socket.on('disconnect', () => {

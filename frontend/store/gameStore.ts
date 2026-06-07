@@ -64,10 +64,11 @@ export const useGameStore = create<GameState>((set) => ({
   resetRound: () =>
     set({
       phase: 'waiting',
+      roundId: null,
       currentMultiplier: 1.0,
       crashPoint: null,
       hasBet: false,
       cashedOut: false,
-      lastResult: null,
+      // Keep lastResult visible until next bet is placed
     }),
 }));
