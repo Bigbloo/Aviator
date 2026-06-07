@@ -1,7 +1,8 @@
 /**
  * page.tsx
  * Main Aviator game page.
- * Initializes user session, connects to Socket.IO, renders game UI.
+ * Initializes user session, renders game UI.
+ * Socket.IO is managed globally by SocketProvider in layout.tsx.
  */
 
 'use client';
@@ -9,18 +10,14 @@
 import { useEffect } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { createUser, getBalance } from '@/lib/api';
-import { useSocket } from '@/hooks/useSocket';
 import Header from '@/components/Header';
 import AviatorCanvas from '@/components/AviatorCanvas';
 import BetPanel from '@/components/BetPanel';
 
 export default function Home() {
-  const setUserId = useGameStore((s) => s.setUserId);
+  const setUserId  = useGameStore((s) => s.setUserId);
   const setBalance = useGameStore((s) => s.setBalance);
-  const userId = useGameStore((s) => s.userId);
-
-  // Connect to backend Socket.IO
-  useSocket();
+  const userId     = useGameStore((s) => s.userId);
 
   // Initialize user session from localStorage
   useEffect(() => {
@@ -28,7 +25,6 @@ export default function Home() {
       let storedId = localStorage.getItem('aviator_userId');
 
       if (!storedId) {
-        // First visit: create new user
         const user = await createUser();
         storedId = user.userId;
         localStorage.setItem('aviator_userId', storedId);
@@ -36,7 +32,6 @@ export default function Home() {
         setBalance(user.balance);
       } else {
         setUserId(storedId);
-        // Fetch current balance
         const balance = await getBalance(storedId);
         setBalance(balance);
       }
@@ -54,7 +49,6 @@ export default function Home() {
         <div className="flex-1">
           <AviatorCanvas />
 
-          {/* User ID display */}
           {userId && (
             <p className="text-gray-700 text-xs mt-2 text-center font-mono">
               ID: {userId.slice(0, 8)}...

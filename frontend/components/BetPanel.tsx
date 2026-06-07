@@ -1,18 +1,20 @@
 /**
  * BetPanel.tsx
  * Bet controls: amount input, bet button, cashout button.
- * Communicates with backend via API calls.
  *
  * Flow:
- *  1. Player clicks "MISER" → POST /api/bet (no cashoutMultiplier) → balance deducted immediately
- *  2. Player clicks "ENCAISSER" → POST /api/bet with cashoutMultiplier → win/loss resolved
- *  3. If round crashes before cashout → loss is shown automatically via store resetRound
+ *  1. Player clicks "MISER" → POST /api/bet (deducts balance, status=pending)
+ *  2. Player clicks "ENCAISSER" → socket 'cashout' event with multiplierAtCashout
+ *     → server verifies multiplierAtCashout < crashPoint (strictly less)
+ *     → ack returns { result, payout, balance }
+ *  3. If round crashes before cashout → loss shown via store resetRound
  */
 
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '@/store/gameStore';
+import { useSocketContext } from '@/lib/socketContext';
 import { placeBet } from '@/lib/api';
 
 const BetPanel = () => {
@@ -33,44 +35,45 @@ const BetPanel = () => {
     setLastResult,
   } = useGameStore();
 
+  const { cashout } = useSocketContext();
   const [loading, setLoading] = useState(false);
-  // Track the roundId at the time of bet placement for cashout
-  const betRoundRef = useRef<string | null>(null);
-  // Track if we already sent the bet to the server
-  const betSentRef = useRef(false);
+  const betRoundRef  = useRef<string | null>(null);
+  const betSentRef   = useRef(false);
+  const betAmountRef = useRef<number>(betAmount);
+
+  // Keep betAmountRef in sync so cashout closure has the right value
+  useEffect(() => {
+    betAmountRef.current = betAmount;
+  }, [betAmount]);
 
   // When round crashes and player had an active bet (didn't cash out) → show loss
   useEffect(() => {
     if (phase === 'crashed' && hasBet && !cashedOut && betSentRef.current) {
       setLastResult({ result: 'lost', payout: 0 });
-      // Balance was already deducted at bet time — no further action needed
     }
   }, [phase, hasBet, cashedOut]);
 
   // Reset bet tracking refs when a new round starts
   useEffect(() => {
     if (phase === 'flying' && !hasBet) {
-      betSentRef.current = false;
+      betSentRef.current  = false;
       betRoundRef.current = null;
     }
   }, [phase, hasBet]);
 
-  // Can bet: during flying phase, haven't bet yet, have enough balance
-  const canBet = phase === 'flying' && !hasBet && !cashedOut && balance >= betAmount && betAmount > 0;
+  const canBet     = phase === 'flying' && !hasBet && !cashedOut && balance >= betAmount && betAmount > 0;
   const canCashout = phase === 'flying' && hasBet && !cashedOut && !loading;
 
   /**
-   * Place bet: deducts balance immediately via API (no cashout multiplier).
-   * The server records the bet as 'pending'.
+   * Place bet via REST — deducts balance, records pending bet.
    */
   const handleBet = async () => {
     if (!canBet || !userId || !roundId) return;
     setLoading(true);
     try {
-      // Send bet without cashoutMultiplier — server deducts balance, records as pending
       const result = await placeBet(userId, roundId, betAmount, 0);
       betRoundRef.current = roundId;
-      betSentRef.current = true;
+      betSentRef.current  = true;
       setHasBet(true);
       setBalance(result.balance);
       setLastResult(null);
@@ -82,18 +85,34 @@ const BetPanel = () => {
   };
 
   /**
-   * Cash out: sends current multiplier to server for win/loss resolution.
+   * Cash out via Socket.IO — lower latency than REST.
+   * Server verifies multiplierAtCashout < crashPoint (strictly less).
    */
   const handleCashout = async () => {
     if (!canCashout || !userId) return;
     const activeRoundId = betRoundRef.current || roundId;
     if (!activeRoundId) return;
+
     setLoading(true);
     try {
-      const result = await placeBet(userId, activeRoundId, betAmount, currentMultiplier);
+      const result = await cashout({
+        userId,
+        roundId: activeRoundId,
+        betAmount: betAmountRef.current,
+        multiplierAtCashout: currentMultiplier,
+      });
+
+      if (result.error) {
+        console.error('[Cashout Error]', result.error);
+        return;
+      }
+
       setCashedOut(true);
-      setBalance(result.balance);
-      setLastResult({ result: result.result, payout: result.payout });
+      if (result.balance !== undefined) setBalance(result.balance);
+      setLastResult({
+        result: (result.result as 'won' | 'lost') || 'lost',
+        payout: result.payout ?? 0,
+      });
     } catch (err) {
       console.error('[Cashout Error]', err);
     } finally {
@@ -140,7 +159,6 @@ const BetPanel = () => {
           disabled={hasBet || loading}
           className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-center font-bold focus:outline-none focus:border-orange-500 disabled:opacity-60"
         />
-        {/* Preset amounts */}
         <div className="flex gap-2 mt-2">
           {presets.map((p) => (
             <button
