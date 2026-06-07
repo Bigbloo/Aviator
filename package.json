@@ -1,0 +1,13 @@
+{
+  "name": "aviator-monorepo",
+  "version": "1.0.0",
+  "description": "Aviator crash game - root launcher for Railway",
+  "main": "backend/src/index.js",
+  "scripts": {
+    "start": "cd backend && npm install && npm start",
+    "build": "cd backend && npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
