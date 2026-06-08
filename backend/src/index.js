@@ -127,21 +127,24 @@ const BOT_NAMES = [
   'Tom', 'Lina', 'Noah', 'Jade', 'Enzo', 'Alice', 'Liam', 'Rose',
 ];
 
-const makeBotBets = () => {
-  const n = 12 + Math.floor(Math.random() * 9); // 12..20 bots per round (busy feed)
-  const out = [];
-  const usedNames = [];
-  for (let i = 0; i < n; i++) {
-    // pick a name not already used this round when possible
-    let name = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
-    let guard = 0;
-    while (usedNames.includes(name) && guard < 10) {
-      name = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
-      guard++;
-    }
-    usedNames.push(name);
+// Spribe-style masked handles (e.g. "5***7", "d***2") so the feed can look busy
+// with hundreds of distinct-looking players.
+const MASK_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const maskedName = () => `${pick(MASK_CHARS)}***${Math.floor(Math.random() * 9) + 1}`;
+const botName = () => (Math.random() < 0.75 ? maskedName() : pick(BOT_NAMES));
 
-    const amount = [1, 2, 5, 10, 20, 50, 100][Math.floor(Math.random() * 7)];
+// Inflated "total bets this round" count shown in the All Bets header (cosmetic,
+// like real Aviator showing thousands while only a slice is rendered).
+const roundTotalBets = () => 2500 + Math.floor(Math.random() * 4500); // 2500..7000
+
+const makeBotBets = () => {
+  const n = 80 + Math.floor(Math.random() * 90); // 80..170 bots per round (busy feed)
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const name = botName();
+
+    const amount = [1, 2, 5, 10, 20, 50, 100, 150, 200, 300, 500][Math.floor(Math.random() * 11)];
 
     // To keep clearly MORE winners than losers: ~82% of bots aim VERY low
     // (1.02–1.22) so they almost always clear before the crash, ~18% greedy.
@@ -190,6 +193,7 @@ const startNewRound = () => {
 
   // Pre-generate this round's bots with a target cashout each (live feed)
   const bots = makeBotBets(); // [{name, amount, target, cashedOut:false}]
+  const totalBets = roundTotalBets(); // inflated header count for "All Bets"
 
   // ── PHASE 1: BETTING (players place bets, plane on the ground) ──
   gameState = {
@@ -207,6 +211,7 @@ const startNewRound = () => {
   // Announce active bots so the live table fills up DURING betting/flight
   io.emit('bets:active', {
     roundId,
+    total: totalBets,
     bets: bots.map((b) => ({ name: b.name, amount: b.amount })),
   });
 

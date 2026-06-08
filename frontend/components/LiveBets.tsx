@@ -42,6 +42,7 @@ const multBadge = (m: number) => {
 const LiveBets = () => {
   const username = useGameStore((s) => s.username);
   const [rows, setRows] = useState<BetRow[]>([]);
+  const [total, setTotal] = useState(0);
   const [tab, setTab] = useState<'all' | 'my' | 'top'>('all');
 
   useEffect(() => {
@@ -51,7 +52,8 @@ const LiveBets = () => {
       reconnectionDelay: 1000,
     });
 
-    socket.on('bets:active', (data: { roundId: string; bets: { name: string; amount: number }[] }) => {
+    socket.on('bets:active', (data: { roundId: string; total?: number; bets: { name: string; amount: number }[] }) => {
+      setTotal(data.total ?? data.bets.length);
       setRows(
         data.bets.map((b, i) => ({
           key: `${data.roundId}-${i}-${b.name}`,
@@ -118,7 +120,9 @@ const LiveBets = () => {
         <p className="text-gray-400 text-[11px] font-bold uppercase tracking-wide">
           {tab === 'my' ? 'My Bets' : tab === 'top' ? 'Top' : 'All Bets'}
         </p>
-        <p className="text-white text-sm font-bold tabular-nums">{filtered.length}</p>
+        <p className="text-white text-sm font-bold tabular-nums">
+          {tab === 'all' ? (total || filtered.length).toLocaleString('en-US') : filtered.length}
+        </p>
       </div>
       <div className="grid grid-cols-[1fr_auto_auto] gap-2 px-3 py-1 text-[10px] uppercase text-gray-500 font-bold border-b border-black/30">
         <span>User</span>
