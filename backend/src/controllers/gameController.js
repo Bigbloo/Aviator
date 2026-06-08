@@ -48,13 +48,14 @@ const getRound = (req, res) => {
  * NO cashoutMultiplier here — cashout is a separate, server-validated action.
  */
 const placeBet = (req, res) => {
-  const { userId, roundId, betAmount } = req.body;
+  const userId = req.userId; // from verified JWT
+  const { roundId, betAmount } = req.body;
   // slot distinguishes the two simultaneous bets (Aviator's signature double-bet).
   // Defaults to 1 for backward compatibility. Accepts 1 or 2.
   const slot = req.body.slot === 2 ? 2 : 1;
 
   const amount = Number(betAmount);
-  if (!userId || !roundId || !Number.isFinite(amount) || amount <= 0) {
+  if (!roundId || !Number.isFinite(amount) || amount <= 0) {
     return res.status(400).json({ error: 'Invalid bet parameters' });
   }
 
@@ -97,9 +98,10 @@ const placeBet = (req, res) => {
  * Client cannot pick its own multiplier.
  */
 const cashout = (req, res) => {
-  const { userId, roundId } = req.body;
+  const userId = req.userId; // from verified JWT
+  const { roundId } = req.body;
   const slot = req.body.slot === 2 ? 2 : 1;
-  if (!userId || !roundId) {
+  if (!roundId) {
     return res.status(400).json({ error: 'Invalid cashout request' });
   }
 

@@ -8,7 +8,7 @@
 
 import { useEffect } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import { createUser, getBalance } from '@/lib/api';
+import { createUser, getBalance, getToken, AuthError } from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
 import Header from '@/components/Header';
 import HistoryBar from '@/components/HistoryBar';
@@ -23,24 +23,33 @@ export default function Home() {
   // Connect to backend Socket.IO
   useSocket();
 
-  // Initialize user session from localStorage
+  // Initialize the session. The session token is the source of truth: with a
+  // valid token we resume the account; otherwise (first visit, or a stale token
+  // from before auth existed) we create a fresh anonymous account.
   useEffect(() => {
-    const init = async () => {
-      let storedId = localStorage.getItem('aviator_userId');
+    const startAnon = async () => {
+      const user = await createUser();
+      localStorage.setItem('aviator_userId', user.userId);
+      setUserId(user.userId);
+      setBalance(user.balance);
+      setUsername(null);
+    };
 
-      if (!storedId) {
-        // First visit: create new user
-        const user = await createUser();
-        storedId = user.userId;
-        localStorage.setItem('aviator_userId', storedId);
-        setUserId(storedId);
-        setBalance(user.balance);
-      } else {
-        setUserId(storedId);
-        // Fetch current balance + username
-        const { balance, username } = await getBalance(storedId);
-        setBalance(balance);
-        setUsername(username);
+    const init = async () => {
+      if (!getToken()) {
+        await startAnon();
+        return;
+      }
+      try {
+        const me = await getBalance();
+        const storedId = localStorage.getItem('aviator_userId');
+        if (storedId) setUserId(storedId);
+        setBalance(me.balance);
+        setUsername(me.username);
+      } catch (err) {
+        // Token rejected/expired → fall back to a fresh anon session.
+        if (err instanceof AuthError) await startAnon();
+        else throw err;
       }
     };
 

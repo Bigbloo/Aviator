@@ -6,6 +6,7 @@
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const db = require('../db/database');
+const { signToken } = require('../middleware/auth');
 
 const BCRYPT_ROUNDS = 10;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -21,29 +22,32 @@ const publicUser = (u) => ({
   balance: u.balance,
 });
 
+// Auth responses additionally carry a fresh session token.
+const authPayload = (u) => ({ ...publicUser(u), token: signToken(u.id) });
+
 /**
- * GET /api/balance/:userId
- * Returns the current balance + username for a user.
- * Creates the user if they don't exist yet (first visit, anon).
+ * GET /api/balance  (auth required)
+ * Returns the current balance + profile for the authenticated user.
+ * The userId comes from the verified JWT, never from the URL.
  */
 const getBalance = (req, res) => {
-  const { userId } = req.params;
+  const userId = req.userId;
   let user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
   if (!user) {
-    db.prepare('INSERT INTO users (id, balance) VALUES (?, ?)').run(userId, 0);
-    user = { id: userId, username: null, email: null, balance: 0 };
+    // Token references a user that no longer exists (e.g. wiped DB).
+    return res.status(401).json({ error: 'Compte introuvable, reconnecte-toi.' });
   }
   return res.json(publicUser(user));
 };
 
 /**
  * POST /api/create
- * Creates a new anonymous user with a random UUID and returns it.
+ * Creates a new anonymous user with a random UUID and mints a session token.
  */
 const createUser = (req, res) => {
   const userId = uuidv4();
   db.prepare('INSERT INTO users (id, balance) VALUES (?, ?)').run(userId, 0);
-  return res.json({ userId, username: null, email: null, balance: 0 });
+  return res.json({ userId, username: null, email: null, balance: 0, token: signToken(userId) });
 };
 
 /**
@@ -54,7 +58,10 @@ const createUser = (req, res) => {
  * preserved. Otherwise a new account is created.
  */
 const register = async (req, res) => {
-  let { username, email, password, firstName, lastName, address, userId } = req.body || {};
+  let { username, email, password, firstName, lastName, address } = req.body || {};
+  // The anon account to upgrade is proven by the optional token (req.userId),
+  // NOT taken from the body — otherwise anyone could hijack a known userId.
+  const userId = req.userId || null;
   username  = (username  || '').toString().trim();
   email     = (email     || '').toString().trim().toLowerCase();
   password  = (password  || '').toString();
@@ -102,7 +109,7 @@ const register = async (req, res) => {
         'UPDATE users SET username = ?, email = ?, password_hash = ?, first_name = ?, last_name = ?, address = ? WHERE id = ?'
       ).run(username, email, passwordHash, firstName, lastName, address, userId);
       const u = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
-      return res.json(publicUser(u));
+      return res.json(authPayload(u));
     }
   }
 
@@ -111,7 +118,7 @@ const register = async (req, res) => {
     'INSERT INTO users (id, username, email, password_hash, first_name, last_name, address, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
   ).run(newId, username, email, passwordHash, firstName, lastName, address, 0);
   const u = db.prepare('SELECT * FROM users WHERE id = ?').get(newId);
-  return res.json(publicUser(u));
+  return res.json(authPayload(u));
 };
 
 /**
@@ -139,7 +146,7 @@ const login = async (req, res) => {
   if (!ok) {
     return res.status(401).json({ error: 'Identifiants invalides.' });
   }
-  return res.json(publicUser(user));
+  return res.json(authPayload(user));
 };
 
 module.exports = { getBalance, createUser, register, login };

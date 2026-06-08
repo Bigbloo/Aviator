@@ -14,13 +14,11 @@ const db = require('../db/database');
  */
 const createPaymentIntent = async (req, res) => {
   try {
-    const { amount, userId } = req.body;
+    const userId = req.userId; // from verified JWT
+    const { amount } = req.body;
 
     if (!amount || amount < 1) {
       return res.status(400).json({ error: 'Minimum deposit is 1€' });
-    }
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
     }
 
     // Ensure user exists
@@ -89,9 +87,10 @@ const handleWebhook = (req, res) => {
  * Body: { userId, amount }
  */
 const simulateDeposit = (req, res) => {
-  const { userId, amount } = req.body;
-  if (!userId || !amount || amount <= 0) {
-    return res.status(400).json({ error: 'Invalid userId or amount' });
+  const userId = req.userId; // from verified JWT
+  const { amount } = req.body;
+  if (!amount || amount <= 0) {
+    return res.status(400).json({ error: 'Invalid amount' });
   }
 
   let user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
@@ -114,9 +113,10 @@ const simulateDeposit = (req, res) => {
  * In test mode: simulates withdrawal and deducts from balance.
  */
 const withdraw = (req, res) => {
-  const { userId, amount, stripeAccountId } = req.body;
+  const userId = req.userId; // from verified JWT
+  const { amount, stripeAccountId } = req.body;
 
-  if (!userId || !amount || amount <= 0) {
+  if (!amount || amount <= 0) {
     return res.status(400).json({ error: 'Invalid withdrawal request' });
   }
 

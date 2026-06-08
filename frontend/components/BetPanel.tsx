@@ -57,7 +57,7 @@ const BetPanel = ({ slot = 1 }: BetPanelProps) => {
     if (!canBet || !userId || !roundId) return;
     setLoading(true);
     try {
-      const result = await placeBet(userId, roundId, betAmount, slot);
+      const result = await placeBet(roundId, betAmount, slot);
       setHasBet(true);
       setBalance(result.balance);
       setLastResult(null);
@@ -73,7 +73,7 @@ const BetPanel = ({ slot = 1 }: BetPanelProps) => {
     if (s.phase !== 'flying' || !s.userId || !s.roundId || !hasBet || cashedOut) return;
     setLoading(true);
     try {
-      const result = await cashout(s.userId, s.roundId, slot);
+      const result = await cashout(s.roundId, slot);
       setCashedOut(true);
       setBalance(result.balance);
       setLastResult({ result: 'won', payout: result.payout });

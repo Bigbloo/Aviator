@@ -78,7 +78,7 @@ export const useSocket = () => {
       const s = useGameStore.getState();
       if (s.userId) {
         try {
-          const { balance } = await getBalance(s.userId);
+          const { balance } = await getBalance();
           s.setBalance(balance);
         } catch {
           /* keep local balance if fetch fails */

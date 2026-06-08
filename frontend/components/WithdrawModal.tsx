@@ -25,7 +25,7 @@ const WithdrawModal = ({ onClose }: Props) => {
     setLoading(true);
     setError('');
     try {
-      const data = await withdraw(userId, amount);
+      const data = await withdraw(amount);
       setBalance(data.balance);
       setMessage(data.message);
     } catch (err: any) {

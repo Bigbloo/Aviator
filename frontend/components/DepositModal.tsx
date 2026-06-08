@@ -29,7 +29,7 @@ const DepositModal = ({ onClose }: Props) => {
     setLoading(true);
     setError('');
     try {
-      const data = await simulateDeposit(userId, amount);
+      const data = await simulateDeposit(amount);
       setBalance(data.balance);
       setSuccess(true);
       setTimeout(onClose, 1500);

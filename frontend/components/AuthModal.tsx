@@ -14,7 +14,7 @@ interface Props {
 }
 
 const AuthModal = ({ onClose }: Props) => {
-  const { userId, setUserId, setUsername, setBalance } = useGameStore();
+  const { setUserId, setUsername, setBalance } = useGameStore();
   const [mode, setMode] = useState<'register' | 'login'>('register');
   const [username, setUsernameLocal] = useState('');
   const [identifier, setIdentifier] = useState('');
@@ -49,19 +49,17 @@ const AuthModal = ({ onClose }: Props) => {
     try {
       const data =
         mode === 'register'
-          ? await register(
-              {
-                username: username.trim(),
-                email: email.trim(),
-                password,
-                firstName: firstName.trim(),
-                lastName: lastName.trim(),
-                address: address.trim(),
-              },
-              userId
-            )
+          ? await register({
+              username: username.trim(),
+              email: email.trim(),
+              password,
+              firstName: firstName.trim(),
+              lastName: lastName.trim(),
+              address: address.trim(),
+            })
           : await login(identifier.trim(), password);
 
+      // Token is persisted inside register()/login(); keep userId for display.
       localStorage.setItem('aviator_userId', data.userId);
       setUserId(data.userId);
       setUsername(data.username);
