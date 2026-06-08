@@ -60,16 +60,14 @@ const Header = () => {
             className="bg-orange-500 hover:bg-orange-400 text-white text-xs sm:text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition active:scale-95 whitespace-nowrap"
             title="Déposer"
           >
-            <span className="sm:hidden">+</span>
-            <span className="hidden sm:inline">+ Déposer</span>
+            + Déposer
           </button>
           <button
             onClick={() => setShowWithdraw(true)}
             className="bg-gray-700 hover:bg-gray-600 text-white text-xs sm:text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition active:scale-95 whitespace-nowrap"
             title="Retirer"
           >
-            <span className="sm:hidden">−</span>
-            <span className="hidden sm:inline">Retirer</span>
+            Retirer
           </button>
         </div>
       </header>
