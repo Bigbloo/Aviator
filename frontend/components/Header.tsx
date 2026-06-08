@@ -29,9 +29,9 @@ const Header = () => {
     <>
       <header className="flex items-center justify-between px-3 sm:px-4 py-3 bg-gray-950 border-b border-orange-900/30 gap-2">
         {/* Logo */}
-        <div className="flex items-center gap-1.5 min-w-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-xl sm:text-2xl">✈️</span>
-          <span className="text-white font-black text-base sm:text-xl tracking-wider sm:tracking-widest">AVIATOR</span>
+          <span className="hidden sm:inline text-white font-black text-base sm:text-xl tracking-wider sm:tracking-widest">AVIATOR</span>
         </div>
 
         {/* Balance + actions */}
