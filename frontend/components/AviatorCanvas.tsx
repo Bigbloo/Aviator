@@ -147,9 +147,12 @@ const AviatorCanvas = () => {
         ctx.font = 'bold 30px monospace';
         ctx.fillStyle = '#22c55e';
         ctx.fillText('🎯 Faites vos jeux !', W / 2, H / 2);
-        ctx.font = '15px monospace';
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        ctx.fillText('Décollage imminent...', W / 2, H / 2 + 32);
+        // Countdown until takeoff
+        const endsAt = (window as any).__bettingEndsAt || 0;
+        const remain = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+        ctx.font = 'bold 22px monospace';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(`Décollage dans ${remain}s`, W / 2, H / 2 + 38);
       } else if (phase === 'flying') {
         ctx.font = 'bold 48px monospace';
         ctx.fillStyle = '#ff6a00';

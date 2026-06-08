@@ -6,9 +6,17 @@
 
 const Database = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
 
-// Use /tmp for Railway (ephemeral) - it's OK for a game since data resets anyway
-const DB_PATH = '/tmp/aviator.db';
+// Persistent storage: set DB_DIR to a Railway volume mount (e.g. /data) so the
+// database survives redeploys. Falls back to /tmp (ephemeral) for local/dev.
+const DB_DIR = process.env.DB_DIR || '/tmp';
+try {
+  if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
+} catch (e) {
+  console.error('[DB] Could not create DB_DIR', DB_DIR, e.message);
+}
+const DB_PATH = path.join(DB_DIR, 'aviator.db');
 
 const db = new Database(DB_PATH);
 

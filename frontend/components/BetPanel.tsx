@@ -1,14 +1,15 @@
 /**
  * BetPanel.tsx
- * Bet controls: amount input, bet button, cashout button.
+ * Bet controls: amount input, bet button, cashout button, auto-cashout.
  * Communicates with backend via API calls.
  */
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { placeBet, cashout } from '@/lib/api';
+import { playCashout } from '@/lib/sound';
 
 const BetPanel = () => {
   const {
@@ -29,6 +30,8 @@ const BetPanel = () => {
   } = useGameStore();
 
   const [loading, setLoading] = useState(false);
+  const [autoEnabled, setAutoEnabled] = useState(false);
+  const [autoTarget, setAutoTarget] = useState(2.0);
 
   const canBet = phase === 'betting' && !hasBet && !cashedOut && balance >= betAmount;
   const canCashout = phase === 'flying' && hasBet && !cashedOut;
@@ -49,22 +52,42 @@ const BetPanel = () => {
   };
 
   const handleCashout = async () => {
-    if (!canCashout || !userId || !roundId) return;
+    const s = useGameStore.getState();
+    if (s.phase !== 'flying' || !s.hasBet || s.cashedOut || !s.userId || !s.roundId) return;
     setLoading(true);
     try {
-      const result = await cashout(userId, roundId);
+      const result = await cashout(s.userId, s.roundId);
       setCashedOut(true);
       setBalance(result.balance);
       setLastResult({ result: 'won', payout: result.payout });
+      playCashout();
     } catch (err) {
       console.error('[Cashout Error]', err);
-      // If cashout failed because it crashed, the bet is lost server-side
       setCashedOut(true);
       setLastResult({ result: 'lost', payout: 0 });
     } finally {
       setLoading(false);
     }
   };
+
+  // Auto-cashout: trigger cashout once the multiplier reaches the target.
+  const firedRef = useRef(false);
+  useEffect(() => {
+    if (phase !== 'flying') {
+      firedRef.current = false; // reset each round
+      return;
+    }
+    if (
+      autoEnabled &&
+      hasBet &&
+      !cashedOut &&
+      !firedRef.current &&
+      currentMultiplier >= autoTarget
+    ) {
+      firedRef.current = true;
+      handleCashout();
+    }
+  }, [currentMultiplier, phase, autoEnabled, hasBet, cashedOut, autoTarget]);
 
   const presets = [5, 10, 20, 50, 100];
 
@@ -73,18 +96,14 @@ const BetPanel = () => {
       {/* Balance */}
       <div className="flex justify-between items-center">
         <span className="text-gray-400 text-sm">Solde</span>
-        <span className="text-orange-400 font-bold text-lg">
-          {balance.toFixed(2)} €
-        </span>
+        <span className="text-orange-400 font-bold text-lg">{balance.toFixed(2)} €</span>
       </div>
 
       {/* Last result */}
       {lastResult && (
         <div
           className={`text-center py-2 rounded-lg font-bold text-sm ${
-            lastResult.result === 'won'
-              ? 'bg-green-900/40 text-green-400'
-              : 'bg-red-900/40 text-red-400'
+            lastResult.result === 'won' ? 'bg-green-900/40 text-green-400' : 'bg-red-900/40 text-red-400'
           }`}
         >
           {lastResult.result === 'won'
@@ -108,7 +127,6 @@ const BetPanel = () => {
           disabled={hasBet}
           className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-center font-bold focus:outline-none focus:border-orange-500"
         />
-        {/* Preset amounts */}
         <div className="flex gap-2 mt-2">
           {presets.map((p) => (
             <button
@@ -121,6 +139,37 @@ const BetPanel = () => {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Auto-cashout */}
+      <div className="bg-gray-800/50 rounded-lg p-3 space-y-2">
+        <label className="flex items-center justify-between cursor-pointer">
+          <span className="text-gray-300 text-sm font-bold">⚡ Auto-encaissement</span>
+          <input
+            type="checkbox"
+            checked={autoEnabled}
+            onChange={(e) => setAutoEnabled(e.target.checked)}
+            disabled={hasBet}
+            className="w-4 h-4 accent-orange-500"
+          />
+        </label>
+        {autoEnabled && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400 text-xs">Encaisser à ×</span>
+            <input
+              type="number"
+              min={1.01}
+              step={0.1}
+              value={autoTarget}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                setAutoTarget(Number.isFinite(v) && v > 1 ? v : 1.5);
+              }}
+              disabled={hasBet}
+              className="flex-1 bg-gray-900 border border-gray-700 rounded-md px-2 py-1 text-white text-center text-sm font-bold focus:outline-none focus:border-orange-500"
+            />
+          </div>
+        )}
       </div>
 
       {/* Bet / Cashout button */}

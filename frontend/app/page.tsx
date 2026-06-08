@@ -11,6 +11,7 @@ import { useGameStore } from '@/store/gameStore';
 import { createUser, getBalance } from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
 import Header from '@/components/Header';
+import HistoryBar from '@/components/HistoryBar';
 import AviatorCanvas from '@/components/AviatorCanvas';
 import BetPanel from '@/components/BetPanel';
 import LiveBets from '@/components/LiveBets';
@@ -48,6 +49,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col">
       <Header />
+      <HistoryBar />
 
       <main className="flex-1 flex flex-col lg:flex-row gap-4 p-4 max-w-5xl mx-auto w-full">
         {/* Game canvas */}

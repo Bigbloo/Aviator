@@ -19,6 +19,7 @@ export interface GameState {
   roundId: string | null;
   currentMultiplier: number;
   crashPoint: number | null;
+  crashHistory: number[];
 
   // Bet
   betAmount: number;
@@ -34,6 +35,7 @@ export interface GameState {
   setRoundId: (id: string) => void;
   setMultiplier: (m: number) => void;
   setCrashPoint: (cp: number) => void;
+  setCrashHistory: (h: number[]) => void;
   setBetAmount: (amount: number) => void;
   setHasBet: (v: boolean) => void;
   setCashedOut: (v: boolean) => void;
@@ -49,6 +51,7 @@ export const useGameStore = create<GameState>((set) => ({
   roundId: null,
   currentMultiplier: 1.0,
   crashPoint: null,
+  crashHistory: [],
   betAmount: 10,
   hasBet: false,
   cashedOut: false,
@@ -61,6 +64,7 @@ export const useGameStore = create<GameState>((set) => ({
   setRoundId: (id) => set({ roundId: id }),
   setMultiplier: (m) => set({ currentMultiplier: m }),
   setCrashPoint: (cp) => set({ crashPoint: cp }),
+  setCrashHistory: (h) => set({ crashHistory: h }),
   setBetAmount: (amount) => set({ betAmount: amount }),
   setHasBet: (v) => set({ hasBet: v }),
   setCashedOut: (v) => set({ cashedOut: v }),

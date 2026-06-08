@@ -95,22 +95,33 @@ const BOT_NAMES = [
   'Tom', 'Lina', 'Noah', 'Jade', 'Enzo', 'Alice', 'Liam', 'Rose',
 ];
 
-const makeBotResults = (crashPoint) => {
+const makeBotBets = () => {
   const n = 4 + Math.floor(Math.random() * 5); // 4..8 bots per round
   const out = [];
   for (let i = 0; i < n; i++) {
     const name = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
     const amount = [1, 2, 5, 10, 20, 50, 100][Math.floor(Math.random() * 7)];
-    // Bot picks a random target cashout; wins if it's below the crash point
+    // Each bot has a target cashout multiplier; it cashes out live if reached
     const target = Math.round((1.1 + Math.random() * 4) * 100) / 100;
-    if (target < crashPoint) {
-      const payout = Math.round(amount * target * 100) / 100;
-      out.push({ name, amount, multiplier: target, payout, result: 'won' });
-    } else {
-      out.push({ name, amount, multiplier: null, payout: 0, result: 'lost' });
-    }
+    out.push({ name, amount, target, cashedOut: false });
   }
   return out;
+};
+
+// ── Crash history (last 20 multipliers) ───────────────────────────────────────
+let crashHistory = [];
+// On boot, load the last 20 crashed rounds from DB so history survives restarts
+try {
+  const past = db
+    .prepare("SELECT crash_point FROM rounds WHERE status = 'crashed' ORDER BY started_at DESC LIMIT 20")
+    .all();
+  crashHistory = past.map((r) => r.crash_point).reverse();
+} catch (e) {
+  crashHistory = [];
+}
+const pushHistory = (crashPoint) => {
+  crashHistory.push(crashPoint);
+  if (crashHistory.length > 20) crashHistory.shift();
 };
 
 /**
@@ -129,6 +140,9 @@ const startNewRound = () => {
     roundId, crashPoint, 'active'
   );
 
+  // Pre-generate this round's bots with a target cashout each (live feed)
+  const bots = makeBotBets(); // [{name, amount, target, cashedOut:false}]
+
   // ── PHASE 1: BETTING (players place bets, plane on the ground) ──
   gameState = {
     phase: 'betting',
@@ -141,6 +155,12 @@ const startNewRound = () => {
 
   console.log(`[Round ${roundId}] Betting window (${BETTING_DURATION}ms) — crash at x${crashPoint}`);
   io.emit('round:betting', { roundId, bettingMs: BETTING_DURATION });
+
+  // Announce active bots so the live table fills up DURING betting/flight
+  io.emit('bets:active', {
+    roundId,
+    bets: bots.map((b) => ({ name: b.name, amount: b.amount })),
+  });
 
   // ── PHASE 2: FLYING (after betting window closes) ──
   setTimeout(() => {
@@ -157,6 +177,15 @@ const startNewRound = () => {
       const multiplier = calcMultiplier(elapsed);
 
       gameState.currentMultiplier = multiplier;
+
+      // Bots cash out live when the multiplier reaches their target (and target < crash)
+      for (const b of bots) {
+        if (!b.cashedOut && b.target <= multiplier && b.target < crashPoint) {
+          b.cashedOut = true;
+          const payout = Math.round(b.amount * b.target * 100) / 100;
+          io.emit('bet:cashout', { roundId, name: b.name, multiplier: b.target, payout });
+        }
+      }
 
       if (multiplier >= gameState.crashPoint) {
         // CRASH
@@ -184,7 +213,7 @@ const startNewRound = () => {
 
         console.log(`[Round ${roundId}] CRASHED at x${gameState.crashPoint}`);
 
-        // Build the results feed (real bets + synthetic bots so the table is lively)
+        // Build the results feed: real bets + bots (bots that didn't cash out = lost)
         const realResults = roundBets.map((b) => ({
           name: b.name,
           amount: b.bet_amount,
@@ -192,12 +221,17 @@ const startNewRound = () => {
           payout: b.status === 'won' ? b.payout : 0,
           result: b.status === 'won' ? 'won' : 'lost',
         }));
-        const results = realResults.concat(
-          makeBotResults(gameState.crashPoint)
+        const botResults = bots.map((b) =>
+          b.cashedOut
+            ? { name: b.name, amount: b.amount, multiplier: b.target, payout: Math.round(b.amount * b.target * 100) / 100, result: 'won' }
+            : { name: b.name, amount: b.amount, multiplier: null, payout: 0, result: 'lost' }
         );
+        const results = realResults.concat(botResults);
 
+        pushHistory(gameState.crashPoint);
         io.emit('round:crash', { roundId, crashPoint: gameState.crashPoint });
         io.emit('bets:results', { roundId, crashPoint: gameState.crashPoint, results });
+        io.emit('history:update', { history: crashHistory });
 
         // Wait then start new round
         setTimeout(startNewRound, WAITING_DURATION);
@@ -218,6 +252,9 @@ io.on('connection', (socket) => {
     roundId: gameState.roundId,
     currentMultiplier: gameState.currentMultiplier,
   });
+
+  // Send the crash history so the bar is populated immediately
+  socket.emit('history:update', { history: crashHistory });
 
   socket.on('disconnect', () => {
     console.log(`[Socket] Client disconnected: ${socket.id}`);

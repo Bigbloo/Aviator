@@ -10,6 +10,7 @@ import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useGameStore } from '@/store/gameStore';
 import { getBalance } from '@/lib/api';
+import { playTakeoff, playCrash } from '@/lib/sound';
 
 // Socket.IO needs the HTTP(S) origin, NOT ws://. The client upgrades internally.
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -21,6 +22,7 @@ export const useSocket = () => {
     setRoundId,
     setMultiplier,
     setCrashPoint,
+    setCrashHistory,
     resetRound,
   } = useGameStore();
 
@@ -47,6 +49,8 @@ export const useSocket = () => {
       setRoundId(data.roundId);
       setPhase('betting');
       setMultiplier(1.0);
+      // expose betting deadline for the countdown (read by the canvas)
+      (window as any).__bettingEndsAt = Date.now() + (data.bettingMs || 0);
     });
 
     // Plane takes off — multiplier starts climbing (cashout phase)
@@ -54,6 +58,7 @@ export const useSocket = () => {
       setRoundId(data.roundId);
       setPhase('flying');
       setMultiplier(1.0);
+      playTakeoff();
     });
 
     // Multiplier tick
@@ -66,6 +71,7 @@ export const useSocket = () => {
       setPhase('crashed');
       setCrashPoint(data.crashPoint);
       setMultiplier(data.crashPoint);
+      playCrash();
 
       // If the player had a bet on this round and never cashed out → it's lost.
       const s = useGameStore.getState();
@@ -82,6 +88,11 @@ export const useSocket = () => {
           /* keep local balance if fetch fails */
         }
       }
+    });
+
+    // Crash history bar update
+    socket.on('history:update', (data: { history: number[] }) => {
+      setCrashHistory(data.history || []);
     });
 
     socket.on('connect', () => console.log('[Socket] Connected'));

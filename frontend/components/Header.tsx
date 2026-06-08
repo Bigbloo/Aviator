@@ -10,12 +10,20 @@ import { useGameStore } from '@/store/gameStore';
 import DepositModal from './DepositModal';
 import WithdrawModal from './WithdrawModal';
 import AuthModal from './AuthModal';
+import { setMuted } from '@/lib/sound';
 
 const Header = () => {
   const { balance, username } = useGameStore();
   const [showDeposit, setShowDeposit] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [muted, setMutedState] = useState(false);
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMutedState(next);
+    setMuted(next);
+  };
 
   return (
     <>
@@ -46,6 +54,14 @@ const Header = () => {
           <div className="bg-gray-800 rounded-lg px-2 sm:px-3 py-1.5 text-orange-400 font-bold text-xs sm:text-sm whitespace-nowrap">
             {balance.toFixed(2)} €
           </div>
+          <button
+            onClick={toggleMute}
+            className="bg-gray-800 hover:bg-gray-700 text-white text-base px-2 py-1.5 rounded-lg transition active:scale-95"
+            title={muted ? 'Activer le son' : 'Couper le son'}
+            aria-label={muted ? 'Activer le son' : 'Couper le son'}
+          >
+            {muted ? '🔇' : '🔊'}
+          </button>
           <button
             onClick={() => setShowDeposit(true)}
             className="bg-orange-500 hover:bg-orange-400 text-white text-xs sm:text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition active:scale-95 whitespace-nowrap"
