@@ -38,11 +38,11 @@ const Header = () => {
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <button
             onClick={() => setShowAuth(true)}
-            className="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 text-white text-xs sm:text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition active:scale-95 whitespace-nowrap max-w-[120px]"
+            className="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 text-white text-xs sm:text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition active:scale-95 whitespace-nowrap max-w-[90px] sm:max-w-[120px]"
             title={username ? 'Changer de compte' : 'Créer un compte'}
           >
             <span>{username ? '👤' : '➕'}</span>
-            <span className="truncate">{username || 'Compte'}</span>
+            <span className="truncate hidden sm:inline">{username || 'Compte'}</span>
           </button>
           <div className="bg-gray-800 rounded-lg px-2 sm:px-3 py-1.5 text-orange-400 font-bold text-xs sm:text-sm whitespace-nowrap">
             {balance.toFixed(2)} €
@@ -58,14 +58,18 @@ const Header = () => {
           <button
             onClick={() => setShowDeposit(true)}
             className="bg-orange-500 hover:bg-orange-400 text-white text-xs sm:text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition active:scale-95 whitespace-nowrap"
+            title="Déposer"
           >
-            + Déposer
+            <span className="sm:hidden">+</span>
+            <span className="hidden sm:inline">+ Déposer</span>
           </button>
           <button
             onClick={() => setShowWithdraw(true)}
             className="bg-gray-700 hover:bg-gray-600 text-white text-xs sm:text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition active:scale-95 whitespace-nowrap"
+            title="Retirer"
           >
-            Retirer
+            <span className="sm:hidden">−</span>
+            <span className="hidden sm:inline">Retirer</span>
           </button>
         </div>
       </header>
