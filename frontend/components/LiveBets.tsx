@@ -103,7 +103,7 @@ const LiveBets = () => {
   );
 
   return (
-    <div className="bg-[#1b1c1d] rounded-2xl border border-black/30 overflow-hidden flex flex-col">
+    <div className="bg-[#1b1c1d] rounded-2xl border border-black/30 overflow-hidden flex flex-col lg:h-full">
       {/* Tabs */}
       <div className="p-2 border-b border-black/30">
         <div className="flex bg-[#101112] rounded-full p-0.5">
@@ -127,7 +127,7 @@ const LiveBets = () => {
       </div>
 
       {/* Rows */}
-      <div className="max-h-[60vh] lg:max-h-[calc(100vh-230px)] overflow-y-auto scrollbar-none">
+      <div className="max-h-[60vh] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto scrollbar-none">
         {filtered.length === 0 && (
           <p className="text-gray-600 text-xs text-center py-6">En attente des paris…</p>
         )}

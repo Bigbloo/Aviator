@@ -32,15 +32,28 @@ const AviatorCanvas = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const W = canvas.width;
-    const H = canvas.height;
     const PAD = { left: 50, bottom: 36, right: 24, top: 24 };
-    const plotW = W - PAD.left - PAD.right;
-    const plotH = H - PAD.top - PAD.bottom;
-    const originX = PAD.left;
-    const originY = H - PAD.bottom; // bottom-left origin
+
+    // Keep the canvas backing store matched to its displayed (CSS) size so the
+    // game fills its container at any width/height without stretching.
+    const fitCanvas = () => {
+      const cw = Math.max(1, Math.round(canvas.clientWidth));
+      const ch = Math.max(1, Math.round(canvas.clientHeight));
+      if (canvas.width !== cw || canvas.height !== ch) {
+        canvas.width = cw;
+        canvas.height = ch;
+      }
+    };
 
     const draw = () => {
+      fitCanvas();
+      const W = canvas.width;
+      const H = canvas.height;
+      const plotW = W - PAD.left - PAD.right;
+      const plotH = H - PAD.top - PAD.bottom;
+      const originX = PAD.left;
+      const originY = H - PAD.bottom; // bottom-left origin
+
       // Read live state each frame (no effect re-run, no stacked loops)
       const { phase, currentMultiplier, crashPoint } = useGameStore.getState();
       const mult = currentMultiplier || 1.0;
@@ -180,8 +193,8 @@ const AviatorCanvas = () => {
       ref={canvasRef}
       width={700}
       height={350}
-      className="w-full h-auto block"
-      style={{ background: '#0d1117', maxWidth: '100%', aspectRatio: '2 / 1' }}
+      className="absolute inset-0 w-full h-full block"
+      style={{ background: '#0d1117' }}
     />
   );
 };

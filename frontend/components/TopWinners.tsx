@@ -43,7 +43,7 @@ const TopWinners = () => {
   }, []);
 
   return (
-    <div className="bg-[#1b1c1d] rounded-2xl border border-black/30 overflow-hidden flex flex-col">
+    <div className="bg-[#1b1c1d] rounded-2xl border border-black/30 overflow-hidden flex flex-col lg:h-full">
       {/* Header */}
       <div className="px-4 py-3 border-b border-black/30 flex items-center justify-between">
         <h3 className="text-white font-bold text-sm flex items-center gap-2">🏆 Top Winners</h3>
@@ -53,7 +53,7 @@ const TopWinners = () => {
         </span>
       </div>
 
-      <div className="overflow-y-auto scrollbar-none lg:max-h-[calc(100vh-180px)]">
+      <div className="overflow-y-auto scrollbar-none lg:flex-1 lg:min-h-0">
         {rows.length === 0 && <p className="text-gray-600 text-sm text-center py-8">Chargement…</p>}
         {rows.map((r) => (
           <div

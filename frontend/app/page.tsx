@@ -60,35 +60,38 @@ export default function Home() {
     <div className="min-h-screen bg-[#0e0e10] flex flex-col">
       <Header />
 
-      <main className="flex-1 w-full max-w-[1400px] mx-auto p-2 sm:p-3
-        grid gap-3 grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_300px]">
+      <main className="flex-1 w-full p-2 gap-2
+        grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)_320px]
+        lg:h-[calc(100vh-56px)]">
 
         {/* LEFT — All Bets sidebar (desktop only here) */}
-        <aside className="hidden lg:block">
+        <aside className="hidden lg:block lg:h-full lg:min-h-0">
           <LiveBets />
         </aside>
 
         {/* CENTER — history + game + bet panels */}
-        <section className="min-w-0 space-y-3">
-          <div className="rounded-2xl overflow-hidden border border-black/30">
+        <section className="min-w-0 flex flex-col gap-2 lg:h-full lg:min-h-0">
+          <div className="rounded-2xl overflow-hidden border border-black/30 flex flex-col flex-1 min-h-[260px]">
             <HistoryBar />
-            <AviatorCanvas />
+            <div className="relative flex-1 min-h-0 bg-[#0d1117]">
+              <AviatorCanvas />
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 shrink-0">
             <BetPanel slot={1} />
             <BetPanel slot={2} />
           </div>
 
           {/* On mobile, the bets + winners stack below the game */}
-          <div className="lg:hidden space-y-3">
+          <div className="lg:hidden space-y-2">
             <TopWinners />
             <LiveBets />
           </div>
         </section>
 
         {/* RIGHT — Top Winners (replaces chat on web) */}
-        <aside className="hidden lg:block">
+        <aside className="hidden lg:block lg:h-full lg:min-h-0">
           <TopWinners />
         </aside>
       </main>
