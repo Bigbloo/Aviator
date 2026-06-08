@@ -32,13 +32,6 @@ const Header = () => {
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-xl sm:text-2xl">✈️</span>
           <span className="text-white font-black text-base sm:text-xl tracking-wider sm:tracking-widest">AVIATOR</span>
-          <span className="hidden sm:inline-block ml-2 bg-yellow-500/20 text-yellow-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-yellow-500/40 whitespace-nowrap">
-            MODE DÉMO · jetons fictifs
-          </span>
-          {/* compact badge on mobile */}
-          <span className="sm:hidden ml-1 bg-yellow-500/20 text-yellow-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-yellow-500/40 whitespace-nowrap">
-            DÉMO
-          </span>
         </div>
 
         {/* Balance + actions */}
