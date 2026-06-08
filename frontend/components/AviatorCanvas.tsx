@@ -177,8 +177,8 @@ const AviatorCanvas = () => {
       ref={canvasRef}
       width={700}
       height={350}
-      className="w-full rounded-xl border border-orange-900/30"
-      style={{ background: '#0d1117' }}
+      className="w-full h-auto block rounded-xl border border-orange-900/30"
+      style={{ background: '#0d1117', maxWidth: '100%', aspectRatio: '2 / 1' }}
     />
   );
 };

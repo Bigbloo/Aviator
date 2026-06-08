@@ -17,30 +17,34 @@ const Header = () => {
 
   return (
     <>
-      <header className="flex items-center justify-between px-4 py-3 bg-gray-950 border-b border-orange-900/30">
+      <header className="flex items-center justify-between px-3 sm:px-4 py-3 bg-gray-950 border-b border-orange-900/30 gap-2">
         {/* Logo */}
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">✈️</span>
-          <span className="text-white font-black text-xl tracking-widest">AVIATOR</span>
-          <span className="ml-2 bg-yellow-500/20 text-yellow-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-yellow-500/40">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-xl sm:text-2xl">✈️</span>
+          <span className="text-white font-black text-base sm:text-xl tracking-wider sm:tracking-widest">AVIATOR</span>
+          <span className="hidden sm:inline-block ml-2 bg-yellow-500/20 text-yellow-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-yellow-500/40 whitespace-nowrap">
             MODE DÉMO · jetons fictifs
+          </span>
+          {/* compact badge on mobile */}
+          <span className="sm:hidden ml-1 bg-yellow-500/20 text-yellow-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-yellow-500/40 whitespace-nowrap">
+            DÉMO
           </span>
         </div>
 
         {/* Balance + actions */}
-        <div className="flex items-center gap-3">
-          <div className="bg-gray-800 rounded-lg px-3 py-1.5 text-orange-400 font-bold text-sm">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          <div className="bg-gray-800 rounded-lg px-2 sm:px-3 py-1.5 text-orange-400 font-bold text-xs sm:text-sm whitespace-nowrap">
             {balance.toFixed(2)} €
           </div>
           <button
             onClick={() => setShowDeposit(true)}
-            className="bg-orange-500 hover:bg-orange-400 text-white text-sm font-bold px-3 py-1.5 rounded-lg transition active:scale-95"
+            className="bg-orange-500 hover:bg-orange-400 text-white text-xs sm:text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition active:scale-95 whitespace-nowrap"
           >
             + Déposer
           </button>
           <button
             onClick={() => setShowWithdraw(true)}
-            className="bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold px-3 py-1.5 rounded-lg transition active:scale-95"
+            className="bg-gray-700 hover:bg-gray-600 text-white text-xs sm:text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition active:scale-95 whitespace-nowrap"
           >
             Retirer
           </button>
