@@ -82,6 +82,18 @@ try {
     db.exec('ALTER TABLE users ADD COLUMN password_hash TEXT');
     console.log('[DB] Migrated: added users.password_hash');
   }
+  if (!has('first_name')) {
+    db.exec('ALTER TABLE users ADD COLUMN first_name TEXT');
+    console.log('[DB] Migrated: added users.first_name');
+  }
+  if (!has('last_name')) {
+    db.exec('ALTER TABLE users ADD COLUMN last_name TEXT');
+    console.log('[DB] Migrated: added users.last_name');
+  }
+  if (!has('address')) {
+    db.exec('ALTER TABLE users ADD COLUMN address TEXT');
+    console.log('[DB] Migrated: added users.address');
+  }
 } catch (e) {
   console.error('[DB] Migration check failed:', e.message);
 }

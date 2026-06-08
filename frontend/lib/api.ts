@@ -9,24 +9,34 @@ export interface AuthResponse {
   userId: string;
   username: string;
   email: string;
+  firstName: string | null;
+  lastName: string | null;
+  address: string | null;
   balance: number;
 }
 
+export interface RegisterInput {
+  username: string;
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  address: string;
+}
+
 /**
- * Creates an account with username + email + password. If userId is provided
- * (existing anon session), credentials are attached to that account so the
- * balance is preserved.
+ * Creates an account with username + email + password + identity (firstName,
+ * lastName, address). If userId is provided (existing anon session), the
+ * credentials are attached to that account so the balance is preserved.
  */
 export const register = async (
-  username: string,
-  email: string,
-  password: string,
+  input: RegisterInput,
   userId?: string | null
 ): Promise<AuthResponse> => {
   const res = await fetch(`${BASE_URL}/api/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, email, password, userId }),
+    body: JSON.stringify({ ...input, userId }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

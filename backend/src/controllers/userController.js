@@ -15,6 +15,9 @@ const publicUser = (u) => ({
   userId: u.id,
   username: u.username || null,
   email: u.email || null,
+  firstName: u.first_name || null,
+  lastName: u.last_name || null,
+  address: u.address || null,
   balance: u.balance,
 });
 
@@ -51,10 +54,13 @@ const createUser = (req, res) => {
  * preserved. Otherwise a new account is created.
  */
 const register = async (req, res) => {
-  let { username, email, password, userId } = req.body || {};
-  username = (username || '').toString().trim();
-  email    = (email    || '').toString().trim().toLowerCase();
-  password = (password || '').toString();
+  let { username, email, password, firstName, lastName, address, userId } = req.body || {};
+  username  = (username  || '').toString().trim();
+  email     = (email     || '').toString().trim().toLowerCase();
+  password  = (password  || '').toString();
+  firstName = (firstName || '').toString().trim();
+  lastName  = (lastName  || '').toString().trim();
+  address   = (address   || '').toString().trim();
 
   if (username.length < 3 || username.length > 20) {
     return res.status(400).json({ error: 'Le pseudo doit faire entre 3 et 20 caractères.' });
@@ -67,6 +73,15 @@ const register = async (req, res) => {
   }
   if (password.length < 8 || password.length > 128) {
     return res.status(400).json({ error: 'Le mot de passe doit faire au moins 8 caractères.' });
+  }
+  if (firstName.length < 1 || firstName.length > 80) {
+    return res.status(400).json({ error: 'Prénom requis (1-80 caractères).' });
+  }
+  if (lastName.length < 1 || lastName.length > 80) {
+    return res.status(400).json({ error: 'Nom requis (1-80 caractères).' });
+  }
+  if (address.length < 5 || address.length > 250) {
+    return res.status(400).json({ error: 'Adresse requise (5-250 caractères).' });
   }
 
   const takenName = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
@@ -83,17 +98,20 @@ const register = async (req, res) => {
   if (userId) {
     const existing = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
     if (existing) {
-      db.prepare('UPDATE users SET username = ?, email = ?, password_hash = ? WHERE id = ?')
-        .run(username, email, passwordHash, userId);
+      db.prepare(
+        'UPDATE users SET username = ?, email = ?, password_hash = ?, first_name = ?, last_name = ?, address = ? WHERE id = ?'
+      ).run(username, email, passwordHash, firstName, lastName, address, userId);
       const u = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
       return res.json(publicUser(u));
     }
   }
 
   const newId = uuidv4();
-  db.prepare('INSERT INTO users (id, username, email, password_hash, balance) VALUES (?, ?, ?, ?, ?)')
-    .run(newId, username, email, passwordHash, 0);
-  return res.json({ userId: newId, username, email, balance: 0 });
+  db.prepare(
+    'INSERT INTO users (id, username, email, password_hash, first_name, last_name, address, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run(newId, username, email, passwordHash, firstName, lastName, address, 0);
+  const u = db.prepare('SELECT * FROM users WHERE id = ?').get(newId);
+  return res.json(publicUser(u));
 };
 
 /**

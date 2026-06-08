@@ -20,12 +20,20 @@ const AuthModal = ({ onClose }: Props) => {
   const [identifier, setIdentifier] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const canSubmit =
     mode === 'register'
-      ? username.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && password.length >= 8
+      ? username.trim().length >= 3 &&
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
+        password.length >= 8 &&
+        firstName.trim().length >= 1 &&
+        lastName.trim().length >= 1 &&
+        address.trim().length >= 5
       : identifier.trim().length >= 3 && password.length >= 1;
 
   const handleSubmit = async () => {
@@ -35,7 +43,17 @@ const AuthModal = ({ onClose }: Props) => {
     try {
       const data =
         mode === 'register'
-          ? await register(username.trim(), email.trim(), password, userId)
+          ? await register(
+              {
+                username: username.trim(),
+                email: email.trim(),
+                password,
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                address: address.trim(),
+              },
+              userId
+            )
           : await login(identifier.trim(), password);
 
       localStorage.setItem('aviator_userId', data.userId);
@@ -57,8 +75,8 @@ const AuthModal = ({ onClose }: Props) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-orange-900/40 rounded-2xl p-6 w-full max-w-sm space-y-4">
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-gray-900 border border-orange-900/40 rounded-2xl p-6 w-full max-w-sm space-y-4 my-8">
         <div className="flex justify-between items-center">
           <h2 className="text-white font-bold text-xl">
             {mode === 'register' ? '👤 Créer un compte' : '🔑 Se connecter'}
@@ -89,6 +107,32 @@ const AuthModal = ({ onClose }: Props) => {
 
         {mode === 'register' ? (
           <>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-gray-400 text-sm mb-1 block">Prénom</label>
+                <input
+                  type="text"
+                  value={firstName}
+                  maxLength={80}
+                  autoComplete="given-name"
+                  placeholder="Jean"
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-orange-500"
+                />
+              </div>
+              <div>
+                <label className="text-gray-400 text-sm mb-1 block">Nom</label>
+                <input
+                  type="text"
+                  value={lastName}
+                  maxLength={80}
+                  autoComplete="family-name"
+                  placeholder="Dupont"
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-orange-500"
+                />
+              </div>
+            </div>
             <div>
               <label className="text-gray-400 text-sm mb-1 block">Pseudo</label>
               <input
@@ -111,6 +155,18 @@ const AuthModal = ({ onClose }: Props) => {
                 placeholder="toi@exemple.com"
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
+              />
+            </div>
+            <div>
+              <label className="text-gray-400 text-sm mb-1 block">Adresse</label>
+              <textarea
+                value={address}
+                maxLength={250}
+                autoComplete="street-address"
+                placeholder="12 rue de la Paix, 75002 Paris, France"
+                rows={2}
+                onChange={(e) => setAddress(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500 resize-none"
               />
             </div>
           </>
@@ -155,10 +211,6 @@ const AuthModal = ({ onClose }: Props) => {
             ? '✅ Créer mon compte'
             : '🔑 Connexion'}
         </button>
-
-        <p className="text-gray-600 text-[11px] text-center">
-          Mot de passe hashé (bcrypt) · jetons fictifs
-        </p>
       </div>
     </div>
   );
