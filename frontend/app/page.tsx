@@ -18,7 +18,7 @@ import LiveBets from '@/components/LiveBets';
 import Leaderboard from '@/components/Leaderboard';
 
 export default function Home() {
-  const { setUserId, setUsername, setBalance, userId } = useGameStore();
+  const { setUserId, setUsername, setBalance } = useGameStore();
 
   // Connect to backend Socket.IO
   useSocket();
@@ -57,19 +57,20 @@ export default function Home() {
         <div className="flex-1">
           <AviatorCanvas />
 
-          {/* User ID display */}
-          {userId && (
-            <p className="text-gray-700 text-xs mt-2 text-center font-mono">
-              ID: {userId.slice(0, 8)}...
-            </p>
-          )}
+          {/* Live bets table — under the game on desktop (PC) */}
+          <div className="hidden lg:block mt-3">
+            <LiveBets />
+          </div>
         </div>
 
-        {/* Bet panels (double bet) + live feed + leaderboard */}
+        {/* Bet panels (double bet) + live feed (mobile) + leaderboard */}
         <div className="w-full lg:w-72 space-y-3">
           <BetPanel slot={1} />
           <BetPanel slot={2} />
-          <LiveBets />
+          {/* Live bets stays here on mobile/tablet only */}
+          <div className="lg:hidden">
+            <LiveBets />
+          </div>
           <Leaderboard />
         </div>
       </main>
