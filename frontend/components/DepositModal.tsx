@@ -21,7 +21,8 @@ interface Props {
   onClose: () => void;
 }
 
-const presets = [10, 20, 50, 100, 200];
+const presets = [15, 25, 50, 100, 200];
+const MIN_DEPOSIT = 15;
 
 const DepositModal = ({ onClose }: Props) => {
   const { setBalance } = useGameStore();
@@ -62,8 +63,8 @@ const DepositModal = ({ onClose }: Props) => {
   }, [deposit, status]);
 
   const handleCreate = async () => {
-    if (amount < 5) {
-      setError('Dépôt minimum : 5 USDT.');
+    if (amount < MIN_DEPOSIT) {
+      setError(`Dépôt minimum : ${MIN_DEPOSIT} USDT.`);
       return;
     }
     setLoading(true);
@@ -127,11 +128,11 @@ const DepositModal = ({ onClose }: Props) => {
               <label className="text-gray-400 text-sm mb-2 block">Montant (USDT)</label>
               <input
                 type="number"
-                min={5}
+                min={MIN_DEPOSIT}
                 value={amount}
                 onChange={(e) => {
                   const v = Number(e.target.value);
-                  setAmount(Number.isFinite(v) && v > 0 ? v : 5);
+                  setAmount(Number.isFinite(v) && v > 0 ? v : MIN_DEPOSIT);
                 }}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white text-center text-xl font-bold focus:outline-none focus:border-orange-500"
               />
@@ -152,7 +153,7 @@ const DepositModal = ({ onClose }: Props) => {
 
             <button
               onClick={handleCreate}
-              disabled={loading || amount < 5}
+              disabled={loading || amount < MIN_DEPOSIT}
               className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 disabled:opacity-40 transition active:scale-95"
             >
               {loading ? '⏳ Génération...' : `Générer l'adresse de dépôt`}

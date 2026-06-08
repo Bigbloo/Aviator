@@ -23,7 +23,7 @@ const PAYOUT_KEY = process.env.NOWPAYMENTS_PAYOUT_KEY;
 const MOCK = !API_KEY;
 
 // Tunables
-const MIN_DEPOSIT = 5;            // USDT
+const MIN_DEPOSIT = 15;           // USDT (NOWPayments min for usdttrc20 ≈ 11 + margin)
 const MIN_WITHDRAW = 10;          // USDT
 const MAX_AUTO_WITHDRAW = 1000;   // above this, hold for manual review (anti-abuse/AML)
 const PAY_CURRENCY = 'usdttrc20';
