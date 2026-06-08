@@ -122,13 +122,29 @@ const BOT_NAMES = [
 ];
 
 const makeBotBets = () => {
-  const n = 4 + Math.floor(Math.random() * 5); // 4..8 bots per round
+  const n = 12 + Math.floor(Math.random() * 9); // 12..20 bots per round (busy feed)
   const out = [];
+  const usedNames = [];
   for (let i = 0; i < n; i++) {
-    const name = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+    // pick a name not already used this round when possible
+    let name = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+    let guard = 0;
+    while (usedNames.includes(name) && guard < 10) {
+      name = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+      guard++;
+    }
+    usedNames.push(name);
+
     const amount = [1, 2, 5, 10, 20, 50, 100][Math.floor(Math.random() * 7)];
-    // Each bot has a target cashout multiplier; it cashes out live if reached
-    const target = Math.round((1.1 + Math.random() * 4) * 100) / 100;
+
+    // To keep clearly MORE winners than losers: ~82% of bots aim VERY low
+    // (1.02–1.22) so they almost always clear before the crash, ~18% greedy.
+    let target;
+    if (Math.random() < 0.82) {
+      target = Math.round((1.02 + Math.random() * 0.2) * 100) / 100; // 1.02..1.22 (wins most rounds)
+    } else {
+      target = Math.round((1.6 + Math.random() * 4) * 100) / 100;    // 1.6..5.6 (riskier)
+    }
     out.push({ name, amount, target, cashedOut: false });
   }
   return out;
