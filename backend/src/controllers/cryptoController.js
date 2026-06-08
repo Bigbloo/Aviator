@@ -98,7 +98,7 @@ const createDeposit = async (req, res) => {
       return res.status(502).json({ error: data.message || 'Erreur du prestataire de paiement.' });
     }
     db.prepare(
-      "INSERT INTO crypto_deposits (id, user_id, amount, currency, address, payment_id, status) VALUES (?,?,?,?,?,?, 'waiting')"
+      "INSERT INTO crypto_deposits (id, user_id, amount, currency, address, payment_id, status) VALUES (?,?,?,?,?,?,?)"
     ).run(id, userId, amount, PAY_CURRENCY, data.pay_address, String(data.payment_id), 'waiting');
     return res.json({
       depositId: id, address: data.pay_address, amount,
