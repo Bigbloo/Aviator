@@ -15,7 +15,7 @@ import HistoryBar from '@/components/HistoryBar';
 import AviatorCanvas from '@/components/AviatorCanvas';
 import BetPanel from '@/components/BetPanel';
 import LiveBets from '@/components/LiveBets';
-import Leaderboard from '@/components/Leaderboard';
+import TopWinners from '@/components/TopWinners';
 
 export default function Home() {
   const { setUserId, setUsername, setBalance } = useGameStore();
@@ -57,31 +57,40 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col">
+    <div className="min-h-screen bg-[#0e0e10] flex flex-col">
       <Header />
-      <HistoryBar />
 
-      <main className="flex-1 flex flex-col lg:flex-row gap-4 p-4 max-w-5xl mx-auto w-full">
-        {/* Game canvas */}
-        <div className="flex-1">
-          <AviatorCanvas />
+      <main className="flex-1 w-full max-w-[1400px] mx-auto p-2 sm:p-3
+        grid gap-3 grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_300px]">
 
-          {/* Live bets table — under the game on desktop (PC) */}
-          <div className="hidden lg:block mt-3">
+        {/* LEFT — All Bets sidebar (desktop only here) */}
+        <aside className="hidden lg:block">
+          <LiveBets />
+        </aside>
+
+        {/* CENTER — history + game + bet panels */}
+        <section className="min-w-0 space-y-3">
+          <div className="rounded-2xl overflow-hidden border border-black/30">
+            <HistoryBar />
+            <AviatorCanvas />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <BetPanel slot={1} />
+            <BetPanel slot={2} />
+          </div>
+
+          {/* On mobile, the bets + winners stack below the game */}
+          <div className="lg:hidden space-y-3">
+            <TopWinners />
             <LiveBets />
           </div>
-        </div>
+        </section>
 
-        {/* Bet panels (double bet) + live feed (mobile) + leaderboard */}
-        <div className="w-full lg:w-72 space-y-3">
-          <BetPanel slot={1} />
-          <BetPanel slot={2} />
-          {/* Live bets stays here on mobile/tablet only */}
-          <div className="lg:hidden">
-            <LiveBets />
-          </div>
-          <Leaderboard />
-        </div>
+        {/* RIGHT — Top Winners (replaces chat on web) */}
+        <aside className="hidden lg:block">
+          <TopWinners />
+        </aside>
       </main>
     </div>
   );

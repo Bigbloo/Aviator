@@ -1,9 +1,8 @@
 /**
  * BetPanel.tsx
- * Bet controls for a SINGLE bet slot. Render two of these for the double-bet
- * feature (slot 1 + slot 2). Each panel owns its own local bet state
- * (amount, hasBet, cashedOut, auto-cashout) so the two are fully independent.
- * Shared game state (phase, multiplier, balance, roundId) comes from the store.
+ * Spribe-style bet controls for a SINGLE slot (render two for the double bet).
+ * Bet/Auto tabs, a -/+ amount stepper with preset chips, and a large green
+ * BET button that turns into a CASH OUT button while flying. Amounts in USDT.
  */
 
 'use client';
@@ -17,33 +16,26 @@ interface BetPanelProps {
   slot?: 1 | 2;
 }
 
-const BetPanel = ({ slot = 1 }: BetPanelProps) => {
-  const {
-    userId,
-    balance,
-    phase,
-    roundId,
-    currentMultiplier,
-    setBalance,
-  } = useGameStore();
+const presets = [1, 2, 5, 10];
+const MIN_BET = 1;
 
-  // Local per-slot state (independent of the other panel)
-  const [betAmount, setBetAmount] = useState(10);
+const BetPanel = ({ slot = 1 }: BetPanelProps) => {
+  const { userId, balance, phase, roundId, currentMultiplier, setBalance } = useGameStore();
+
+  const [tab, setTab] = useState<'bet' | 'auto'>('bet');
+  const [betAmount, setBetAmount] = useState(1);
   const [hasBet, setHasBet] = useState(false);
   const [cashedOut, setCashedOut] = useState(false);
   const [lastResult, setLastResult] = useState<{ result: 'won' | 'lost'; payout: number } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [autoEnabled, setAutoEnabled] = useState(false);
   const [autoTarget, setAutoTarget] = useState(2.0);
 
-  // Reset this slot's bet state whenever a new betting phase starts.
   const prevPhase = useRef(phase);
   useEffect(() => {
     if (phase === 'betting' && prevPhase.current !== 'betting') {
       setHasBet(false);
       setCashedOut(false);
     }
-    // When the round crashes and we still hold a non-cashed bet, mark it lost.
     if (phase === 'crashed' && prevPhase.current === 'flying' && hasBet && !cashedOut) {
       setLastResult({ result: 'lost', payout: 0 });
     }
@@ -52,6 +44,9 @@ const BetPanel = ({ slot = 1 }: BetPanelProps) => {
 
   const canBet = phase === 'betting' && !hasBet && !cashedOut && balance >= betAmount;
   const canCashout = phase === 'flying' && hasBet && !cashedOut;
+
+  const adjust = (delta: number) =>
+    setBetAmount((a) => Math.max(MIN_BET, Math.round((a + delta) * 100) / 100));
 
   const handleBet = async () => {
     if (!canBet || !userId || !roundId) return;
@@ -87,141 +82,146 @@ const BetPanel = ({ slot = 1 }: BetPanelProps) => {
     }
   };
 
-  // Auto-cashout: trigger once the multiplier reaches the target.
+  // Auto-cashout
   const firedRef = useRef(false);
   useEffect(() => {
     if (phase !== 'flying') {
-      firedRef.current = false; // reset each round
+      firedRef.current = false;
       return;
     }
-    if (autoEnabled && hasBet && !cashedOut && !firedRef.current && currentMultiplier >= autoTarget) {
+    if (tab === 'auto' && hasBet && !cashedOut && !firedRef.current && currentMultiplier >= autoTarget) {
       firedRef.current = true;
       doCashout();
     }
-  }, [currentMultiplier, phase, autoEnabled, hasBet, cashedOut, autoTarget]);
-
-  const presets = [5, 10, 20, 50, 100];
+  }, [currentMultiplier, phase, tab, hasBet, cashedOut, autoTarget]);
 
   return (
-    <div className="bg-gray-900 border border-orange-900/40 rounded-xl p-4 space-y-3">
-      {/* Slot label */}
-      <div className="flex justify-between items-center">
-        <span className="text-gray-500 text-xs font-bold uppercase tracking-wider">Pari {slot}</span>
-        {lastResult && (
-          <span
-            className={`text-xs font-bold ${
-              lastResult.result === 'won' ? 'text-green-400' : 'text-red-400'
-            }`}
+    <div className="bg-[#1b1c1d] rounded-2xl p-2.5 border border-black/30">
+      {/* Bet / Auto tabs */}
+      <div className="flex justify-center mb-2.5">
+        <div className="inline-flex bg-[#101112] rounded-full p-0.5 text-xs font-bold">
+          <button
+            onClick={() => setTab('bet')}
+            className={`px-5 py-1 rounded-full transition ${tab === 'bet' ? 'bg-[#3a3b3e] text-white' : 'text-gray-400'}`}
           >
-            {lastResult.result === 'won'
-              ? `✅ +${lastResult.payout.toFixed(2)} €`
-              : '❌ Perdu'}
-          </span>
-        )}
-      </div>
-
-      {/* Bet amount */}
-      <div>
-        <label className="text-gray-400 text-xs mb-1 block">Mise (€)</label>
-        <input
-          type="number"
-          min={1}
-          max={balance}
-          value={betAmount}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            setBetAmount(Number.isFinite(v) && v > 0 ? v : 1);
-          }}
-          disabled={hasBet}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-center font-bold focus:outline-none focus:border-orange-500"
-        />
-        <div className="flex gap-2 mt-2">
-          {presets.map((p) => (
-            <button
-              key={p}
-              onClick={() => setBetAmount(p)}
-              disabled={hasBet}
-              className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs py-1 rounded-md transition disabled:opacity-40"
-            >
-              {p}€
-            </button>
-          ))}
+            Bet
+          </button>
+          <button
+            onClick={() => setTab('auto')}
+            className={`px-5 py-1 rounded-full transition ${tab === 'auto' ? 'bg-[#3a3b3e] text-white' : 'text-gray-400'}`}
+          >
+            Auto
+          </button>
         </div>
       </div>
 
-      {/* Auto-cashout */}
-      <div className="bg-gray-800/50 rounded-lg p-3 space-y-2">
-        <label className="flex items-center justify-between cursor-pointer">
-          <span className="text-gray-300 text-sm font-bold">⚡ Auto-encaissement</span>
-          <input
-            type="checkbox"
-            checked={autoEnabled}
-            onChange={(e) => setAutoEnabled(e.target.checked)}
-            disabled={hasBet}
-            className="w-4 h-4 accent-orange-500"
-          />
-        </label>
-        {autoEnabled && (
-          <div className="flex items-center gap-2">
-            <span className="text-gray-400 text-xs">Encaisser à ×</span>
+      <div className="flex gap-2 items-stretch">
+        {/* Amount + presets */}
+        <div className="w-[46%] space-y-1.5">
+          <div className="flex items-center justify-between bg-[#101112] rounded-full px-2 py-1.5">
+            <button
+              onClick={() => adjust(-1)}
+              disabled={hasBet}
+              className="w-6 h-6 rounded-full bg-[#2c2d30] text-gray-300 text-lg leading-none flex items-center justify-center disabled:opacity-40"
+            >
+              −
+            </button>
             <input
               type="number"
-              min={1.01}
-              step={0.1}
-              value={autoTarget}
+              min={MIN_BET}
+              value={betAmount}
               onChange={(e) => {
                 const v = Number(e.target.value);
-                setAutoTarget(Number.isFinite(v) && v > 1 ? v : 1.5);
+                setBetAmount(Number.isFinite(v) && v > 0 ? v : MIN_BET);
               }}
               disabled={hasBet}
-              className="flex-1 bg-gray-900 border border-gray-700 rounded-md px-2 py-1 text-white text-center text-sm font-bold focus:outline-none focus:border-orange-500"
+              className="w-full bg-transparent text-white text-center font-bold text-base focus:outline-none"
             />
+            <button
+              onClick={() => adjust(1)}
+              disabled={hasBet}
+              className="w-6 h-6 rounded-full bg-[#2c2d30] text-gray-300 text-lg leading-none flex items-center justify-center disabled:opacity-40"
+            >
+              +
+            </button>
           </div>
-        )}
+          <div className="grid grid-cols-2 gap-1.5">
+            {presets.map((p) => (
+              <button
+                key={p}
+                onClick={() => setBetAmount(p)}
+                disabled={hasBet}
+                className="bg-[#101112] hover:bg-[#2c2d30] text-gray-300 text-xs py-1 rounded-md transition disabled:opacity-40"
+              >
+                {p.toFixed(2)}
+              </button>
+            ))}
+          </div>
+          {tab === 'auto' && (
+            <div className="flex items-center gap-1 bg-[#101112] rounded-full px-2 py-1 mt-1">
+              <span className="text-gray-500 text-[10px] whitespace-nowrap">Auto ×</span>
+              <input
+                type="number"
+                min={1.01}
+                step={0.1}
+                value={autoTarget}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setAutoTarget(Number.isFinite(v) && v > 1 ? v : 1.5);
+                }}
+                disabled={hasBet}
+                className="w-full bg-transparent text-white text-center text-xs font-bold focus:outline-none"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Big action button */}
+        <div className="flex-1">
+          {!hasBet ? (
+            <button
+              onClick={handleBet}
+              disabled={!canBet}
+              className="w-full h-full min-h-[72px] rounded-2xl font-bold text-white border border-[#5bbf1c]/40
+                bg-gradient-to-b from-[#5bbf1c] to-[#28a909] hover:from-[#69d122] hover:to-[#2fbf0c]
+                disabled:from-gray-600 disabled:to-gray-700 disabled:border-gray-600 disabled:opacity-60
+                transition active:scale-[0.98] flex flex-col items-center justify-center leading-tight shadow-lg"
+            >
+              <span className="text-lg">{phase === 'betting' ? 'BET' : phase === 'flying' ? 'WAIT' : 'NEXT'}</span>
+              <span className="text-sm font-extrabold">{betAmount.toFixed(2)} USDT</span>
+            </button>
+          ) : (
+            <button
+              onClick={doCashout}
+              disabled={!canCashout || loading || cashedOut}
+              className="w-full h-full min-h-[72px] rounded-2xl font-bold text-black border border-[#f5a623]/40
+                bg-gradient-to-b from-[#ffcf4a] to-[#f5a623] hover:from-[#ffd866] hover:to-[#ffb52e]
+                disabled:opacity-60 transition active:scale-[0.98] flex flex-col items-center justify-center leading-tight shadow-lg"
+            >
+              {cashedOut ? (
+                <>
+                  <span className="text-base">CASHED OUT</span>
+                  <span className="text-sm font-extrabold">
+                    +{lastResult?.payout.toFixed(2)} USDT
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-base">CASH OUT</span>
+                  <span className="text-sm font-extrabold">
+                    {(betAmount * currentMultiplier).toFixed(2)} USDT
+                  </span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Bet / Cashout button */}
-      {!hasBet ? (
-        <button
-          onClick={handleBet}
-          disabled={!canBet}
-          className="w-full py-3 rounded-xl font-bold text-white text-lg transition-all
-            bg-gradient-to-r from-orange-500 to-red-500
-            hover:from-orange-400 hover:to-red-400
-            disabled:opacity-40 disabled:cursor-not-allowed
-            active:scale-95"
-        >
-          {phase === 'betting'
-            ? '🎯 MISER'
-            : phase === 'flying'
-            ? '✈️ En vol... (trop tard)'
-            : '⏳ Prochaine manche'}
-        </button>
-      ) : (
-        <button
-          onClick={doCashout}
-          disabled={!canCashout || loading || cashedOut}
-          className="w-full py-3 rounded-xl font-bold text-white text-lg transition-all
-            bg-gradient-to-r from-green-500 to-emerald-500
-            hover:from-green-400 hover:to-emerald-400
-            disabled:opacity-40 disabled:cursor-not-allowed
-            active:scale-95 animate-pulse"
-        >
-          {cashedOut
-            ? '✅ Encaissé !'
-            : loading
-            ? '⏳ Traitement...'
-            : `💸 ENCAISSER × ${currentMultiplier.toFixed(2)}`}
-        </button>
-      )}
-
-      {/* Potential win */}
-      {hasBet && !cashedOut && (
-        <div className="text-center text-sm text-gray-400">
-          Gain potentiel :{' '}
-          <span className="text-green-400 font-bold">
-            {(betAmount * currentMultiplier).toFixed(2)} €
-          </span>
+      {/* Last result line */}
+      {lastResult && !hasBet && (
+        <div className={`text-center text-xs font-bold mt-2 ${lastResult.result === 'won' ? 'text-green-400' : 'text-red-400'}`}>
+          {lastResult.result === 'won' ? `✅ Gagné +${lastResult.payout.toFixed(2)} USDT` : '❌ Perdu'}
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
 /**
  * Header.tsx
- * Top navigation bar with balance, deposit and withdraw buttons.
+ * Top bar — Spribe-style: red italic Aviator logo, USDT balance pill, deposit
+ * and account actions.
  */
 
 'use client';
@@ -18,6 +19,7 @@ const Header = () => {
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [muted, setMutedState] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const toggleMute = () => {
     const next = !muted;
@@ -27,48 +29,75 @@ const Header = () => {
 
   return (
     <>
-      <header className="flex items-center justify-between px-3 sm:px-4 py-3 bg-gray-950 border-b border-orange-900/30 gap-2">
+      <header className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#1b1c1d] border-b border-black/40 gap-2">
         {/* Logo */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-xl sm:text-2xl">✈️</span>
-          <span className="hidden sm:inline text-white font-black text-base sm:text-xl tracking-wider sm:tracking-widest">AVIATOR</span>
-        </div>
+        <button onClick={() => setShowAuth(true)} className="flex items-center shrink-0" title="Aviator">
+          <span className="text-[#e50539] font-black italic text-xl sm:text-2xl tracking-tight select-none drop-shadow-[0_0_8px_rgba(229,5,57,0.5)]">
+            Aviator
+          </span>
+        </button>
 
         {/* Balance + actions */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-          <button
-            onClick={() => setShowAuth(true)}
-            className="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 text-white text-xs sm:text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition active:scale-95 whitespace-nowrap max-w-[90px] sm:max-w-[120px]"
-            title={username ? 'Changer de compte' : 'Créer un compte'}
-          >
-            <span>{username ? '👤' : '➕'}</span>
-            <span className="truncate hidden sm:inline">{username || 'Compte'}</span>
-          </button>
-          <div className="bg-gray-800 rounded-lg px-2 sm:px-3 py-1.5 text-orange-400 font-bold text-xs sm:text-sm whitespace-nowrap">
-            {balance.toFixed(2)} €
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Balance pill */}
+          <div className="flex items-center gap-2 bg-[#101112] rounded-full pl-3 pr-1 py-1">
+            <span className="text-white font-bold text-sm tabular-nums">
+              {balance.toFixed(2)} <span className="text-gray-400 text-xs font-semibold">USDT</span>
+            </span>
+            <button
+              onClick={() => setShowDeposit(true)}
+              className="bg-[#28a909] hover:bg-[#23950a] text-white text-xs sm:text-sm font-bold px-3 py-1.5 rounded-full transition active:scale-95 whitespace-nowrap"
+              title="Déposer"
+            >
+              Dépôt
+            </button>
           </div>
+
           <button
             onClick={toggleMute}
-            className="bg-gray-800 hover:bg-gray-700 text-white text-base px-2 py-1.5 rounded-lg transition active:scale-95"
+            className="bg-[#2c2d30] hover:bg-[#3a3b3e] text-white text-base w-8 h-8 flex items-center justify-center rounded-full transition active:scale-95"
             title={muted ? 'Activer le son' : 'Couper le son'}
             aria-label={muted ? 'Activer le son' : 'Couper le son'}
           >
             {muted ? '🔇' : '🔊'}
           </button>
-          <button
-            onClick={() => setShowDeposit(true)}
-            className="bg-orange-500 hover:bg-orange-400 text-white text-xs sm:text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition active:scale-95 whitespace-nowrap"
-            title="Déposer"
-          >
-            + Déposer
-          </button>
-          <button
-            onClick={() => setShowWithdraw(true)}
-            className="bg-gray-700 hover:bg-gray-600 text-white text-xs sm:text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition active:scale-95 whitespace-nowrap"
-            title="Retirer"
-          >
-            Retirer
-          </button>
+
+          {/* Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              className="bg-[#2c2d30] hover:bg-[#3a3b3e] text-white w-8 h-8 flex items-center justify-center rounded-full transition active:scale-95"
+              aria-label="Menu"
+            >
+              ☰
+            </button>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 mt-2 w-44 bg-[#1b1c1d] border border-black/40 rounded-xl shadow-xl z-50 overflow-hidden">
+                  <button
+                    onClick={() => { setShowAuth(true); setMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-[#2c2d30] flex items-center gap-2"
+                  >
+                    <span>{username ? '👤' : '➕'}</span>
+                    <span className="truncate">{username || 'Créer un compte'}</span>
+                  </button>
+                  <button
+                    onClick={() => { setShowDeposit(true); setMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-[#2c2d30] flex items-center gap-2"
+                  >
+                    💰 Déposer
+                  </button>
+                  <button
+                    onClick={() => { setShowWithdraw(true); setMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-[#2c2d30] flex items-center gap-2"
+                  >
+                    💸 Retirer
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
