@@ -20,6 +20,7 @@ const AuthModal = ({ onClose }: Props) => {
   const [identifier, setIdentifier] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [address, setAddress] = useState('');
@@ -31,6 +32,7 @@ const AuthModal = ({ onClose }: Props) => {
       ? username.trim().length >= 3 &&
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
         password.length >= 8 &&
+        password === passwordConfirm &&
         firstName.trim().length >= 1 &&
         lastName.trim().length >= 1 &&
         address.trim().length >= 5
@@ -38,6 +40,10 @@ const AuthModal = ({ onClose }: Props) => {
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
+    if (mode === 'register' && password !== passwordConfirm) {
+      setError('Les mots de passe ne correspondent pas.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -72,6 +78,7 @@ const AuthModal = ({ onClose }: Props) => {
     setMode(m);
     setError('');
     setPassword('');
+    setPasswordConfirm('');
   };
 
   return (
@@ -193,10 +200,33 @@ const AuthModal = ({ onClose }: Props) => {
             autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
             placeholder={mode === 'register' ? '8 caractères minimum' : 'Mot de passe'}
             onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+            onKeyDown={(e) => mode === 'login' && e.key === 'Enter' && handleSubmit()}
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
           />
         </div>
+
+        {mode === 'register' && (
+          <div>
+            <label className="text-gray-400 text-sm mb-1 block">Confirmer le mot de passe</label>
+            <input
+              type="password"
+              value={passwordConfirm}
+              maxLength={128}
+              autoComplete="new-password"
+              placeholder="Retape le mot de passe"
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              className={`w-full bg-gray-800 border rounded-lg px-4 py-2.5 text-white focus:outline-none ${
+                passwordConfirm.length > 0 && password !== passwordConfirm
+                  ? 'border-red-500 focus:border-red-400'
+                  : 'border-gray-700 focus:border-orange-500'
+              }`}
+            />
+            {passwordConfirm.length > 0 && password !== passwordConfirm && (
+              <p className="text-red-400 text-xs mt-1">Les mots de passe ne correspondent pas.</p>
+            )}
+          </div>
+        )}
 
         {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
