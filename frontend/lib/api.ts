@@ -6,6 +6,43 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 /**
+ * Creates an account with a username (attaches to existing anon session if userId given).
+ */
+export const register = async (
+  username: string,
+  userId?: string | null
+): Promise<{ userId: string; username: string; balance: number }> => {
+  const res = await fetch(`${BASE_URL}/api/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, userId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Échec de la création du compte');
+  }
+  return res.json();
+};
+
+/**
+ * Logs in by username (no password — demo mode).
+ */
+export const login = async (
+  username: string
+): Promise<{ userId: string; username: string; balance: number }> => {
+  const res = await fetch(`${BASE_URL}/api/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Connexion échouée');
+  }
+  return res.json();
+};
+
+/**
  * Creates a new user and returns userId.
  */
 export const createUser = async (): Promise<{ userId: string; balance: number }> => {
@@ -15,13 +52,15 @@ export const createUser = async (): Promise<{ userId: string; balance: number }>
 };
 
 /**
- * Fetches the current balance for a user.
+ * Fetches the current balance + username for a user.
  */
-export const getBalance = async (userId: string): Promise<number> => {
+export const getBalance = async (
+  userId: string
+): Promise<{ balance: number; username: string | null }> => {
   const res = await fetch(`${BASE_URL}/api/balance/${userId}`);
   if (!res.ok) throw new Error('Failed to fetch balance');
   const data = await res.json();
-  return data.balance;
+  return { balance: data.balance, username: data.username ?? null };
 };
 
 /**

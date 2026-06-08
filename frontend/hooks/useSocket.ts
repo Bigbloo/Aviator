@@ -76,8 +76,8 @@ export const useSocket = () => {
       // Always resync the real balance from the server (source of truth).
       if (s.userId) {
         try {
-          const bal = await getBalance(s.userId);
-          s.setBalance(bal);
+          const { balance } = await getBalance(s.userId);
+          s.setBalance(balance);
         } catch {
           /* keep local balance if fetch fails */
         }

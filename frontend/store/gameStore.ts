@@ -11,6 +11,7 @@ export type GamePhase = 'waiting' | 'betting' | 'flying' | 'crashed';
 export interface GameState {
   // User
   userId: string | null;
+  username: string | null;
   balance: number;
 
   // Round
@@ -27,6 +28,7 @@ export interface GameState {
 
   // Actions
   setUserId: (id: string) => void;
+  setUsername: (name: string | null) => void;
   setBalance: (balance: number) => void;
   setPhase: (phase: GamePhase) => void;
   setRoundId: (id: string) => void;
@@ -41,6 +43,7 @@ export interface GameState {
 
 export const useGameStore = create<GameState>((set) => ({
   userId: null,
+  username: null,
   balance: 0,
   phase: 'waiting',
   roundId: null,
@@ -52,6 +55,7 @@ export const useGameStore = create<GameState>((set) => ({
   lastResult: null,
 
   setUserId: (id) => set({ userId: id }),
+  setUsername: (name) => set({ username: name }),
   setBalance: (balance) => set({ balance }),
   setPhase: (phase) => set({ phase }),
   setRoundId: (id) => set({ roundId: id }),

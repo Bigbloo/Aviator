@@ -86,6 +86,33 @@ const calcMultiplier = (elapsedMs) => {
   return Math.round(Math.exp(MULTIPLIER_SPEED * elapsedMs) * 100) / 100;
 };
 
+// ── Synthetic players (DEMO) ──────────────────────────────────────────────────
+// Generates a handful of fake bet results each round so the live feed looks
+// active. Purely cosmetic — these never touch real balances.
+const BOT_NAMES = [
+  'Lucas', 'Emma', 'Hugo', 'Léa', 'Nathan', 'Chloé', 'Gabriel', 'Manon',
+  'Louis', 'Inès', 'Jules', 'Sarah', 'Adam', 'Camille', 'Raphaël', 'Zoé',
+  'Tom', 'Lina', 'Noah', 'Jade', 'Enzo', 'Alice', 'Liam', 'Rose',
+];
+
+const makeBotResults = (crashPoint) => {
+  const n = 4 + Math.floor(Math.random() * 5); // 4..8 bots per round
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const name = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+    const amount = [1, 2, 5, 10, 20, 50, 100][Math.floor(Math.random() * 7)];
+    // Bot picks a random target cashout; wins if it's below the crash point
+    const target = Math.round((1.1 + Math.random() * 4) * 100) / 100;
+    if (target < crashPoint) {
+      const payout = Math.round(amount * target * 100) / 100;
+      out.push({ name, amount, multiplier: target, payout, result: 'won' });
+    } else {
+      out.push({ name, amount, multiplier: null, payout: 0, result: 'lost' });
+    }
+  }
+  return out;
+};
+
 /**
  * Starts a new round: generates crash point, stores in DB, begins broadcasting.
  */
@@ -142,13 +169,35 @@ const startNewRound = () => {
           "UPDATE rounds SET status = 'crashed', ended_at = strftime('%s', 'now') WHERE id = ?"
         ).run(roundId);
 
+        // Collect this round's real results (winners cashed out, losers still pending)
+        const roundBets = db.prepare(
+          `SELECT b.bet_amount, b.cashout_multiplier, b.payout, b.status,
+                  COALESCE(u.username, 'Joueur ' || substr(u.id,1,4)) AS name
+           FROM bets b JOIN users u ON u.id = b.user_id
+           WHERE b.round_id = ?`
+        ).all(roundId);
+
         // Mark all pending bets for this round as lost
         db.prepare(
           "UPDATE bets SET status = 'lost', payout = 0 WHERE round_id = ? AND status = 'pending'"
         ).run(roundId);
 
         console.log(`[Round ${roundId}] CRASHED at x${gameState.crashPoint}`);
+
+        // Build the results feed (real bets + synthetic bots so the table is lively)
+        const realResults = roundBets.map((b) => ({
+          name: b.name,
+          amount: b.bet_amount,
+          multiplier: b.status === 'won' ? b.cashout_multiplier : null,
+          payout: b.status === 'won' ? b.payout : 0,
+          result: b.status === 'won' ? 'won' : 'lost',
+        }));
+        const results = realResults.concat(
+          makeBotResults(gameState.crashPoint)
+        );
+
         io.emit('round:crash', { roundId, crashPoint: gameState.crashPoint });
+        io.emit('bets:results', { roundId, crashPoint: gameState.crashPoint, results });
 
         // Wait then start new round
         setTimeout(startNewRound, WAITING_DURATION);

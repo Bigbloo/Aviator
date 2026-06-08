@@ -13,9 +13,10 @@ import { useSocket } from '@/hooks/useSocket';
 import Header from '@/components/Header';
 import AviatorCanvas from '@/components/AviatorCanvas';
 import BetPanel from '@/components/BetPanel';
+import LiveBets from '@/components/LiveBets';
 
 export default function Home() {
-  const { setUserId, setBalance, userId } = useGameStore();
+  const { setUserId, setUsername, setBalance, userId } = useGameStore();
 
   // Connect to backend Socket.IO
   useSocket();
@@ -34,9 +35,10 @@ export default function Home() {
         setBalance(user.balance);
       } else {
         setUserId(storedId);
-        // Fetch current balance
-        const balance = await getBalance(storedId);
+        // Fetch current balance + username
+        const { balance, username } = await getBalance(storedId);
         setBalance(balance);
+        setUsername(username);
       }
     };
 
@@ -60,9 +62,10 @@ export default function Home() {
           )}
         </div>
 
-        {/* Bet panel */}
+        {/* Bet panel + live feed */}
         <div className="w-full lg:w-72 space-y-3">
           <BetPanel />
+          <LiveBets />
         </div>
       </main>
     </div>

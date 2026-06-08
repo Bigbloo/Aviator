@@ -19,6 +19,7 @@ db.pragma('journal_mode = WAL');
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
+    username TEXT,
     balance REAL NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
   );
@@ -54,6 +55,17 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
 `);
+
+// ── Idempotent migrations (for existing DBs that predate a column) ──
+try {
+  const cols = db.prepare("PRAGMA table_info(users)").all();
+  if (!cols.some((c) => c.name === 'username')) {
+    db.exec('ALTER TABLE users ADD COLUMN username TEXT');
+    console.log('[DB] Migrated: added users.username');
+  }
+} catch (e) {
+  console.error('[DB] Migration check failed:', e.message);
+}
 
 console.log('[DB] SQLite initialized from', DB_PATH);
 

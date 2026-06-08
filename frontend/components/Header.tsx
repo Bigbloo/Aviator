@@ -9,11 +9,13 @@ import { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import DepositModal from './DepositModal';
 import WithdrawModal from './WithdrawModal';
+import AuthModal from './AuthModal';
 
 const Header = () => {
-  const { balance, userId } = useGameStore();
+  const { balance, username } = useGameStore();
   const [showDeposit, setShowDeposit] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
 
   return (
     <>
@@ -33,6 +35,14 @@ const Header = () => {
 
         {/* Balance + actions */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          <button
+            onClick={() => setShowAuth(true)}
+            className="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 text-white text-xs sm:text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition active:scale-95 whitespace-nowrap max-w-[120px]"
+            title={username ? 'Changer de compte' : 'Créer un compte'}
+          >
+            <span>{username ? '👤' : '➕'}</span>
+            <span className="truncate">{username || 'Compte'}</span>
+          </button>
           <div className="bg-gray-800 rounded-lg px-2 sm:px-3 py-1.5 text-orange-400 font-bold text-xs sm:text-sm whitespace-nowrap">
             {balance.toFixed(2)} €
           </div>
@@ -53,6 +63,7 @@ const Header = () => {
 
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
       {showWithdraw && <WithdrawModal onClose={() => setShowWithdraw(false)} />}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
     </>
   );
 };

@@ -5,9 +5,11 @@
 
 const express = require('express');
 const router = express.Router();
-const { getBalance, createUser } = require('../controllers/userController');
+const { getBalance, createUser, register, login } = require('../controllers/userController');
 
 router.post('/create', createUser);
+router.post('/register', register);
+router.post('/login', login);
 router.get('/balance/:userId', getBalance);
 
 module.exports = router;
