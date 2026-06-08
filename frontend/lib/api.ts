@@ -5,17 +5,28 @@
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
+export interface AuthResponse {
+  userId: string;
+  username: string;
+  email: string;
+  balance: number;
+}
+
 /**
- * Creates an account with a username (attaches to existing anon session if userId given).
+ * Creates an account with username + email + password. If userId is provided
+ * (existing anon session), credentials are attached to that account so the
+ * balance is preserved.
  */
 export const register = async (
   username: string,
+  email: string,
+  password: string,
   userId?: string | null
-): Promise<{ userId: string; username: string; balance: number }> => {
+): Promise<AuthResponse> => {
   const res = await fetch(`${BASE_URL}/api/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, userId }),
+    body: JSON.stringify({ username, email, password, userId }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -25,15 +36,16 @@ export const register = async (
 };
 
 /**
- * Logs in by username (no password — demo mode).
+ * Logs in with email-or-username + password (bcrypt-verified server-side).
  */
 export const login = async (
-  username: string
-): Promise<{ userId: string; username: string; balance: number }> => {
+  identifier: string,
+  password: string
+): Promise<AuthResponse> => {
   const res = await fetch(`${BASE_URL}/api/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username }),
+    body: JSON.stringify({ identifier, password }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

@@ -68,9 +68,19 @@ db.exec(`
 // ── Idempotent migrations (for existing DBs that predate a column) ──
 try {
   const cols = db.prepare("PRAGMA table_info(users)").all();
-  if (!cols.some((c) => c.name === 'username')) {
+  const has = (n) => cols.some((c) => c.name === n);
+  if (!has('username')) {
     db.exec('ALTER TABLE users ADD COLUMN username TEXT');
     console.log('[DB] Migrated: added users.username');
+  }
+  if (!has('email')) {
+    db.exec('ALTER TABLE users ADD COLUMN email TEXT');
+    db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL");
+    console.log('[DB] Migrated: added users.email (unique)');
+  }
+  if (!has('password_hash')) {
+    db.exec('ALTER TABLE users ADD COLUMN password_hash TEXT');
+    console.log('[DB] Migrated: added users.password_hash');
   }
 } catch (e) {
   console.error('[DB] Migration check failed:', e.message);

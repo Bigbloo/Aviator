@@ -1,6 +1,6 @@
 /**
  * AuthModal.tsx
- * Account creation / login by username (demo mode — no password).
+ * Account creation (pseudo + email + password) and login (email-or-pseudo + password).
  */
 
 'use client';
@@ -16,40 +16,49 @@ interface Props {
 const AuthModal = ({ onClose }: Props) => {
   const { userId, setUserId, setUsername, setBalance } = useGameStore();
   const [mode, setMode] = useState<'register' | 'login'>('register');
-  const [name, setName] = useState('');
+  const [username, setUsernameLocal] = useState('');
+  const [identifier, setIdentifier] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const canSubmit =
+    mode === 'register'
+      ? username.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && password.length >= 8
+      : identifier.trim().length >= 3 && password.length >= 1;
+
   const handleSubmit = async () => {
-    const trimmed = name.trim();
-    if (trimmed.length < 3) {
-      setError('Le pseudo doit faire au moins 3 caractères.');
-      return;
-    }
+    if (!canSubmit) return;
     setLoading(true);
     setError('');
     try {
       const data =
         mode === 'register'
-          ? await register(trimmed, userId)
-          : await login(trimmed);
+          ? await register(username.trim(), email.trim(), password, userId)
+          : await login(identifier.trim(), password);
 
-      // Persist + update store
       localStorage.setItem('aviator_userId', data.userId);
       setUserId(data.userId);
       setUsername(data.username);
       setBalance(data.balance);
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue.');
     } finally {
       setLoading(false);
     }
   };
 
+  const switchMode = (m: 'register' | 'login') => {
+    setMode(m);
+    setError('');
+    setPassword('');
+  };
+
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-orange-900/40 rounded-2xl p-6 w-full max-w-sm space-y-5">
+      <div className="bg-gray-900 border border-orange-900/40 rounded-2xl p-6 w-full max-w-sm space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-white font-bold text-xl">
             {mode === 'register' ? '👤 Créer un compte' : '🔑 Se connecter'}
@@ -59,10 +68,9 @@ const AuthModal = ({ onClose }: Props) => {
           </button>
         </div>
 
-        {/* Mode toggle */}
         <div className="flex bg-gray-800 rounded-lg p-1 text-sm">
           <button
-            onClick={() => { setMode('register'); setError(''); }}
+            onClick={() => switchMode('register')}
             className={`flex-1 py-1.5 rounded-md font-bold transition ${
               mode === 'register' ? 'bg-orange-500 text-white' : 'text-gray-400'
             }`}
@@ -70,7 +78,7 @@ const AuthModal = ({ onClose }: Props) => {
             Créer un compte
           </button>
           <button
-            onClick={() => { setMode('login'); setError(''); }}
+            onClick={() => switchMode('login')}
             className={`flex-1 py-1.5 rounded-md font-bold transition ${
               mode === 'login' ? 'bg-orange-500 text-white' : 'text-gray-400'
             }`}
@@ -79,16 +87,58 @@ const AuthModal = ({ onClose }: Props) => {
           </button>
         </div>
 
+        {mode === 'register' ? (
+          <>
+            <div>
+              <label className="text-gray-400 text-sm mb-1 block">Pseudo</label>
+              <input
+                type="text"
+                value={username}
+                maxLength={20}
+                autoComplete="username"
+                placeholder="3 à 20 caractères"
+                onChange={(e) => setUsernameLocal(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
+              />
+            </div>
+            <div>
+              <label className="text-gray-400 text-sm mb-1 block">Email</label>
+              <input
+                type="email"
+                value={email}
+                maxLength={254}
+                autoComplete="email"
+                placeholder="toi@exemple.com"
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
+              />
+            </div>
+          </>
+        ) : (
+          <div>
+            <label className="text-gray-400 text-sm mb-1 block">Email ou pseudo</label>
+            <input
+              type="text"
+              value={identifier}
+              autoComplete="username"
+              placeholder="toi@exemple.com ou MonPseudo"
+              onChange={(e) => setIdentifier(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
+            />
+          </div>
+        )}
+
         <div>
-          <label className="text-gray-400 text-sm mb-2 block">Pseudo</label>
+          <label className="text-gray-400 text-sm mb-1 block">Mot de passe</label>
           <input
-            type="text"
-            value={name}
-            maxLength={20}
-            placeholder="Ton pseudo (3-20 caractères)"
-            onChange={(e) => setName(e.target.value)}
+            type="password"
+            value={password}
+            maxLength={128}
+            autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+            placeholder={mode === 'register' ? '8 caractères minimum' : 'Mot de passe'}
+            onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white text-center font-bold focus:outline-none focus:border-orange-500"
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
           />
         </div>
 
@@ -96,7 +146,7 @@ const AuthModal = ({ onClose }: Props) => {
 
         <button
           onClick={handleSubmit}
-          disabled={loading || name.trim().length < 3}
+          disabled={loading || !canSubmit}
           className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 disabled:opacity-40 transition active:scale-95"
         >
           {loading
@@ -107,7 +157,7 @@ const AuthModal = ({ onClose }: Props) => {
         </button>
 
         <p className="text-gray-600 text-[11px] text-center">
-          Mode démo · aucun mot de passe requis · jetons fictifs
+          Mot de passe hashé (bcrypt) · jetons fictifs
         </p>
       </div>
     </div>
