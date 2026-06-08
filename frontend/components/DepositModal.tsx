@@ -12,9 +12,11 @@ import { useGameStore } from '@/store/gameStore';
 import {
   createCryptoDeposit,
   getCryptoDeposit,
+  getCryptoCurrencies,
   mockConfirmDeposit,
   getBalance,
   type CryptoDeposit,
+  type CryptoCurrency,
 } from '@/lib/api';
 
 interface Props {
@@ -27,12 +29,23 @@ const MIN_DEPOSIT = 15;
 const DepositModal = ({ onClose }: Props) => {
   const { setBalance } = useGameStore();
   const [amount, setAmount] = useState(20);
+  const [currencies, setCurrencies] = useState<CryptoCurrency[]>([]);
+  const [payCurrency, setPayCurrency] = useState('usdttrc20');
   const [deposit, setDeposit] = useState<CryptoDeposit | null>(null);
   const [status, setStatus] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Load the list of pay-in currencies once.
+  useEffect(() => {
+    getCryptoCurrencies()
+      .then((list) => {
+        if (list.length) setCurrencies(list);
+      })
+      .catch(() => {});
+  }, []);
 
   const refreshBalance = async () => {
     try {
@@ -70,7 +83,7 @@ const DepositModal = ({ onClose }: Props) => {
     setLoading(true);
     setError('');
     try {
-      const d = await createCryptoDeposit(amount);
+      const d = await createCryptoDeposit(amount, payCurrency);
       setDeposit(d);
       setStatus(d.status);
     } catch (err: unknown) {
@@ -147,6 +160,23 @@ const DepositModal = ({ onClose }: Props) => {
                   </button>
                 ))}
               </div>
+              <p className="text-gray-600 text-xs mt-1">Solde crédité en USDT · minimum {MIN_DEPOSIT}</p>
+            </div>
+
+            {/* Crypto selector */}
+            <div>
+              <label className="text-gray-400 text-sm mb-2 block">Payer avec</label>
+              <select
+                value={payCurrency}
+                onChange={(e) => setPayCurrency(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
+              >
+                {(currencies.length ? currencies : [{ code: 'usdttrc20', name: 'USDT', network: 'TRC-20 (Tron)' }]).map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name} — {c.network}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {error && <p className="text-red-400 text-sm text-center">{error}</p>}
@@ -158,16 +188,17 @@ const DepositModal = ({ onClose }: Props) => {
             >
               {loading ? '⏳ Génération...' : `Générer l'adresse de dépôt`}
             </button>
-
-            <p className="text-gray-600 text-xs text-center">
-              Réseau : USDT TRC-20 (Tron) · frais réseau réduits
-            </p>
           </>
         ) : (
           <>
             <p className="text-gray-400 text-sm text-center">
-              Envoie exactement <span className="text-orange-400 font-bold">{deposit.payAmount} USDT</span> (TRC-20) à
-              l&apos;adresse ci-dessous.
+              Envoie exactement{' '}
+              <span className="text-orange-400 font-bold">
+                {deposit.payAmount} {deposit.payCurrency.toUpperCase().replace(/(TRC20|ERC20|BSC|SOL)$/,'')}
+              </span>{' '}
+              <span className="text-gray-500">({deposit.network})</span> à l&apos;adresse ci-dessous.
+              <br />
+              <span className="text-gray-500 text-xs">Tu seras crédité de {deposit.amount} USDT.</span>
             </p>
 
             {qrUrl && (
@@ -176,7 +207,7 @@ const DepositModal = ({ onClose }: Props) => {
             )}
 
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
-              <p className="text-gray-500 text-xs mb-1">Adresse USDT (TRC-20)</p>
+              <p className="text-gray-500 text-xs mb-1">Adresse de dépôt ({deposit.network})</p>
               <p className="text-white text-xs font-mono break-all">{deposit.address}</p>
               <button
                 onClick={copyAddress}

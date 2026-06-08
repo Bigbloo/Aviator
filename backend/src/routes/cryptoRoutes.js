@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const {
-  createDeposit, getDeposit, handleIpn, mockConfirm, createWithdrawal,
+  createDeposit, getDeposit, handleIpn, mockConfirm, createWithdrawal, listCurrencies,
 } = require('../controllers/cryptoController');
 const { requireAuth } = require('../middleware/auth');
 
@@ -15,6 +15,7 @@ const devOnly = (req, res, next) => {
   return next();
 };
 
+router.get('/crypto/currencies', requireAuth, listCurrencies);
 router.post('/crypto/deposit', requireAuth, createDeposit);
 router.get('/crypto/deposit/:id', requireAuth, getDeposit);
 router.post('/crypto/withdraw', requireAuth, createWithdrawal);

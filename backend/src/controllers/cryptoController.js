@@ -31,6 +31,28 @@ const PAY_CURRENCY = 'usdttrc20';
 // TRC-20 address: base58, starts with 'T', 34 chars total.
 const TRC20_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
 
+// Curated list of pay-in currencies offered to the player. The account balance
+// stays in USDT; NOWPayments converts whatever they pay into that value.
+const POPULAR = [
+  { code: 'usdttrc20', name: 'USDT', network: 'TRC-20 (Tron)' },
+  { code: 'usdterc20', name: 'USDT', network: 'ERC-20 (Ethereum)' },
+  { code: 'usdtbsc',   name: 'USDT', network: 'BEP-20 (BSC)' },
+  { code: 'btc',       name: 'Bitcoin', network: 'Bitcoin' },
+  { code: 'eth',       name: 'Ethereum', network: 'ERC-20' },
+  { code: 'bnbbsc',    name: 'BNB', network: 'BEP-20 (BSC)' },
+  { code: 'sol',       name: 'Solana', network: 'Solana' },
+  { code: 'trx',       name: 'TRON', network: 'Tron' },
+  { code: 'ltc',       name: 'Litecoin', network: 'Litecoin' },
+  { code: 'usdcsol',   name: 'USDC', network: 'Solana' },
+  { code: 'xmr',       name: 'Monero', network: 'Monero' },
+  { code: 'doge',      name: 'Dogecoin', network: 'Dogecoin' },
+];
+const POPULAR_CODES = new Set(POPULAR.map((c) => c.code));
+const networkOf = (code) => (POPULAR.find((c) => c.code === code) || {}).network || code;
+
+let _curCache = null;
+let _curCacheAt = 0;
+
 const now = () => Math.floor(Date.now() / 1000);
 
 // ── Deposit crediting (idempotent) ────────────────────────────────────────────
@@ -39,23 +61,43 @@ const now = () => Math.floor(Date.now() / 1000);
  * status transition inside a single DB transaction, so a duplicate webhook is a
  * no-op.
  */
-const creditDeposit = (depositId, receivedAmount) => {
+const creditDeposit = (depositId, paidInCrypto) => {
   const apply = db.transaction(() => {
     const dep = db.prepare('SELECT * FROM crypto_deposits WHERE id = ?').get(depositId);
     if (!dep) return { credited: false, reason: 'not_found' };
     if (dep.status === 'finished') return { credited: false, reason: 'already' };
 
-    const amount = Number(receivedAmount != null ? receivedAmount : dep.amount);
+    // Credit the requested USDT VALUE (dep.amount), not the raw crypto amount —
+    // the player may have paid in BTC/ETH/etc. which NOWPayments converts.
+    // `received` records the actual crypto amount for the audit trail.
+    const credit = Number(dep.amount);
     db.prepare(
       "UPDATE crypto_deposits SET status='finished', received=?, updated_at=? WHERE id=?"
-    ).run(amount, now(), depositId);
-    db.prepare('UPDATE users SET balance = balance + ? WHERE id = ?').run(amount, dep.user_id);
+    ).run(paidInCrypto != null ? Number(paidInCrypto) : null, now(), depositId);
+    db.prepare('UPDATE users SET balance = balance + ? WHERE id = ?').run(credit, dep.user_id);
     db.prepare(
       'INSERT INTO transactions (id, user_id, type, amount, stripe_intent) VALUES (?, ?, ?, ?, ?)'
-    ).run(uuidv4(), dep.user_id, 'deposit', amount, dep.payment_id);
-    return { credited: true, userId: dep.user_id, amount };
+    ).run(uuidv4(), dep.user_id, 'deposit', credit, dep.payment_id);
+    return { credited: true, userId: dep.user_id, amount: credit };
   });
   return apply();
+};
+
+// ── GET /api/crypto/currencies  (auth) — pay-in options ───────────────────────
+const listCurrencies = async (req, res) => {
+  if (MOCK) return res.json({ currencies: POPULAR });
+  try {
+    if (!_curCache || Date.now() - _curCacheAt > 3600 * 1000) {
+      const r = await fetch(`${API}/currencies`, { headers: { 'x-api-key': API_KEY } });
+      const d = await r.json();
+      _curCache = new Set((d.currencies || []).map((c) => String(c).toLowerCase()));
+      _curCacheAt = Date.now();
+    }
+    const available = POPULAR.filter((c) => _curCache.has(c.code));
+    return res.json({ currencies: available.length ? available : POPULAR });
+  } catch (e) {
+    return res.json({ currencies: POPULAR });
+  }
 };
 
 // ── POST /api/crypto/deposit  (auth) ──────────────────────────────────────────
@@ -66,17 +108,23 @@ const createDeposit = async (req, res) => {
     return res.status(400).json({ error: `Dépôt minimum : ${MIN_DEPOSIT} USDT.` });
   }
 
+  // Pay-in currency chosen by the player (defaults to USDT TRC-20). Restricted
+  // to our curated list so arbitrary values can't be injected.
+  const payCurrency = (req.body.payCurrency || PAY_CURRENCY).toString().toLowerCase().trim();
+  if (!POPULAR_CODES.has(payCurrency)) {
+    return res.status(400).json({ error: 'Crypto non supportée.' });
+  }
+
   const id = uuidv4();
 
   if (MOCK) {
-    // Deterministic-looking fake address (clearly a mock, not a real wallet).
     const address = 'TMock' + crypto.randomBytes(15).toString('hex').slice(0, 29);
     db.prepare(
       "INSERT INTO crypto_deposits (id, user_id, amount, currency, address, payment_id, status) VALUES (?,?,?,?,?,?, 'waiting')"
-    ).run(id, userId, amount, PAY_CURRENCY, address, 'mock_' + id);
+    ).run(id, userId, amount, payCurrency, address, 'mock_' + id);
     return res.json({
       depositId: id, address, amount, payAmount: amount,
-      currency: 'USDT', network: 'TRC-20', status: 'waiting', mock: true,
+      payCurrency, network: networkOf(payCurrency), status: 'waiting', mock: true,
     });
   }
 
@@ -86,8 +134,8 @@ const createDeposit = async (req, res) => {
       headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         price_amount: amount,
-        price_currency: 'usd',          // ~1:1 with USDT
-        pay_currency: PAY_CURRENCY,
+        price_currency: 'usd',          // account unit ≈ USDT
+        pay_currency: payCurrency,
         order_id: id,
         ipn_callback_url: (process.env.PUBLIC_API_URL || '') + '/api/crypto/ipn',
       }),
@@ -99,10 +147,12 @@ const createDeposit = async (req, res) => {
     }
     db.prepare(
       "INSERT INTO crypto_deposits (id, user_id, amount, currency, address, payment_id, status) VALUES (?,?,?,?,?,?,?)"
-    ).run(id, userId, amount, PAY_CURRENCY, data.pay_address, String(data.payment_id), 'waiting');
+    ).run(id, userId, amount, payCurrency, data.pay_address, String(data.payment_id), 'waiting');
     return res.json({
       depositId: id, address: data.pay_address, amount,
-      payAmount: data.pay_amount, currency: 'USDT', network: 'TRC-20', status: 'waiting',
+      payAmount: data.pay_amount, payCurrency,
+      network: data.network ? networkOf(payCurrency) : networkOf(payCurrency),
+      status: 'waiting',
     });
   } catch (e) {
     console.error('[Crypto] deposit error', e.message);
@@ -249,5 +299,5 @@ const createWithdrawal = async (req, res) => {
 };
 
 module.exports = {
-  createDeposit, getDeposit, handleIpn, mockConfirm, createWithdrawal, MOCK,
+  createDeposit, getDeposit, handleIpn, mockConfirm, createWithdrawal, listCurrencies, MOCK,
 };

@@ -141,23 +141,40 @@ export const simulateDeposit = async (amount: number): Promise<{ balance: number
 
 // ── Crypto (USDT TRC-20) ─────────────────────────────────────────────────────
 
+export interface CryptoCurrency {
+  code: string;     // e.g. "usdttrc20"
+  name: string;     // e.g. "USDT"
+  network: string;  // e.g. "TRC-20 (Tron)"
+}
+
+/** Lists the pay-in currencies the player can deposit with. */
+export const getCryptoCurrencies = async (): Promise<CryptoCurrency[]> => {
+  const res = await fetch(`${BASE_URL}/api/crypto/currencies`, { headers: authHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch currencies');
+  const data = await res.json();
+  return data.currencies ?? [];
+};
+
 export interface CryptoDeposit {
   depositId: string;
   address: string;
-  amount: number;
-  payAmount: number;
-  currency: string;   // "USDT"
-  network: string;    // "TRC-20"
+  amount: number;     // USDT value credited
+  payAmount: number;  // amount to send, in the chosen crypto
+  payCurrency: string;
+  network: string;
   status: string;     // waiting | confirming | finished | failed
   mock?: boolean;
 }
 
-/** Creates a USDT deposit and returns the pay-in address. */
-export const createCryptoDeposit = async (amount: number): Promise<CryptoDeposit> => {
+/** Creates a deposit in the chosen crypto and returns the pay-in address. */
+export const createCryptoDeposit = async (
+  amount: number,
+  payCurrency: string
+): Promise<CryptoDeposit> => {
   const res = await fetch(`${BASE_URL}/api/crypto/deposit`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ amount }),
+    body: JSON.stringify({ amount, payCurrency }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
