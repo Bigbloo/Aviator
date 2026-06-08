@@ -9,6 +9,7 @@
 import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useGameStore } from '@/store/gameStore';
+import { getBalance } from '@/lib/api';
 
 // Socket.IO needs the HTTP(S) origin, NOT ws://. The client upgrades internally.
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -60,11 +61,27 @@ export const useSocket = () => {
       setMultiplier(data.multiplier);
     });
 
-    // Round crashed
-    socket.on('round:crash', (data: { roundId: string; crashPoint: number }) => {
+    // Round crashed — resync balance from server (handles lost bets correctly)
+    socket.on('round:crash', async (data: { roundId: string; crashPoint: number }) => {
       setPhase('crashed');
       setCrashPoint(data.crashPoint);
       setMultiplier(data.crashPoint);
+
+      // If the player had a bet on this round and never cashed out → it's lost.
+      const s = useGameStore.getState();
+      if (s.hasBet && !s.cashedOut && s.roundId === data.roundId) {
+        s.setLastResult({ result: 'lost', payout: 0 });
+      }
+
+      // Always resync the real balance from the server (source of truth).
+      if (s.userId) {
+        try {
+          const bal = await getBalance(s.userId);
+          s.setBalance(bal);
+        } catch {
+          /* keep local balance if fetch fails */
+        }
+      }
     });
 
     socket.on('connect', () => console.log('[Socket] Connected'));

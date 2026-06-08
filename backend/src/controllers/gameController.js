@@ -70,16 +70,18 @@ const placeBet = (req, res) => {
     .get(userId, roundId);
   if (existing) return res.status(400).json({ error: 'Already bet on this round' });
 
-  // Debit immediately
-  db.prepare('UPDATE users SET balance = balance - ? WHERE id = ?').run(amount, userId);
-  db.prepare(
-    'INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)'
-  ).run(uuidv4(), userId, 'bet', -amount);
-
+  // Atomic: debit + record transaction + create bet in one DB transaction
   const betId = uuidv4();
-  db.prepare(
-    "INSERT INTO bets (id, user_id, round_id, bet_amount, status) VALUES (?, ?, ?, ?, 'pending')"
-  ).run(betId, userId, roundId, amount);
+  const runBet = db.transaction(() => {
+    db.prepare('UPDATE users SET balance = balance - ? WHERE id = ?').run(amount, userId);
+    db.prepare(
+      'INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)'
+    ).run(uuidv4(), userId, 'bet', -amount);
+    db.prepare(
+      "INSERT INTO bets (id, user_id, round_id, bet_amount, status) VALUES (?, ?, ?, ?, 'pending')"
+    ).run(betId, userId, roundId, amount);
+  });
+  runBet();
 
   const updated = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
   return res.json({ betId, balance: updated.balance, status: 'pending' });
@@ -117,13 +119,17 @@ const cashout = (req, res) => {
 
   const payout = Math.round(bet.bet_amount * multiplier * 100) / 100;
 
-  db.prepare('UPDATE users SET balance = balance + ? WHERE id = ?').run(payout, userId);
-  db.prepare(
-    'INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)'
-  ).run(uuidv4(), userId, 'win', payout);
-  db.prepare(
-    "UPDATE bets SET status = 'won', cashout_multiplier = ?, payout = ? WHERE id = ?"
-  ).run(multiplier, payout, bet.id);
+  // Atomic: credit balance + record transaction + mark bet won
+  const runCashout = db.transaction(() => {
+    db.prepare('UPDATE users SET balance = balance + ? WHERE id = ?').run(payout, userId);
+    db.prepare(
+      'INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)'
+    ).run(uuidv4(), userId, 'win', payout);
+    db.prepare(
+      "UPDATE bets SET status = 'won', cashout_multiplier = ?, payout = ? WHERE id = ?"
+    ).run(multiplier, payout, bet.id);
+  });
+  runCashout();
 
   const updated = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
   return res.json({ result: 'won', multiplier, payout, balance: updated.balance });

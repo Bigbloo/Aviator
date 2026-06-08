@@ -63,7 +63,10 @@ const WithdrawModal = ({ onClose }: Props) => {
                 min={1}
                 max={balance}
                 value={amount}
-                onChange={(e) => setAmount(Number(e.target.value))}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setAmount(Number.isFinite(v) && v > 0 ? v : 1);
+                }}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white text-center text-xl font-bold focus:outline-none focus:border-orange-500"
               />
             </div>

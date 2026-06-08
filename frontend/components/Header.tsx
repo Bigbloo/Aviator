@@ -22,6 +22,9 @@ const Header = () => {
         <div className="flex items-center gap-2">
           <span className="text-2xl">✈️</span>
           <span className="text-white font-black text-xl tracking-widest">AVIATOR</span>
+          <span className="ml-2 bg-yellow-500/20 text-yellow-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-yellow-500/40">
+            MODE DÉMO · jetons fictifs
+          </span>
         </div>
 
         {/* Balance + actions */}
