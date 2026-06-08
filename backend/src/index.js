@@ -14,6 +14,8 @@ const rateLimit = require('express-rate-limit');
 const userRoutes = require('./routes/userRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const gameRoutes = require('./routes/gameRoutes');
+const cryptoRoutes = require('./routes/cryptoRoutes');
+const { MOCK: CRYPTO_MOCK } = require('./controllers/cryptoController');
 const { generateCrashPoint, setLiveState } = require('./controllers/gameController');
 const db = require('./db/database');
 const { v4: uuidv4 } = require('uuid');
@@ -75,12 +77,16 @@ const authLimiter = rateLimit({
 });
 
 app.use(['/api/bet', '/api/cashout'], actionLimiter);
-app.use(['/api/register', '/api/login', '/api/deposit/simulate', '/api/withdraw'], authLimiter);
+app.use(
+  ['/api/register', '/api/login', '/api/deposit/simulate', '/api/withdraw', '/api/crypto/deposit', '/api/crypto/withdraw'],
+  authLimiter
+);
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api', userRoutes);
 app.use('/api', paymentRoutes);
 app.use('/api', gameRoutes);
+app.use('/api', cryptoRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: Date.now() }));
@@ -307,6 +313,7 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
   console.log(`[Server] Aviator backend running on port ${PORT}`);
+  console.log(`[Crypto] USDT payments mode: ${CRYPTO_MOCK ? 'MOCK (no API key)' : 'LIVE (NOWPayments)'}`);
   // Start the game loop after a short delay
   setTimeout(startNewRound, WAITING_DURATION);
 });

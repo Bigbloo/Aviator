@@ -139,6 +139,82 @@ export const simulateDeposit = async (amount: number): Promise<{ balance: number
   return res.json();
 };
 
+// ── Crypto (USDT TRC-20) ─────────────────────────────────────────────────────
+
+export interface CryptoDeposit {
+  depositId: string;
+  address: string;
+  amount: number;
+  payAmount: number;
+  currency: string;   // "USDT"
+  network: string;    // "TRC-20"
+  status: string;     // waiting | confirming | finished | failed
+  mock?: boolean;
+}
+
+/** Creates a USDT deposit and returns the pay-in address. */
+export const createCryptoDeposit = async (amount: number): Promise<CryptoDeposit> => {
+  const res = await fetch(`${BASE_URL}/api/crypto/deposit`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ amount }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Échec de la création du dépôt');
+  }
+  return res.json();
+};
+
+/** Polls a deposit's status. */
+export const getCryptoDeposit = async (
+  depositId: string
+): Promise<{ depositId: string; status: string; amount: number; received: number | null }> => {
+  const res = await fetch(`${BASE_URL}/api/crypto/deposit/${depositId}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch deposit');
+  return res.json();
+};
+
+/** DEV ONLY: simulate the on-chain payment landing (404 in production). */
+export const mockConfirmDeposit = async (
+  depositId: string
+): Promise<{ status: string; credited: boolean; balance: number }> => {
+  const res = await fetch(`${BASE_URL}/api/crypto/_mock/confirm`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ depositId }),
+  });
+  if (!res.ok) throw new Error('mock confirm unavailable');
+  return res.json();
+};
+
+export interface CryptoWithdrawal {
+  withdrawalId: string;
+  status: string; // processing | pending_review | completed | failed
+  txid?: string;
+  amount: number;
+  address: string;
+  balance: number;
+  message: string;
+}
+
+/** Requests a USDT withdrawal to a TRC-20 address. */
+export const createCryptoWithdrawal = async (
+  amount: number,
+  address: string
+): Promise<CryptoWithdrawal> => {
+  const res = await fetch(`${BASE_URL}/api/crypto/withdraw`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ amount, address }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Échec du retrait');
+  }
+  return res.json();
+};
+
 /**
  * Places a bet (debits balance, creates pending bet).
  */

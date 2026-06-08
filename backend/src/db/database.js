@@ -63,6 +63,36 @@ db.exec(`
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+
+  -- Crypto (USDT TRC-20) deposits. payment_id is the provider's id and is
+  -- UNIQUE so a replayed IPN webhook can never credit a balance twice.
+  CREATE TABLE IF NOT EXISTS crypto_deposits (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    amount REAL NOT NULL,           -- expected/credited amount (USDT)
+    received REAL,                  -- actually paid (USDT), set on confirmation
+    currency TEXT NOT NULL DEFAULT 'usdttrc20',
+    address TEXT,                   -- pay-in address shown to the user
+    payment_id TEXT UNIQUE,         -- provider payment id (idempotency key)
+    status TEXT NOT NULL DEFAULT 'waiting', -- waiting | confirming | finished | failed
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+    updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  -- Crypto withdrawals (payouts) to a player-provided TRC-20 address.
+  CREATE TABLE IF NOT EXISTS crypto_withdrawals (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    amount REAL NOT NULL,           -- USDT
+    address TEXT NOT NULL,
+    txid TEXT,                      -- on-chain tx hash once sent
+    payout_id TEXT,                 -- provider payout id
+    status TEXT NOT NULL DEFAULT 'processing', -- processing | pending_review | completed | failed
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+    updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
 `);
 
 // ── Idempotent migrations (for existing DBs that predate a column) ──
