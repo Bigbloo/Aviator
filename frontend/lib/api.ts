@@ -288,6 +288,81 @@ export const getLeaderboard = async (): Promise<LeaderboardEntry[]> => {
   return data.leaderboard ?? [];
 };
 
+// ── Admin: withdrawal review console ─────────────────────────────────────────
+
+const adminHeaders = (token: string, extra: Record<string, string> = {}) => ({
+  ...extra,
+  'x-admin-token': token,
+});
+
+export interface AdminWithdrawal {
+  id: string;
+  amount: number;
+  address: string;
+  status: string; // pending_review | processing | completed | rejected | failed
+  txid: string | null;
+  payout_id: string | null;
+  note: string | null;
+  created_at: number;
+  reviewed_at: number | null;
+  user_id: string;
+  username: string | null;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  user_address: string | null;
+}
+
+/** Verifies an admin token (200 if valid). */
+export const adminPing = async (token: string): Promise<boolean> => {
+  const res = await fetch(`${BASE_URL}/api/admin/ping`, { headers: adminHeaders(token) });
+  return res.ok;
+};
+
+export const adminListWithdrawals = async (
+  token: string,
+  status = ''
+): Promise<{ withdrawals: AdminWithdrawal[]; pendingCount: number }> => {
+  const q = status ? `?status=${encodeURIComponent(status)}` : '';
+  const res = await fetch(`${BASE_URL}/api/admin/withdrawals${q}`, { headers: adminHeaders(token) });
+  if (!res.ok) throw new Error('Accès refusé');
+  return res.json();
+};
+
+export const adminApproveWithdrawal = async (
+  token: string,
+  id: string,
+  note = ''
+): Promise<{ id: string; status: string; txid: string | null }> => {
+  const res = await fetch(`${BASE_URL}/api/admin/withdrawals/${id}/approve`, {
+    method: 'POST',
+    headers: adminHeaders(token, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ note }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Échec de l'approbation");
+  }
+  return res.json();
+};
+
+export const adminRejectWithdrawal = async (
+  token: string,
+  id: string,
+  note = ''
+): Promise<{ id: string; status: string; refunded: number }> => {
+  const res = await fetch(`${BASE_URL}/api/admin/withdrawals/${id}/reject`, {
+    method: 'POST',
+    headers: adminHeaders(token, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ note }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Échec du rejet');
+  }
+  return res.json();
+};
+
 /**
  * Requests a withdrawal.
  */

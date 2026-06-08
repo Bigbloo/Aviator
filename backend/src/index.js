@@ -15,6 +15,7 @@ const userRoutes = require('./routes/userRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const gameRoutes = require('./routes/gameRoutes');
 const cryptoRoutes = require('./routes/cryptoRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const { MOCK: CRYPTO_MOCK } = require('./controllers/cryptoController');
 const { generateCrashPoint, setLiveState } = require('./controllers/gameController');
 const db = require('./db/database');
@@ -78,7 +79,7 @@ const authLimiter = rateLimit({
 
 app.use(['/api/bet', '/api/cashout'], actionLimiter);
 app.use(
-  ['/api/register', '/api/login', '/api/deposit/simulate', '/api/withdraw', '/api/crypto/deposit', '/api/crypto/withdraw'],
+  ['/api/register', '/api/login', '/api/deposit/simulate', '/api/withdraw', '/api/crypto/deposit', '/api/crypto/withdraw', '/api/admin'],
   authLimiter
 );
 
@@ -87,6 +88,7 @@ app.use('/api', userRoutes);
 app.use('/api', paymentRoutes);
 app.use('/api', gameRoutes);
 app.use('/api', cryptoRoutes);
+app.use('/api', adminRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: Date.now() }));

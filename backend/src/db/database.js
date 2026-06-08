@@ -139,6 +139,24 @@ try {
   console.error('[DB] bets.slot migration check failed:', e.message);
 }
 
+// Migration: withdrawal review audit trail (manual approval flow).
+try {
+  const wCols = db.prepare("PRAGMA table_info(crypto_withdrawals)").all();
+  const wHas = (n) => wCols.some((c) => c.name === n);
+  if (wCols.length) {
+    if (!wHas('note')) {
+      db.exec('ALTER TABLE crypto_withdrawals ADD COLUMN note TEXT');
+      console.log('[DB] Migrated: added crypto_withdrawals.note');
+    }
+    if (!wHas('reviewed_at')) {
+      db.exec('ALTER TABLE crypto_withdrawals ADD COLUMN reviewed_at INTEGER');
+      console.log('[DB] Migrated: added crypto_withdrawals.reviewed_at');
+    }
+  }
+} catch (e) {
+  console.error('[DB] crypto_withdrawals migration check failed:', e.message);
+}
+
 console.log('[DB] SQLite initialized from', DB_PATH);
 
 module.exports = db;

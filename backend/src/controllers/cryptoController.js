@@ -216,6 +216,9 @@ const mockConfirm = (req, res) => {
 };
 
 // ── POST /api/crypto/withdraw  (auth) ─────────────────────────────────────────
+// EVERY withdrawal is held for manual compliance review. The balance is debited
+// immediately (so the funds can't be re-bet while pending); an admin then
+// approves (sends on-chain) or rejects (refunds) it from the admin console.
 const createWithdrawal = async (req, res) => {
   const userId = req.userId;
   const amount = Number(req.body.amount);
@@ -233,71 +236,105 @@ const createWithdrawal = async (req, res) => {
   if (user.balance < amount) return res.status(400).json({ error: 'Solde insuffisant.' });
 
   const id = uuidv4();
-  const needsReview = amount > MAX_AUTO_WITHDRAW;
-  const initialStatus = needsReview ? 'pending_review' : 'processing';
-
-  // Atomic: debit balance + record the withdrawal request up front so the funds
-  // can't be double-spent while the payout is in flight.
   const debit = db.transaction(() => {
     db.prepare('UPDATE users SET balance = balance - ? WHERE id = ?').run(amount, userId);
     db.prepare('INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)')
       .run(uuidv4(), userId, 'withdrawal', -amount);
-    db.prepare("INSERT INTO crypto_withdrawals (id, user_id, amount, address, status) VALUES (?,?,?,?,?)")
-      .run(id, userId, amount, address, initialStatus);
+    db.prepare("INSERT INTO crypto_withdrawals (id, user_id, amount, address, status) VALUES (?,?,?,?, 'pending_review')")
+      .run(id, userId, amount, address);
   });
   debit();
 
   const balanceAfter = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId).balance;
+  return res.json({
+    withdrawalId: id, status: 'pending_review', amount, address, balance: balanceAfter,
+    message: `Retrait de ${amount} USDT enregistré — en attente de validation (conformité).`,
+  });
+};
 
-  if (needsReview) {
-    return res.json({
-      withdrawalId: id, status: 'pending_review', amount, address, balance: balanceAfter,
-      message: `Retrait de ${amount} USDT en attente de validation manuelle.`,
-    });
-  }
-
+// ── Shared payout executor (used by admin approval) ───────────────────────────
+// Sends the funds on-chain (real NOWPayments payout, or a mock txid). Returns
+// { ok, status, txid?, error? }. Does NOT touch the balance (already debited).
+const executePayout = async (w) => {
   if (MOCK) {
     const txid = 'mock_tx_' + crypto.randomBytes(16).toString('hex');
-    db.prepare("UPDATE crypto_withdrawals SET status='completed', txid=?, updated_at=? WHERE id=?")
-      .run(txid, now(), id);
-    return res.json({
-      withdrawalId: id, status: 'completed', txid, amount, address, balance: balanceAfter,
-      message: `Retrait de ${amount} USDT envoyé (mock).`, mock: true,
-    });
+    return { ok: true, status: 'completed', txid };
   }
-
-  // REAL payout. NOWPayments payouts require a payout API key (+ 2FA-issued JWT).
-  // On any failure we refund the balance so funds are never lost.
+  if (!PAYOUT_KEY) return { ok: false, error: 'payout key missing' };
   try {
-    if (!PAYOUT_KEY) throw new Error('payout key missing');
     const r = await fetch(`${API}/payout`, {
       method: 'POST',
       headers: { 'x-api-key': PAYOUT_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ withdrawals: [{ address, currency: PAY_CURRENCY, amount }] }),
+      body: JSON.stringify({ withdrawals: [{ address: w.address, currency: PAY_CURRENCY, amount: w.amount }] }),
     });
     const data = await r.json();
-    if (!r.ok) throw new Error(data.message || 'payout failed');
+    if (!r.ok) return { ok: false, error: data.message || 'payout failed' };
     const payoutId = String(data.id || (data.withdrawals && data.withdrawals[0] && data.withdrawals[0].id) || '');
-    db.prepare("UPDATE crypto_withdrawals SET status='processing', payout_id=?, updated_at=? WHERE id=?")
-      .run(payoutId, now(), id);
-    return res.json({
-      withdrawalId: id, status: 'processing', payoutId, amount, address, balance: balanceAfter,
-      message: `Retrait de ${amount} USDT en cours d'envoi.`,
-    });
+    return { ok: true, status: 'processing', payoutId };
   } catch (e) {
-    console.error('[Crypto] payout error — refunding', e.message);
-    const refund = db.transaction(() => {
-      db.prepare('UPDATE users SET balance = balance + ? WHERE id = ?').run(amount, userId);
-      db.prepare('INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)')
-        .run(uuidv4(), userId, 'withdrawal_refund', amount);
-      db.prepare("UPDATE crypto_withdrawals SET status='failed', updated_at=? WHERE id=?").run(now(), id);
-    });
-    refund();
-    const bal = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId).balance;
-    return res.status(502).json({ error: "Échec de l'envoi, montant recrédité.", balance: bal });
+    return { ok: false, error: e.message };
   }
 };
 
+// ── ADMIN: GET /api/admin/withdrawals?status=pending_review ───────────────────
+// Lists withdrawals with the player's KYC info for compliance review.
+const adminListWithdrawals = (req, res) => {
+  const status = (req.query.status || '').toString();
+  const params = [];
+  let where = '';
+  if (status) { where = 'WHERE w.status = ?'; params.push(status); }
+  const rows = db.prepare(
+    `SELECT w.id, w.amount, w.address, w.status, w.txid, w.payout_id, w.note,
+            w.created_at, w.reviewed_at,
+            u.id AS user_id, u.username, u.email, u.first_name, u.last_name, u.address AS user_address
+     FROM crypto_withdrawals w JOIN users u ON u.id = w.user_id
+     ${where}
+     ORDER BY (w.status = 'pending_review') DESC, w.created_at DESC
+     LIMIT 200`
+  ).all(...params);
+  const pending = db.prepare("SELECT COUNT(*) AS n FROM crypto_withdrawals WHERE status='pending_review'").get().n;
+  return res.json({ withdrawals: rows, pendingCount: pending });
+};
+
+// ── ADMIN: POST /api/admin/withdrawals/:id/approve ────────────────────────────
+const adminApproveWithdrawal = async (req, res) => {
+  const w = db.prepare('SELECT * FROM crypto_withdrawals WHERE id = ?').get(req.params.id);
+  if (!w) return res.status(404).json({ error: 'Retrait introuvable.' });
+  if (w.status !== 'pending_review') {
+    return res.status(409).json({ error: `Déjà traité (statut: ${w.status}).` });
+  }
+  const result = await executePayout(w);
+  if (!result.ok) {
+    return res.status(502).json({ error: `Échec de l'envoi : ${result.error}. Le retrait reste en attente.` });
+  }
+  const note = (req.body && req.body.note ? String(req.body.note) : '').slice(0, 500);
+  db.prepare(
+    "UPDATE crypto_withdrawals SET status=?, txid=?, payout_id=?, note=?, reviewed_at=?, updated_at=? WHERE id=?"
+  ).run(result.status, result.txid || null, result.payoutId || null, note || null, now(), now(), w.id);
+  return res.json({ id: w.id, status: result.status, txid: result.txid || null });
+};
+
+// ── ADMIN: POST /api/admin/withdrawals/:id/reject ─────────────────────────────
+// Refunds the held balance and marks the withdrawal rejected.
+const adminRejectWithdrawal = (req, res) => {
+  const w = db.prepare('SELECT * FROM crypto_withdrawals WHERE id = ?').get(req.params.id);
+  if (!w) return res.status(404).json({ error: 'Retrait introuvable.' });
+  if (w.status !== 'pending_review') {
+    return res.status(409).json({ error: `Déjà traité (statut: ${w.status}).` });
+  }
+  const note = (req.body && req.body.note ? String(req.body.note) : '').slice(0, 500);
+  const refund = db.transaction(() => {
+    db.prepare('UPDATE users SET balance = balance + ? WHERE id = ?').run(w.amount, w.user_id);
+    db.prepare('INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)')
+      .run(uuidv4(), w.user_id, 'withdrawal_refund', w.amount);
+    db.prepare("UPDATE crypto_withdrawals SET status='rejected', note=?, reviewed_at=?, updated_at=? WHERE id=?")
+      .run(note || null, now(), now(), w.id);
+  });
+  refund();
+  return res.json({ id: w.id, status: 'rejected', refunded: w.amount });
+};
+
 module.exports = {
-  createDeposit, getDeposit, handleIpn, mockConfirm, createWithdrawal, listCurrencies, MOCK,
+  createDeposit, getDeposit, handleIpn, mockConfirm, createWithdrawal, listCurrencies,
+  adminListWithdrawals, adminApproveWithdrawal, adminRejectWithdrawal, MOCK,
 };

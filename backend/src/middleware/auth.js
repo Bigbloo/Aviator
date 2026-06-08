@@ -58,4 +58,25 @@ const optionalAuth = (req, res, next) => {
   return next();
 };
 
-module.exports = { signToken, requireAuth, optionalAuth };
+/**
+ * Admin gate for the withdrawal-review console. Requires the x-admin-token
+ * header to match ADMIN_TOKEN. Fails closed: if ADMIN_TOKEN isn't configured,
+ * the admin API is disabled entirely (503) rather than open.
+ */
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+const requireAdmin = (req, res, next) => {
+  if (!ADMIN_TOKEN || ADMIN_TOKEN.length < 12) {
+    return res.status(503).json({ error: 'Console admin désactivée (ADMIN_TOKEN non configuré).' });
+  }
+  const token = req.headers['x-admin-token'] || '';
+  // Constant-time-ish comparison
+  if (token.length !== ADMIN_TOKEN.length) {
+    return res.status(401).json({ error: 'Accès admin refusé.' });
+  }
+  let diff = 0;
+  for (let i = 0; i < token.length; i++) diff |= token.charCodeAt(i) ^ ADMIN_TOKEN.charCodeAt(i);
+  if (diff !== 0) return res.status(401).json({ error: 'Accès admin refusé.' });
+  return next();
+};
+
+module.exports = { signToken, requireAuth, optionalAuth, requireAdmin };
