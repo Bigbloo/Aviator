@@ -102,12 +102,13 @@ export const simulateDeposit = async (
 export const placeBet = async (
   userId: string,
   roundId: string,
-  betAmount: number
-): Promise<{ betId: string; balance: number; status: string }> => {
+  betAmount: number,
+  slot: 1 | 2 = 1
+): Promise<{ betId: string; slot: number; balance: number; status: string }> => {
   const res = await fetch(`${BASE_URL}/api/bet`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, roundId, betAmount }),
+    body: JSON.stringify({ userId, roundId, betAmount, slot }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -121,18 +122,36 @@ export const placeBet = async (
  */
 export const cashout = async (
   userId: string,
-  roundId: string
+  roundId: string,
+  slot: 1 | 2 = 1
 ): Promise<{ result: 'won'; multiplier: number; payout: number; balance: number }> => {
   const res = await fetch(`${BASE_URL}/api/cashout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, roundId }),
+    body: JSON.stringify({ userId, roundId, slot }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || 'Failed to cashout');
   }
   return res.json();
+};
+
+/**
+ * Fetches the top-players leaderboard (by net profit). Demo-padded.
+ */
+export interface LeaderboardEntry {
+  rank: number;
+  name: string;
+  net: number;
+  rounds: number;
+  real: boolean;
+}
+export const getLeaderboard = async (): Promise<LeaderboardEntry[]> => {
+  const res = await fetch(`${BASE_URL}/api/leaderboard`);
+  if (!res.ok) throw new Error('Failed to fetch leaderboard');
+  const data = await res.json();
+  return data.leaderboard ?? [];
 };
 
 /**

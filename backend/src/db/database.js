@@ -47,6 +47,7 @@ db.exec(`
     bet_amount REAL NOT NULL,
     cashout_multiplier REAL,
     payout REAL,
+    slot INTEGER NOT NULL DEFAULT 1,
     status TEXT NOT NULL DEFAULT 'pending',
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
     FOREIGN KEY (user_id) REFERENCES users(id),
@@ -73,6 +74,17 @@ try {
   }
 } catch (e) {
   console.error('[DB] Migration check failed:', e.message);
+}
+
+// Migration: add bets.slot (double-bet feature) for pre-existing DBs.
+try {
+  const betCols = db.prepare("PRAGMA table_info(bets)").all();
+  if (!betCols.some((c) => c.name === 'slot')) {
+    db.exec('ALTER TABLE bets ADD COLUMN slot INTEGER NOT NULL DEFAULT 1');
+    console.log('[DB] Migrated: added bets.slot');
+  }
+} catch (e) {
+  console.error('[DB] bets.slot migration check failed:', e.message);
 }
 
 console.log('[DB] SQLite initialized from', DB_PATH);

@@ -15,6 +15,7 @@ import HistoryBar from '@/components/HistoryBar';
 import AviatorCanvas from '@/components/AviatorCanvas';
 import BetPanel from '@/components/BetPanel';
 import LiveBets from '@/components/LiveBets';
+import Leaderboard from '@/components/Leaderboard';
 
 export default function Home() {
   const { setUserId, setUsername, setBalance, userId } = useGameStore();
@@ -64,10 +65,12 @@ export default function Home() {
           )}
         </div>
 
-        {/* Bet panel + live feed */}
+        {/* Bet panels (double bet) + live feed + leaderboard */}
         <div className="w-full lg:w-72 space-y-3">
-          <BetPanel />
+          <BetPanel slot={1} />
+          <BetPanel slot={2} />
           <LiveBets />
+          <Leaderboard />
         </div>
       </main>
     </div>

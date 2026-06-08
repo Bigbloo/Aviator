@@ -73,13 +73,9 @@ export const useSocket = () => {
       setMultiplier(data.crashPoint);
       playCrash();
 
-      // If the player had a bet on this round and never cashed out → it's lost.
-      const s = useGameStore.getState();
-      if (s.hasBet && !s.cashedOut && s.roundId === data.roundId) {
-        s.setLastResult({ result: 'lost', payout: 0 });
-      }
-
       // Always resync the real balance from the server (source of truth).
+      // Each BetPanel tracks its own win/lost state via the phase change.
+      const s = useGameStore.getState();
       if (s.userId) {
         try {
           const { balance } = await getBalance(s.userId);

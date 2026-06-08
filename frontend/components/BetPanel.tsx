@@ -1,7 +1,9 @@
 /**
  * BetPanel.tsx
- * Bet controls: amount input, bet button, cashout button, auto-cashout.
- * Communicates with backend via API calls.
+ * Bet controls for a SINGLE bet slot. Render two of these for the double-bet
+ * feature (slot 1 + slot 2). Each panel owns its own local bet state
+ * (amount, hasBet, cashedOut, auto-cashout) so the two are fully independent.
+ * Shared game state (phase, multiplier, balance, roundId) comes from the store.
  */
 
 'use client';
@@ -11,27 +13,42 @@ import { useGameStore } from '@/store/gameStore';
 import { placeBet, cashout } from '@/lib/api';
 import { playCashout } from '@/lib/sound';
 
-const BetPanel = () => {
+interface BetPanelProps {
+  slot?: 1 | 2;
+}
+
+const BetPanel = ({ slot = 1 }: BetPanelProps) => {
   const {
     userId,
     balance,
     phase,
     roundId,
     currentMultiplier,
-    betAmount,
-    hasBet,
-    cashedOut,
-    lastResult,
-    setBetAmount,
-    setHasBet,
-    setCashedOut,
     setBalance,
-    setLastResult,
   } = useGameStore();
 
+  // Local per-slot state (independent of the other panel)
+  const [betAmount, setBetAmount] = useState(10);
+  const [hasBet, setHasBet] = useState(false);
+  const [cashedOut, setCashedOut] = useState(false);
+  const [lastResult, setLastResult] = useState<{ result: 'won' | 'lost'; payout: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [autoEnabled, setAutoEnabled] = useState(false);
   const [autoTarget, setAutoTarget] = useState(2.0);
+
+  // Reset this slot's bet state whenever a new betting phase starts.
+  const prevPhase = useRef(phase);
+  useEffect(() => {
+    if (phase === 'betting' && prevPhase.current !== 'betting') {
+      setHasBet(false);
+      setCashedOut(false);
+    }
+    // When the round crashes and we still hold a non-cashed bet, mark it lost.
+    if (phase === 'crashed' && prevPhase.current === 'flying' && hasBet && !cashedOut) {
+      setLastResult({ result: 'lost', payout: 0 });
+    }
+    prevPhase.current = phase;
+  }, [phase, hasBet, cashedOut]);
 
   const canBet = phase === 'betting' && !hasBet && !cashedOut && balance >= betAmount;
   const canCashout = phase === 'flying' && hasBet && !cashedOut;
@@ -40,7 +57,7 @@ const BetPanel = () => {
     if (!canBet || !userId || !roundId) return;
     setLoading(true);
     try {
-      const result = await placeBet(userId, roundId, betAmount);
+      const result = await placeBet(userId, roundId, betAmount, slot);
       setHasBet(true);
       setBalance(result.balance);
       setLastResult(null);
@@ -51,12 +68,12 @@ const BetPanel = () => {
     }
   };
 
-  const handleCashout = async () => {
+  const doCashout = async () => {
     const s = useGameStore.getState();
-    if (s.phase !== 'flying' || !s.hasBet || s.cashedOut || !s.userId || !s.roundId) return;
+    if (s.phase !== 'flying' || !s.userId || !s.roundId || !hasBet || cashedOut) return;
     setLoading(true);
     try {
-      const result = await cashout(s.userId, s.roundId);
+      const result = await cashout(s.userId, s.roundId, slot);
       setCashedOut(true);
       setBalance(result.balance);
       setLastResult({ result: 'won', payout: result.payout });
@@ -70,47 +87,38 @@ const BetPanel = () => {
     }
   };
 
-  // Auto-cashout: trigger cashout once the multiplier reaches the target.
+  // Auto-cashout: trigger once the multiplier reaches the target.
   const firedRef = useRef(false);
   useEffect(() => {
     if (phase !== 'flying') {
       firedRef.current = false; // reset each round
       return;
     }
-    if (
-      autoEnabled &&
-      hasBet &&
-      !cashedOut &&
-      !firedRef.current &&
-      currentMultiplier >= autoTarget
-    ) {
+    if (autoEnabled && hasBet && !cashedOut && !firedRef.current && currentMultiplier >= autoTarget) {
       firedRef.current = true;
-      handleCashout();
+      doCashout();
     }
   }, [currentMultiplier, phase, autoEnabled, hasBet, cashedOut, autoTarget]);
 
   const presets = [5, 10, 20, 50, 100];
 
   return (
-    <div className="bg-gray-900 border border-orange-900/40 rounded-xl p-4 space-y-4">
-      {/* Balance */}
+    <div className="bg-gray-900 border border-orange-900/40 rounded-xl p-4 space-y-3">
+      {/* Slot label */}
       <div className="flex justify-between items-center">
-        <span className="text-gray-400 text-sm">Solde</span>
-        <span className="text-orange-400 font-bold text-lg">{balance.toFixed(2)} €</span>
+        <span className="text-gray-500 text-xs font-bold uppercase tracking-wider">Pari {slot}</span>
+        {lastResult && (
+          <span
+            className={`text-xs font-bold ${
+              lastResult.result === 'won' ? 'text-green-400' : 'text-red-400'
+            }`}
+          >
+            {lastResult.result === 'won'
+              ? `✅ +${lastResult.payout.toFixed(2)} €`
+              : '❌ Perdu'}
+          </span>
+        )}
       </div>
-
-      {/* Last result */}
-      {lastResult && (
-        <div
-          className={`text-center py-2 rounded-lg font-bold text-sm ${
-            lastResult.result === 'won' ? 'bg-green-900/40 text-green-400' : 'bg-red-900/40 text-red-400'
-          }`}
-        >
-          {lastResult.result === 'won'
-            ? `✅ Gagné ! +${lastResult.payout.toFixed(2)} €`
-            : '❌ Perdu !'}
-        </div>
-      )}
 
       {/* Bet amount */}
       <div>
@@ -191,7 +199,7 @@ const BetPanel = () => {
         </button>
       ) : (
         <button
-          onClick={handleCashout}
+          onClick={doCashout}
           disabled={!canCashout || loading || cashedOut}
           className="w-full py-3 rounded-xl font-bold text-white text-lg transition-all
             bg-gradient-to-r from-green-500 to-emerald-500

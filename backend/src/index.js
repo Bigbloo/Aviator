@@ -9,6 +9,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 
 const userRoutes = require('./routes/userRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
@@ -50,6 +51,31 @@ app.use('/api/webhook', express.raw({ type: 'application/json' }));
 
 // ── JSON body parser ──────────────────────────────────────────────────────────
 app.use(express.json());
+
+// ── Rate limiting (#9 — anti-spam / anti-abuse) ──────────────────────────────
+// Behind Railway's proxy, trust it so the limiter sees the real client IP.
+app.set('trust proxy', 1);
+
+// Tight limiter for game actions (bet/cashout) — fast-paced but capped.
+const actionLimiter = rateLimit({
+  windowMs: 10 * 1000, // 10s window
+  max: 30,             // max 30 actions / 10s / IP (3/s sustained)
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de requêtes, ralentissez un instant.' },
+});
+
+// Stricter limiter for auth & money endpoints (register/login/deposit/withdraw).
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 min window
+  max: 15,             // max 15 / min / IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de tentatives, réessayez dans une minute.' },
+});
+
+app.use(['/api/bet', '/api/cashout'], actionLimiter);
+app.use(['/api/register', '/api/login', '/api/deposit/simulate', '/api/withdraw'], authLimiter);
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api', userRoutes);
