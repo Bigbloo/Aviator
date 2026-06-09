@@ -141,4 +141,31 @@ const cashout = (req, res) => {
   return res.json({ result: 'won', multiplier, payout, balance: updated.balance });
 };
 
-module.exports = { getRound, placeBet, cashout, generateCrashPoint, setLiveState };
+/**
+ * GET /api/me/bets  (auth)
+ * Returns the authenticated player's recent bets for the "My Bets" tab.
+ */
+const getMyBets = (req, res) => {
+  const rows = db.prepare(
+    `SELECT b.id, b.bet_amount, b.cashout_multiplier, b.payout, b.status, b.slot,
+            b.created_at, r.crash_point
+     FROM bets b LEFT JOIN rounds r ON r.id = b.round_id
+     WHERE b.user_id = ?
+     ORDER BY b.created_at DESC
+     LIMIT 50`
+  ).all(req.userId);
+  return res.json({
+    bets: rows.map((b) => ({
+      id: b.id,
+      betAmount: b.bet_amount,
+      multiplier: b.cashout_multiplier,
+      payout: b.payout,
+      status: b.status,
+      slot: b.slot,
+      createdAt: b.created_at,
+      crashPoint: b.crash_point,
+    })),
+  });
+};
+
+module.exports = { getRound, placeBet, cashout, getMyBets, generateCrashPoint, setLiveState };

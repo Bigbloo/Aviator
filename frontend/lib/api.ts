@@ -271,6 +271,25 @@ export const cashout = async (
   return res.json();
 };
 
+export interface MyBet {
+  id: string;
+  betAmount: number;
+  multiplier: number | null;
+  payout: number | null;
+  status: string; // pending | won | lost
+  slot: number;
+  createdAt: number;
+  crashPoint: number | null;
+}
+
+/** The authenticated player's recent bets (for the "My Bets" tab). */
+export const getMyBets = async (): Promise<MyBet[]> => {
+  const res = await fetch(`${BASE_URL}/api/me/bets`, { headers: authHeaders() });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.bets ?? [];
+};
+
 /**
  * Fetches the top-players leaderboard (by net profit). Demo-padded.
  */

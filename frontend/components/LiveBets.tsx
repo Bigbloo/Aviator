@@ -1,7 +1,7 @@
 /**
  * LiveBets.tsx
- * Spribe-style "All Bets" sidebar: tabs (All Bets / My Bets / Top), a live
- * count, and a table of bets with avatar, bet (USDT), multiplier and cash-out.
+ * "All Bets" sidebar: tabs (All Bets / My Bets), a live count, and a table of
+ * bets. All Bets = the live round feed; My Bets = the player's own bet history.
  */
 
 'use client';
@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useGameStore } from '@/store/gameStore';
+import { getMyBets, type MyBet } from '@/lib/api';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -21,7 +22,6 @@ interface BetRow {
   status: 'flying' | 'won' | 'lost';
 }
 
-// Deterministic avatar color from a name.
 const AVATAR_COLORS = [
   'from-pink-500 to-rose-600', 'from-sky-500 to-blue-600', 'from-emerald-500 to-green-600',
   'from-amber-500 to-orange-600', 'from-violet-500 to-purple-600', 'from-cyan-500 to-teal-600',
@@ -39,12 +39,18 @@ const multBadge = (m: number) => {
   return 'text-pink-300 bg-pink-500/15';
 };
 
+const fmtTime = (s: number) =>
+  new Date(s * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
 const LiveBets = () => {
   const username = useGameStore((s) => s.username);
+  const userId = useGameStore((s) => s.userId);
   const [rows, setRows] = useState<BetRow[]>([]);
   const [total, setTotal] = useState(0);
-  const [tab, setTab] = useState<'all' | 'my' | 'top'>('all');
+  const [myBets, setMyBets] = useState<MyBet[]>([]);
+  const [tab, setTab] = useState<'all' | 'my'>('all');
 
+  // Live round feed (All Bets).
   useEffect(() => {
     const socket: Socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
@@ -77,9 +83,9 @@ const LiveBets = () => {
     });
 
     socket.on('bets:results', () => {
-      setRows((prev) =>
-        prev.map((r) => (r.status === 'flying' ? { ...r, status: 'lost' as const } : r))
-      );
+      setRows((prev) => prev.map((r) => (r.status === 'flying' ? { ...r, status: 'lost' as const } : r)));
+      // Refresh the player's own history after each round settles.
+      getMyBets().then(setMyBets).catch(() => {});
     });
 
     return () => {
@@ -87,13 +93,12 @@ const LiveBets = () => {
     };
   }, []);
 
-  const filtered = (() => {
-    if (tab === 'my') return rows.filter((r) => username && r.name === username);
-    if (tab === 'top') return [...rows].sort((a, b) => b.payout - a.payout || b.amount - a.amount);
-    return rows;
-  })();
+  // Load My Bets when switching to that tab (and when the session changes).
+  useEffect(() => {
+    if (tab === 'my') getMyBets().then(setMyBets).catch(() => {});
+  }, [tab, userId]);
 
-  const Tab = ({ id, label }: { id: 'all' | 'my' | 'top'; label: string }) => (
+  const Tab = ({ id, label }: { id: 'all' | 'my'; label: string }) => (
     <button
       onClick={() => setTab(id)}
       className={`flex-1 py-1.5 rounded-full text-xs font-bold transition ${
@@ -111,60 +116,97 @@ const LiveBets = () => {
         <div className="flex bg-[#101112] rounded-full p-0.5">
           <Tab id="all" label="All Bets" />
           <Tab id="my" label="My Bets" />
-          <Tab id="top" label="Top" />
         </div>
       </div>
 
-      {/* Count + header */}
+      {/* Count */}
       <div className="px-3 pt-2 pb-1">
         <p className="text-gray-400 text-[11px] font-bold uppercase tracking-wide">
-          {tab === 'my' ? 'My Bets' : tab === 'top' ? 'Top' : 'All Bets'}
+          {tab === 'my' ? 'My Bets' : 'All Bets'}
         </p>
         <p className="text-white text-sm font-bold tabular-nums">
-          {tab === 'all' ? (total || filtered.length).toLocaleString('en-US') : filtered.length}
+          {tab === 'all' ? (total || rows.length).toLocaleString('en-US') : myBets.length}
         </p>
       </div>
+
       <div className="grid grid-cols-[1fr_auto_auto] gap-2 px-3 py-1 text-[10px] uppercase text-gray-500 font-bold border-b border-black/30">
-        <span>User</span>
+        <span>{tab === 'my' ? 'Heure' : 'User'}</span>
         <span className="text-right pr-2">Bet USDT</span>
         <span className="text-right">Cash out</span>
       </div>
 
       {/* Rows */}
       <div className="max-h-[60vh] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto scrollbar-none">
-        {filtered.length === 0 && (
-          <p className="text-gray-600 text-xs text-center py-6">En attente des paris…</p>
-        )}
-        {filtered.map((r) => (
-          <div
-            key={r.key}
-            className={`grid grid-cols-[1fr_auto_auto] gap-2 items-center px-3 py-1.5 text-xs border-b border-black/20 ${
-              r.status === 'won' ? 'bg-green-900/15' : ''
-            }`}
-          >
-            <span className="flex items-center gap-2 min-w-0">
-              <span className={`w-6 h-6 rounded-full bg-gradient-to-br ${colorFor(r.name)} shrink-0 flex items-center justify-center text-[10px] font-bold text-white`}>
-                {r.name.charAt(0).toUpperCase()}
-              </span>
-              <span className="text-gray-300 truncate">{r.name}</span>
-            </span>
-            <span className="text-right text-gray-300 font-mono tabular-nums pr-2 flex items-center justify-end gap-1.5">
-              {r.amount.toFixed(2)}
-              {r.multiplier && (
-                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${multBadge(r.multiplier)}`}>
-                  {r.multiplier.toFixed(2)}×
+        {tab === 'all' ? (
+          <>
+            {rows.length === 0 && <p className="text-gray-600 text-xs text-center py-6">En attente des paris…</p>}
+            {rows.map((r) => (
+              <div
+                key={r.key}
+                className={`grid grid-cols-[1fr_auto_auto] gap-2 items-center px-3 py-1.5 text-xs border-b border-black/20 ${
+                  r.status === 'won' ? 'bg-green-900/15' : ''
+                }`}
+              >
+                <span className="flex items-center gap-2 min-w-0">
+                  <span className={`w-6 h-6 rounded-full bg-gradient-to-br ${colorFor(r.name)} shrink-0 flex items-center justify-center text-[10px] font-bold text-white`}>
+                    {r.name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="text-gray-300 truncate">{r.name}</span>
                 </span>
-              )}
-            </span>
-            <span
-              className={`text-right font-mono tabular-nums font-bold ${
-                r.status === 'won' ? 'text-green-400' : 'text-gray-600'
-              }`}
-            >
-              {r.status === 'won' ? r.payout.toFixed(2) : '—'}
-            </span>
-          </div>
-        ))}
+                <span className="text-right text-gray-300 font-mono tabular-nums pr-2 flex items-center justify-end gap-1.5">
+                  {r.amount.toFixed(2)}
+                  {r.multiplier && (
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${multBadge(r.multiplier)}`}>
+                      {r.multiplier.toFixed(2)}×
+                    </span>
+                  )}
+                </span>
+                <span className={`text-right font-mono tabular-nums font-bold ${r.status === 'won' ? 'text-green-400' : 'text-gray-600'}`}>
+                  {r.status === 'won' ? r.payout.toFixed(2) : '—'}
+                </span>
+              </div>
+            ))}
+          </>
+        ) : (
+          <>
+            {!username && (
+              <p className="text-gray-500 text-xs text-center py-6 px-3">
+                Crée un compte pour suivre tes paris.
+              </p>
+            )}
+            {username && myBets.length === 0 && (
+              <p className="text-gray-600 text-xs text-center py-6 px-3">Aucun pari pour l’instant — place ta première mise !</p>
+            )}
+            {myBets.map((b) => {
+              const won = b.status === 'won';
+              const lost = b.status === 'lost';
+              return (
+                <div
+                  key={b.id}
+                  className={`grid grid-cols-[1fr_auto_auto] gap-2 items-center px-3 py-1.5 text-xs border-b border-black/20 ${
+                    won ? 'bg-green-900/15' : lost ? 'bg-red-900/10' : ''
+                  }`}
+                >
+                  <span className="flex items-center gap-2 min-w-0 text-gray-400">
+                    <span className="text-sm">{won ? '🟢' : lost ? '🔴' : '🕐'}</span>
+                    <span className="truncate">{fmtTime(b.createdAt)}</span>
+                  </span>
+                  <span className="text-right text-gray-300 font-mono tabular-nums pr-2 flex items-center justify-end gap-1.5">
+                    {b.betAmount.toFixed(2)}
+                    {b.multiplier && (
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${multBadge(b.multiplier)}`}>
+                        {b.multiplier.toFixed(2)}×
+                      </span>
+                    )}
+                  </span>
+                  <span className={`text-right font-mono tabular-nums font-bold ${won ? 'text-green-400' : lost ? 'text-red-400' : 'text-gray-500'}`}>
+                    {won ? `+${(b.payout ?? 0).toFixed(2)}` : lost ? `-${b.betAmount.toFixed(2)}` : '…'}
+                  </span>
+                </div>
+              );
+            })}
+          </>
+        )}
       </div>
 
       <div className="px-3 py-2 border-t border-black/30 flex items-center gap-1.5">
