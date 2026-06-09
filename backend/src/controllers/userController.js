@@ -3,14 +3,19 @@
  * Handles user creation, registration (email + password + username) and balance retrieval.
  */
 
+const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const db = require('../db/database');
 const { signToken } = require('../middleware/auth');
+const { send } = require('../email');
 
 const BCRYPT_ROUNDS = 10;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_RE = /^[A-Za-z0-9_À-ÿ ]+$/;
+const WEB = process.env.PUBLIC_WEB_URL || 'https://frontend-wine-six-11.vercel.app';
+const TOKEN_TTL = { verify: 3 * 86400, reset: 3600 }; // seconds
+const nowS = () => Math.floor(Date.now() / 1000);
 
 const publicUser = (u) => ({
   userId: u.id,
@@ -19,8 +24,31 @@ const publicUser = (u) => ({
   firstName: u.first_name || null,
   lastName: u.last_name || null,
   address: u.address || null,
+  emailVerified: !!u.email_verified,
   balance: u.balance,
 });
+
+// ── Email token helpers ───────────────────────────────────────────────────────
+const issueToken = (userId, type) => {
+  const token = crypto.randomBytes(32).toString('hex');
+  db.prepare('INSERT INTO auth_tokens (token, user_id, type, expires_at) VALUES (?,?,?,?)')
+    .run(token, userId, type, nowS() + TOKEN_TTL[type]);
+  return token;
+};
+
+const sendVerificationEmail = async (user) => {
+  if (!user || !user.email) return;
+  const token = issueToken(user.id, 'verify');
+  const link = `${WEB}/verify-email?token=${token}`;
+  await send(
+    user.email,
+    'Confirme ton adresse e-mail — Aviator',
+    `<p>Bienvenue ${user.username || ''} !</p>
+     <p>Confirme ton adresse e-mail en cliquant sur ce lien :</p>
+     <p><a href="${link}">${link}</a></p>
+     <p style="color:#888;font-size:12px">Ce lien expire dans 3 jours.</p>`
+  );
+};
 
 // Auth responses additionally carry a fresh session token.
 const authPayload = (u) => ({ ...publicUser(u), token: signToken(u.id) });
@@ -109,6 +137,7 @@ const register = async (req, res) => {
         'UPDATE users SET username = ?, email = ?, password_hash = ?, first_name = ?, last_name = ?, address = ? WHERE id = ?'
       ).run(username, email, passwordHash, firstName, lastName, address, userId);
       const u = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+      sendVerificationEmail(u).catch((e) => console.error('[Mail] verify send:', e.message));
       return res.json(authPayload(u));
     }
   }
@@ -118,6 +147,7 @@ const register = async (req, res) => {
     'INSERT INTO users (id, username, email, password_hash, first_name, last_name, address, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
   ).run(newId, username, email, passwordHash, firstName, lastName, address, 0);
   const u = db.prepare('SELECT * FROM users WHERE id = ?').get(newId);
+  sendVerificationEmail(u).catch((e) => console.error('[Mail] verify send:', e.message));
   return res.json(authPayload(u));
 };
 
@@ -149,4 +179,69 @@ const login = async (req, res) => {
   return res.json(authPayload(user));
 };
 
-module.exports = { getBalance, createUser, register, login };
+// ── GET /api/verify-email?token=… ─────────────────────────────────────────────
+const verifyEmail = (req, res) => {
+  const token = (req.query.token || '').toString();
+  const row = db.prepare("SELECT * FROM auth_tokens WHERE token = ? AND type = 'verify' AND used = 0").get(token);
+  if (!row || row.expires_at < nowS()) {
+    return res.status(400).json({ error: 'Lien invalide ou expiré.' });
+  }
+  db.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').run(row.user_id);
+  db.prepare('UPDATE auth_tokens SET used = 1 WHERE token = ?').run(token);
+  return res.json({ ok: true });
+};
+
+// ── POST /api/resend-verification  (auth) ─────────────────────────────────────
+const resendVerification = async (req, res) => {
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
+  if (!user || !user.email) return res.status(400).json({ error: 'Aucune adresse e-mail sur ce compte.' });
+  if (user.email_verified) return res.json({ ok: true, alreadyVerified: true });
+  await sendVerificationEmail(user).catch((e) => console.error('[Mail] resend:', e.message));
+  return res.json({ ok: true });
+};
+
+// ── POST /api/forgot-password  { email } ──────────────────────────────────────
+const forgotPassword = async (req, res) => {
+  const email = (req.body && req.body.email ? req.body.email : '').toString().trim().toLowerCase();
+  const user = email ? db.prepare('SELECT * FROM users WHERE email = ?').get(email) : null;
+  if (user) {
+    const token = issueToken(user.id, 'reset');
+    const link = `${WEB}/reset-password?token=${token}`;
+    await send(
+      user.email,
+      'Réinitialise ton mot de passe — Aviator',
+      `<p>Tu as demandé à réinitialiser ton mot de passe.</p>
+       <p><a href="${link}">${link}</a></p>
+       <p style="color:#888;font-size:12px">Ce lien expire dans 1 heure. Si tu n'es pas à l'origine de cette demande, ignore cet e-mail.</p>`
+    ).catch((e) => console.error('[Mail] reset:', e.message));
+  }
+  // Always succeed to avoid revealing whether an email exists.
+  return res.json({ ok: true });
+};
+
+// ── POST /api/reset-password  { token, password } ─────────────────────────────
+const resetPassword = async (req, res) => {
+  const token = (req.body && req.body.token ? req.body.token : '').toString();
+  const password = (req.body && req.body.password ? req.body.password : '').toString();
+  if (password.length < 8 || password.length > 128) {
+    return res.status(400).json({ error: 'Le mot de passe doit faire au moins 8 caractères.' });
+  }
+  const row = db.prepare("SELECT * FROM auth_tokens WHERE token = ? AND type = 'reset' AND used = 0").get(token);
+  if (!row || row.expires_at < nowS()) {
+    return res.status(400).json({ error: 'Lien invalide ou expiré.' });
+  }
+  const hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+  const apply = db.transaction(() => {
+    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, row.user_id);
+    db.prepare('UPDATE auth_tokens SET used = 1 WHERE token = ?').run(token);
+    // Invalidate any other outstanding reset tokens for this user.
+    db.prepare("UPDATE auth_tokens SET used = 1 WHERE user_id = ? AND type = 'reset'").run(row.user_id);
+  });
+  apply();
+  return res.json({ ok: true });
+};
+
+module.exports = {
+  getBalance, createUser, register, login,
+  verifyEmail, resendVerification, forgotPassword, resetPassword,
+};

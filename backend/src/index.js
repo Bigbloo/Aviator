@@ -80,7 +80,7 @@ const authLimiter = rateLimit({
 
 app.use(['/api/bet', '/api/cashout'], actionLimiter);
 app.use(
-  ['/api/register', '/api/login', '/api/deposit/simulate', '/api/withdraw', '/api/crypto/deposit', '/api/crypto/withdraw', '/api/admin'],
+  ['/api/register', '/api/login', '/api/deposit/simulate', '/api/withdraw', '/api/crypto/deposit', '/api/crypto/withdraw', '/api/admin', '/api/forgot-password', '/api/reset-password', '/api/resend-verification'],
   authLimiter
 );
 

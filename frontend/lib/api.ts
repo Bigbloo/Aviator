@@ -91,6 +91,39 @@ export const register = async (input: RegisterInput): Promise<AuthResponse> => {
   return data;
 };
 
+/** Requests a password-reset email (always succeeds to avoid enumeration). */
+export const forgotPassword = async (email: string): Promise<void> => {
+  await fetch(`${BASE_URL}/api/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+};
+
+/** Sets a new password from a reset token. */
+export const resetPassword = async (token: string, password: string): Promise<void> => {
+  const res = await fetch(`${BASE_URL}/api/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, password }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Échec de la réinitialisation');
+  }
+};
+
+/** Confirms an email-verification token. Returns true on success. */
+export const verifyEmail = async (token: string): Promise<boolean> => {
+  const res = await fetch(`${BASE_URL}/api/verify-email?token=${encodeURIComponent(token)}`);
+  return res.ok;
+};
+
+/** Re-sends the verification email to the logged-in user. */
+export const resendVerification = async (): Promise<void> => {
+  await fetch(`${BASE_URL}/api/resend-verification`, { method: 'POST', headers: authHeaders() });
+};
+
 /**
  * Logs in with email-or-username + password (bcrypt-verified server-side).
  */

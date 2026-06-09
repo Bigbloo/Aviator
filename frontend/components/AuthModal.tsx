@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import { register, login } from '@/lib/api';
+import { register, login, forgotPassword } from '@/lib/api';
 
 interface Props {
   onClose: () => void;
@@ -15,7 +15,8 @@ interface Props {
 
 const AuthModal = ({ onClose }: Props) => {
   const { setUserId, setUsername, setBalance } = useGameStore();
-  const [mode, setMode] = useState<'register' | 'login'>('register');
+  const [mode, setMode] = useState<'register' | 'login' | 'forgot'>('register');
+  const [forgotSent, setForgotSent] = useState(false);
   const [username, setUsernameLocal] = useState('');
   const [identifier, setIdentifier] = useState('');
   const [email, setEmail] = useState('');
@@ -74,12 +75,79 @@ const AuthModal = ({ onClose }: Props) => {
     }
   };
 
-  const switchMode = (m: 'register' | 'login') => {
+  const switchMode = (m: 'register' | 'login' | 'forgot') => {
     setMode(m);
     setError('');
     setPassword('');
     setPasswordConfirm('');
+    setForgotSent(false);
   };
+
+  const handleForgot = async () => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError('Entre une adresse e-mail valide.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      await forgotPassword(email.trim());
+      setForgotSent(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Forgot-password view ──
+  if (mode === 'forgot') {
+    return (
+      <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="bg-gray-900 border border-orange-900/40 rounded-2xl p-6 w-full max-w-sm space-y-4 my-8">
+          <div className="flex justify-between items-center">
+            <h2 className="text-white font-bold text-xl">🔒 Mot de passe oublié</h2>
+            <button onClick={onClose} className="text-gray-500 hover:text-white text-xl">✕</button>
+          </div>
+
+          {forgotSent ? (
+            <div className="text-center py-4 space-y-3">
+              <div className="text-4xl">📧</div>
+              <p className="text-gray-300 text-sm">
+                Si un compte existe avec cet e-mail, un lien de réinitialisation vient d’être envoyé.
+                Vérifie ta boîte de réception (et tes spams).
+              </p>
+              <button onClick={() => switchMode('login')} className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition">
+                Retour à la connexion
+              </button>
+            </div>
+          ) : (
+            <>
+              <p className="text-gray-400 text-sm">Entre ton e-mail, on t’envoie un lien pour réinitialiser ton mot de passe.</p>
+              <input
+                type="email"
+                value={email}
+                autoComplete="email"
+                placeholder="toi@exemple.com"
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleForgot()}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
+              />
+              {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+              <button
+                onClick={handleForgot}
+                disabled={loading}
+                className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 disabled:opacity-40 transition active:scale-95"
+              >
+                {loading ? '⏳ Envoi...' : 'Envoyer le lien'}
+              </button>
+              <button onClick={() => switchMode('login')} className="w-full text-gray-500 hover:text-gray-300 text-sm">
+                ← Retour à la connexion
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto">
@@ -242,6 +310,16 @@ const AuthModal = ({ onClose }: Props) => {
               <a href="/privacy" target="_blank" className="underline text-orange-400">Politique de confidentialité</a>.
             </span>
           </label>
+        )}
+
+        {mode === 'login' && (
+          <button
+            type="button"
+            onClick={() => switchMode('forgot')}
+            className="block ml-auto -mt-1 text-orange-400 text-xs hover:underline"
+          >
+            Mot de passe oublié ?
+          </button>
         )}
 
         {error && <p className="text-red-400 text-sm text-center">{error}</p>}

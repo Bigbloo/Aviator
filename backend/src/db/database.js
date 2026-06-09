@@ -124,9 +124,26 @@ try {
     db.exec('ALTER TABLE users ADD COLUMN address TEXT');
     console.log('[DB] Migrated: added users.address');
   }
+  if (!has('email_verified')) {
+    db.exec('ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0');
+    console.log('[DB] Migrated: added users.email_verified');
+  }
 } catch (e) {
   console.error('[DB] Migration check failed:', e.message);
 }
+
+// Auth tokens for email verification and password reset.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS auth_tokens (
+    token TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    type TEXT NOT NULL,                 -- 'verify' | 'reset'
+    expires_at INTEGER NOT NULL,
+    used INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+`);
 
 // Migration: add bets.slot (double-bet feature) for pre-existing DBs.
 try {
