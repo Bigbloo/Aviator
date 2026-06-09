@@ -54,8 +54,10 @@ app.use(cors(corsOptions));
 // ── Stripe webhook needs raw body ─────────────────────────────────────────────
 app.use('/api/webhook', express.raw({ type: 'application/json' }));
 
-// ── JSON body parser ──────────────────────────────────────────────────────────
+// ── Body parsers ──────────────────────────────────────────────────────────────
 app.use(express.json());
+// Plisio posts its IPN callbacks form-urlencoded, not JSON.
+app.use(express.urlencoded({ extended: true }));
 
 // ── Rate limiting (#9 — anti-spam / anti-abuse) ──────────────────────────────
 // Behind Railway's proxy, trust it so the limiter sees the real client IP.
