@@ -4,6 +4,7 @@ import DemoToggle from '@/components/DemoToggle';
 import ResultPopup from '@/components/ResultPopup';
 import AgeGate from '@/components/AgeGate';
 import PWARegister from '@/components/PWARegister';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 export const metadata: Metadata = {
   title: 'Aviator — Crash Game',
@@ -37,11 +38,13 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className="bg-gray-950 text-white antialiased">
-        {children}
-        <ResultPopup />
-        <DemoToggle />
-        <AgeGate />
-        <PWARegister />
+        <ErrorBoundary>
+          {children}
+          <ResultPopup />
+          <DemoToggle />
+          <AgeGate />
+          <PWARegister />
+        </ErrorBoundary>
       </body>
     </html>
   );
