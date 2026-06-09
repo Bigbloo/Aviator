@@ -168,9 +168,11 @@ export const getBalance = async (): Promise<{ balance: number; username: string 
 // ── Crypto (USDT TRC-20) ─────────────────────────────────────────────────────
 
 export interface CryptoCurrency {
-  code: string;     // e.g. "usdttrc20"
-  name: string;     // e.g. "USDT"
-  network: string;  // e.g. "TRC-20 (Tron)"
+  code: string;     // e.g. "sol"
+  name: string;     // e.g. "Solana"
+  network: string;  // e.g. "Solana"
+  symbol?: string;  // e.g. "◎"
+  color?: string;   // brand color, e.g. "#9945FF"
 }
 
 /** Lists the pay-in currencies the player can deposit with. */

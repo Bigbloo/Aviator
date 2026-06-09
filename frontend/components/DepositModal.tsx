@@ -26,6 +26,21 @@ interface Props {
 const presets = [2, 5, 10, 25, 50];
 const MIN_DEPOSIT = 1;
 
+// Fallback if the currencies endpoint is unreachable.
+const FALLBACK_CURRENCIES: CryptoCurrency[] = [
+  { code: 'sol', name: 'Solana', network: 'Solana', symbol: '◎', color: '#9945FF' },
+];
+
+// Round colored badge with the crypto's original symbol.
+const CoinBadge = ({ c, size = 7 }: { c: CryptoCurrency; size?: number }) => (
+  <span
+    className={`inline-flex items-center justify-center rounded-full font-bold text-white shrink-0 ${size === 7 ? 'w-7 h-7 text-sm' : 'w-6 h-6 text-xs'}`}
+    style={{ backgroundColor: c.color || '#4b5563' }}
+  >
+    {c.symbol || c.name.charAt(0)}
+  </span>
+);
+
 const DepositModal = ({ onClose }: Props) => {
   const { setBalance } = useGameStore();
   const [amount, setAmount] = useState(5);
@@ -36,6 +51,7 @@ const DepositModal = ({ onClose }: Props) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Load the list of pay-in currencies once; default to the first available.
@@ -173,20 +189,48 @@ const DepositModal = ({ onClose }: Props) => {
               <p className="text-gray-600 text-xs mt-1">Solde crédité en USDT · minimum {MIN_DEPOSIT}</p>
             </div>
 
-            {/* Crypto selector */}
-            <div>
+            {/* Crypto selector — custom dropdown styled like the rest of the site */}
+            <div className="relative">
               <label className="text-gray-400 text-sm mb-2 block">Payer avec</label>
-              <select
-                value={payCurrency}
-                onChange={(e) => setPayCurrency(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
-              >
-                {(currencies.length ? currencies : [{ code: 'sol', name: 'Solana', network: 'Solana' }]).map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.name} — {c.network}
-                  </option>
-                ))}
-              </select>
+              {(() => {
+                const list = currencies.length ? currencies : FALLBACK_CURRENCIES;
+                const selected = list.find((c) => c.code === payCurrency) || list[0];
+                return (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setPickerOpen((o) => !o)}
+                      className="w-full flex items-center gap-3 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white hover:border-gray-600 focus:outline-none focus:border-orange-500 transition"
+                    >
+                      <CoinBadge c={selected} />
+                      <span className="font-semibold">{selected.name}</span>
+                      <span className="text-gray-500 text-sm">{selected.network}</span>
+                      <span className={`ml-auto text-gray-500 text-xs transition-transform ${pickerOpen ? 'rotate-180' : ''}`}>▼</span>
+                    </button>
+                    {pickerOpen && (
+                      <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-xl shadow-black/50 overflow-hidden">
+                        {list.map((c) => (
+                          <button
+                            key={c.code}
+                            type="button"
+                            onClick={() => {
+                              setPayCurrency(c.code);
+                              setPickerOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition ${
+                              c.code === payCurrency ? 'bg-orange-500/15 text-orange-300' : 'text-white hover:bg-gray-700'
+                            }`}
+                          >
+                            <CoinBadge c={c} size={6} />
+                            <span className="font-semibold text-sm">{c.name}</span>
+                            <span className="text-gray-500 text-xs ml-auto">{c.network}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             {error && <p className="text-red-400 text-sm text-center">{error}</p>}
