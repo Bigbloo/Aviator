@@ -3,10 +3,22 @@ import './globals.css';
 import DemoToggle from '@/components/DemoToggle';
 import ResultPopup from '@/components/ResultPopup';
 import AgeGate from '@/components/AgeGate';
+import PWARegister from '@/components/PWARegister';
 
 export const metadata: Metadata = {
   title: 'Aviator — Crash Game',
   description: 'Aviator crash game — mise, envole-toi, encaisse avant le crash !',
+  applicationName: 'Aviator',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Aviator',
+  },
+  icons: {
+    icon: '/icon-192.png',
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export const viewport: Viewport = {
@@ -14,7 +26,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#0a0a0a',
+  themeColor: '#0e0e10',
 };
 
 export default function RootLayout({
@@ -29,6 +41,7 @@ export default function RootLayout({
         <ResultPopup />
         <DemoToggle />
         <AgeGate />
+        <PWARegister />
       </body>
     </html>
   );
