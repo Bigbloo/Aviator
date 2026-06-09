@@ -191,8 +191,8 @@ const AviatorCanvas = () => {
 
         // Curve stroke
         const gradient = ctx.createLinearGradient(originX, 0, W, 0);
-        gradient.addColorStop(0, crashed ? 'rgba(255,50,50,0.85)' : 'rgba(255,165,0,0.85)');
-        gradient.addColorStop(1, crashed ? '#ff0000' : '#ff6a00');
+        gradient.addColorStop(0, crashed ? 'rgba(255,50,50,0.85)' : 'rgba(255,70,90,0.9)');
+        gradient.addColorStop(1, crashed ? '#ff0000' : '#e8112d');
 
         ctx.beginPath();
         ctx.moveTo(pts[0].x, pts[0].y);
@@ -207,7 +207,7 @@ const AviatorCanvas = () => {
         ctx.lineTo(tip.x, originY);
         ctx.lineTo(pts[0].x, originY);
         ctx.closePath();
-        ctx.fillStyle = crashed ? 'rgba(255,0,0,0.08)' : 'rgba(255,106,0,0.08)';
+        ctx.fillStyle = crashed ? 'rgba(255,0,0,0.08)' : 'rgba(232,17,45,0.12)';
         ctx.fill();
 
         // Airplane at the tip — clamped inside the plot so it never leaves
@@ -222,8 +222,9 @@ const AviatorCanvas = () => {
             ctx.save();
             ctx.translate(ax, ay);
             ctx.rotate(-0.08);
-            // nose of the sprite sits near its top-right → offset so it meets the tip
-            ctx.drawImage(img, -targetW * 0.86, -targetH * 0.34, targetW, targetH);
+            // The curve meets the plane at its REAR (tail, lower-left of the
+            // sprite); the plane extends forward (up-right) from there.
+            ctx.drawImage(img, -targetW * 0.12, -targetH * 0.70, targetW, targetH);
             ctx.restore();
           } else {
             const planeScale = Math.min(1.5, Math.max(0.85, Math.min(W, H) / 300));
