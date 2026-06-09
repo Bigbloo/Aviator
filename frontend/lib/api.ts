@@ -316,9 +316,10 @@ export const getMyBets = async (): Promise<MyBet[]> => {
 export interface LeaderboardEntry {
   rank: number;
   name: string;
-  net: number;
-  rounds: number;
-  real: boolean;
+  bet: number;
+  multiplier: number;
+  payout: number;
+  at: number;
 }
 export const getLeaderboard = async (): Promise<LeaderboardEntry[]> => {
   const res = await fetch(`${BASE_URL}/api/leaderboard`);

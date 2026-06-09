@@ -19,6 +19,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const { isMock } = require('./config');
 const { generateCrashPoint, setLiveState } = require('./controllers/gameController');
 const db = require('./db/database');
+const topWins = require('./topWins');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
@@ -132,12 +133,21 @@ const BOT_NAMES = [
   'Tom', 'Lina', 'Noah', 'Jade', 'Enzo', 'Alice', 'Liam', 'Rose',
 ];
 
-// Spribe-style masked handles (e.g. "5***7", "d***2") so the feed can look busy
-// with hundreds of distinct-looking players.
+// Spribe-style masked handles (e.g. "5***7", "d***2") so the feed looks busy
+// with hundreds of distinct-looking players (all masked, like the real game).
 const MASK_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const maskedName = () => `${pick(MASK_CHARS)}***${Math.floor(Math.random() * 9) + 1}`;
-const botName = () => (Math.random() < 0.75 ? maskedName() : pick(BOT_NAMES));
+const botName = () => maskedName();
+
+// Realistic bet distribution — most players stake small, few stake big.
+const realisticBet = () => {
+  const r = Math.random();
+  if (r < 0.5) return pick([1, 2, 3, 5]);
+  if (r < 0.8) return pick([10, 15, 20, 25]);
+  if (r < 0.95) return pick([50, 75, 100]);
+  return pick([150, 200, 300, 500]);
+};
 
 // Inflated "total bets this round" count shown in the All Bets header (cosmetic,
 // like real Aviator showing thousands while only a slice is rendered).
@@ -149,7 +159,7 @@ const makeBotBets = () => {
   for (let i = 0; i < n; i++) {
     const name = botName();
 
-    const amount = [1, 2, 5, 10, 20, 50, 100, 150, 200, 300, 500][Math.floor(Math.random() * 11)];
+    const amount = realisticBet();
 
     // To keep clearly MORE winners than losers: ~82% of bots aim VERY low
     // (1.02–1.22) so they almost always clear before the crash, ~18% greedy.
@@ -285,6 +295,13 @@ const startNewRound = () => {
             : { name: b.name, amount: b.amount, multiplier: null, payout: 0, result: 'lost' }
         );
         const results = realResults.concat(botResults);
+
+        // Feed the Top Winners board with this round's notable wins.
+        for (const r of results) {
+          if (r.result === 'won' && r.multiplier && r.multiplier >= 5) {
+            topWins.record({ name: r.name, bet: r.amount, multiplier: r.multiplier });
+          }
+        }
 
         pushHistory(gameState.crashPoint);
         io.emit('round:crash', { roundId, crashPoint: gameState.crashPoint });
