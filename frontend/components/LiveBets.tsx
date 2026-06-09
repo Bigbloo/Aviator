@@ -43,7 +43,6 @@ const fmtTime = (s: number) =>
   new Date(s * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
 const LiveBets = () => {
-  const username = useGameStore((s) => s.username);
   const userId = useGameStore((s) => s.userId);
   const [rows, setRows] = useState<BetRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -93,9 +92,14 @@ const LiveBets = () => {
     };
   }, []);
 
-  // Load My Bets when switching to that tab (and when the session changes).
+  // Load My Bets when switching to that tab (and when the session changes),
+  // then keep it fresh so pending bets show up live.
   useEffect(() => {
-    if (tab === 'my') getMyBets().then(setMyBets).catch(() => {});
+    if (tab !== 'my') return;
+    const load = () => getMyBets().then(setMyBets).catch(() => {});
+    load();
+    const id = setInterval(load, 4000);
+    return () => clearInterval(id);
   }, [tab, userId]);
 
   const myStaked = myBets.reduce((a, b) => a + b.betAmount, 0);
@@ -173,12 +177,7 @@ const LiveBets = () => {
           </>
         ) : (
           <>
-            {!username && (
-              <p className="text-gray-500 text-xs text-center py-6 px-3">
-                Crée un compte pour suivre tes paris.
-              </p>
-            )}
-            {username && myBets.length === 0 && (
+            {myBets.length === 0 && (
               <p className="text-gray-600 text-xs text-center py-6 px-3">Aucun pari pour l’instant — place ta première mise !</p>
             )}
             {myBets.length > 0 && (
