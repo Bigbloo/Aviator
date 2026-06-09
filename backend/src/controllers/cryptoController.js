@@ -32,19 +32,12 @@ const TRC20_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
 // Curated list of pay-in currencies offered to the player. The account balance
 // stays in USDT; NOWPayments converts whatever they pay into that value.
 const POPULAR = [
-  { code: 'usdttrc20', name: 'USDT', network: 'TRC-20 (Tron)' },
-  { code: 'usdterc20', name: 'USDT', network: 'ERC-20 (Ethereum)' },
-  { code: 'usdtbsc',   name: 'USDT', network: 'BEP-20 (BSC)' },
-  { code: 'btc',       name: 'Bitcoin', network: 'Bitcoin' },
-  { code: 'eth',       name: 'Ethereum', network: 'ERC-20' },
-  { code: 'bnbbsc',    name: 'BNB', network: 'BEP-20 (BSC)' },
-  { code: 'sol',       name: 'Solana', network: 'Solana' },
-  { code: 'ton',       name: 'Toncoin', network: 'TON' },
-  { code: 'trx',       name: 'TRON', network: 'Tron' },
-  { code: 'ltc',       name: 'Litecoin', network: 'Litecoin' },
-  { code: 'usdcsol',   name: 'USDC', network: 'Solana' },
-  { code: 'xmr',       name: 'Monero', network: 'Monero' },
-  { code: 'doge',      name: 'Dogecoin', network: 'Dogecoin' },
+  { code: 'btc',    name: 'Bitcoin', network: 'Bitcoin' },
+  { code: 'sol',    name: 'Solana', network: 'Solana' },
+  { code: 'ton',    name: 'Toncoin', network: 'TON' },
+  { code: 'bnbbsc', name: 'BNB', network: 'BEP-20 (BSC)' },
+  { code: 'ltc',    name: 'Litecoin', network: 'Litecoin' },
+  { code: 'xmr',    name: 'Monero', network: 'Monero' },
 ];
 const POPULAR_CODES = new Set(POPULAR.map((c) => c.code));
 const networkOf = (code) => (POPULAR.find((c) => c.code === code) || {}).network || code;
