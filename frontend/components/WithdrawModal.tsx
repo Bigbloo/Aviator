@@ -14,7 +14,7 @@ interface Props {
 }
 
 const TRC20_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
-const MIN_WITHDRAW = 10;
+const MIN_WITHDRAW = 1; // baissé pour test — remettre ~10 ensuite
 
 const WithdrawModal = ({ onClose }: Props) => {
   const { balance, setBalance } = useGameStore();
