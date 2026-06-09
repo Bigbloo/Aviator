@@ -151,7 +151,7 @@ const LiveBets = () => {
               <div
                 key={r.key}
                 className={`grid grid-cols-[1fr_auto_auto] gap-2 items-center px-3 py-1.5 text-xs border-b border-black/20 ${
-                  r.status === 'won' ? 'bg-green-900/15' : ''
+                  r.status === 'won' ? 'bg-green-900/15' : r.status === 'lost' ? 'bg-red-900/10' : ''
                 }`}
               >
                 <span className="flex items-center gap-2 min-w-0">
@@ -168,8 +168,10 @@ const LiveBets = () => {
                     </span>
                   )}
                 </span>
-                <span className={`text-right font-mono tabular-nums font-bold ${r.status === 'won' ? 'text-green-400' : 'text-gray-600'}`}>
-                  {r.status === 'won' ? r.payout.toFixed(2) : '—'}
+                <span className={`text-right font-mono tabular-nums font-bold ${
+                  r.status === 'won' ? 'text-green-400' : r.status === 'lost' ? 'text-red-400' : 'text-gray-600'
+                }`}>
+                  {r.status === 'won' ? `+${r.payout.toFixed(2)}` : r.status === 'lost' ? `−${r.amount.toFixed(2)}` : '—'}
                 </span>
               </div>
             ))}
