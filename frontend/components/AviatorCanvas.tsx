@@ -234,30 +234,33 @@ const AviatorCanvas = () => {
       }
 
       // ── Center multiplier / status text ──
+      // Scale the font to the canvas width so it isn't oversized on phones.
+      const k = Math.min(1.15, Math.max(0.5, W / 700));
+      const px = (n: number) => `${Math.round(n * k)}px`;
       ctx.textAlign = 'center';
       if (crashed) {
-        ctx.font = 'bold 46px monospace';
+        ctx.font = `bold ${px(44)} monospace`;
         ctx.fillStyle = '#ff3333';
         ctx.fillText(`CRASH ! ${(crashPoint ?? mult).toFixed(2)}x`, W / 2, H / 2);
-        ctx.font = '16px monospace';
+        ctx.font = `${px(15)} monospace`;
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        ctx.fillText('Nouvelle manche bientôt...', W / 2, H / 2 + 36);
+        ctx.fillText('Nouvelle manche bientôt...', W / 2, H / 2 + 34 * k);
       } else if (phase === 'betting') {
-        ctx.font = 'bold 30px monospace';
+        ctx.font = `bold ${px(28)} monospace`;
         ctx.fillStyle = '#22c55e';
         ctx.fillText('🎯 Faites vos jeux !', W / 2, H / 2);
         // Countdown until takeoff
         const endsAt = (window as any).__bettingEndsAt || 0;
         const remain = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
-        ctx.font = 'bold 22px monospace';
+        ctx.font = `bold ${px(20)} monospace`;
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(`Décollage dans ${remain}s`, W / 2, H / 2 + 38);
+        ctx.fillText(`Décollage dans ${remain}s`, W / 2, H / 2 + 36 * k);
       } else if (phase === 'flying') {
-        ctx.font = 'bold 48px monospace';
+        ctx.font = `bold ${px(48)} monospace`;
         ctx.fillStyle = '#ff6a00';
         ctx.fillText(`${mult.toFixed(2)}x`, W / 2, H / 2);
       } else {
-        ctx.font = 'bold 28px monospace';
+        ctx.font = `bold ${px(26)} monospace`;
         ctx.fillStyle = 'rgba(255,255,255,0.6)';
         ctx.fillText('En attente...', W / 2, H / 2);
       }
