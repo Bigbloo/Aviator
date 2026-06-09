@@ -187,18 +187,20 @@ const BetPanel = ({ slot = 1 }: BetPanelProps) => {
               className="w-full h-full min-h-[72px] rounded-2xl font-bold text-white border border-[#5bbf1c]/40
                 bg-gradient-to-b from-[#5bbf1c] to-[#28a909] hover:from-[#69d122] hover:to-[#2fbf0c]
                 disabled:from-gray-600 disabled:to-gray-700 disabled:border-gray-600 disabled:opacity-60
-                transition active:scale-[0.98] flex flex-col items-center justify-center leading-tight shadow-lg"
+                transition active:scale-[0.98] flex flex-col items-center justify-center leading-tight shadow-lg
+                touch-manipulation select-none"
             >
               <span className="text-lg">{phase === 'betting' ? 'BET' : phase === 'flying' ? 'WAIT' : 'NEXT'}</span>
               <span className="text-sm font-extrabold">{betAmount.toFixed(2)} USDT</span>
             </button>
           ) : (
             <button
-              onClick={doCashout}
+              onPointerDown={(e) => { e.preventDefault(); doCashout(); }}
               disabled={!canCashout || loading || cashedOut}
               className="w-full h-full min-h-[72px] rounded-2xl font-bold text-black border border-[#f5a623]/40
                 bg-gradient-to-b from-[#ffcf4a] to-[#f5a623] hover:from-[#ffd866] hover:to-[#ffb52e]
-                disabled:opacity-60 transition active:scale-[0.98] flex flex-col items-center justify-center leading-tight shadow-lg"
+                disabled:opacity-60 transition active:scale-[0.98] flex flex-col items-center justify-center leading-tight shadow-lg
+                touch-manipulation select-none"
             >
               {cashedOut ? (
                 <>

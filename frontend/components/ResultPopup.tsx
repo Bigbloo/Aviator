@@ -29,7 +29,7 @@ const ResultPopup = () => {
   const won = result.won;
 
   return (
-    <div className="fixed inset-x-0 top-28 z-[70] flex justify-center px-4 pointer-events-none">
+    <div className="fixed inset-x-0 top-1/3 z-[70] flex justify-center px-4 pointer-events-none">
       <div
         key={result.id}
         className={`font-black text-4xl sm:text-5xl tabular-nums transition-all duration-300 drop-shadow-[0_2px_10px_rgba(0,0,0,0.7)] ${
