@@ -163,7 +163,8 @@ const cashout = (req, res) => {
 const getMyBets = (req, res) => {
   const rows = db.prepare(
     `SELECT b.id, b.bet_amount, b.cashout_multiplier, b.payout, b.status, b.slot,
-            b.created_at, r.crash_point
+            b.created_at,
+            CASE WHEN r.status = 'crashed' THEN r.crash_point ELSE NULL END AS crash_point
      FROM bets b LEFT JOIN rounds r ON r.id = b.round_id
      WHERE b.user_id = ?
      ORDER BY b.created_at DESC
