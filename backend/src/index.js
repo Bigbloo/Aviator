@@ -88,7 +88,7 @@ app.use('/api', userRoutes);
 app.use('/api', paymentRoutes);
 app.use('/api', gameRoutes);
 app.use('/api', cryptoRoutes);
-app.use('/api', adminRoutes);
+app.use('/api/admin', adminRoutes); // requireAdmin confined to /api/admin/*
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: Date.now() }));
