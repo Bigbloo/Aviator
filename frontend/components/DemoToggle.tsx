@@ -56,18 +56,18 @@ const DemoToggle = () => {
   };
 
   return (
-    <div className="fixed bottom-1 right-1 z-50 flex items-center gap-2 select-none">
+    <div className="fixed bottom-2 right-2 z-[60] flex items-center gap-2 select-none">
       {flash && (
-        <span className="text-[11px] font-bold text-gray-200 bg-[#1b1c1d] border border-black/40 rounded-md px-2 py-1 shadow-lg">
+        <span className="text-[11px] font-bold text-gray-100 bg-[#1b1c1d] border border-black/40 rounded-md px-2 py-1 shadow-lg">
           {flash}
         </span>
       )}
-      {/* Near-invisible hit target: ~0 opacity, faintly visible on hover. */}
+      {/* Discreet but findable: a dim dot that brightens on hover. */}
       <button
         onClick={handleClick}
-        aria-label="."
+        aria-label="·"
         title=""
-        className="w-4 h-4 rounded-full bg-gray-500/0 hover:bg-gray-500/30 transition-colors duration-200 cursor-default"
+        className="w-3.5 h-3.5 rounded-full bg-white/20 hover:bg-white/60 ring-1 ring-white/10 transition-colors duration-200 cursor-pointer"
       />
     </div>
   );
