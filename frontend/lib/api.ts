@@ -132,33 +132,6 @@ export const getBalance = async (): Promise<{ balance: number; username: string 
   return { balance: data.balance, username: data.username ?? null, userId: data.userId ?? null };
 };
 
-/**
- * Creates a Stripe PaymentIntent and returns clientSecret.
- */
-export const createPaymentIntent = async (amount: number): Promise<string> => {
-  const res = await fetch(`${BASE_URL}/api/create-payment-intent`, {
-    method: 'POST',
-    headers: authHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ amount }),
-  });
-  if (!res.ok) throw new Error('Failed to create payment intent');
-  const data = await res.json();
-  return data.clientSecret;
-};
-
-/**
- * DEV: Simulates a deposit without Stripe (blocked server-side in production).
- */
-export const simulateDeposit = async (amount: number): Promise<{ balance: number }> => {
-  const res = await fetch(`${BASE_URL}/api/deposit/simulate`, {
-    method: 'POST',
-    headers: authHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ amount }),
-  });
-  if (!res.ok) throw new Error('Failed to simulate deposit');
-  return res.json();
-};
-
 // ── Crypto (USDT TRC-20) ─────────────────────────────────────────────────────
 
 export interface CryptoCurrency {
@@ -401,21 +374,5 @@ export const adminRejectWithdrawal = async (
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || 'Échec du rejet');
   }
-  return res.json();
-};
-
-/**
- * Requests a withdrawal.
- */
-export const withdraw = async (
-  amount: number,
-  stripeAccountId?: string
-): Promise<{ success: boolean; message: string; balance: number }> => {
-  const res = await fetch(`${BASE_URL}/api/withdraw`, {
-    method: 'POST',
-    headers: authHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ amount, stripeAccountId }),
-  });
-  if (!res.ok) throw new Error('Failed to withdraw');
   return res.json();
 };
