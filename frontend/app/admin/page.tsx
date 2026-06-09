@@ -10,7 +10,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   adminPing,
   adminListWithdrawals,
-  adminApproveWithdrawal,
+  adminMarkPaidWithdrawal,
   adminRejectWithdrawal,
   type AdminWithdrawal,
 } from '@/lib/api';
@@ -96,11 +96,19 @@ export default function AdminPage() {
     }
   };
 
-  const handleApprove = async (w: AdminWithdrawal) => {
-    if (!confirm(`Approuver et ENVOYER ${w.amount} USDT à\n${w.address} ?\n\nCette action est irréversible.`)) return;
+  const handleMarkPaid = async (w: AdminWithdrawal) => {
+    const txid = prompt(
+      `Paiement manuel — envoie d'abord ${w.amount} USDT (TRC-20) à :\n${w.address}\n\nPuis colle ici le hash de transaction (txid) :`,
+      ''
+    );
+    if (txid === null) return;
+    if (txid.trim().length < 6) {
+      alert('txid invalide.');
+      return;
+    }
     setBusy(w.id);
     try {
-      await adminApproveWithdrawal(token, w.id);
+      await adminMarkPaidWithdrawal(token, w.id, txid.trim());
       await load(token, filter);
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Erreur');
@@ -202,11 +210,11 @@ export default function AdminPage() {
               {w.status === 'pending_review' && (
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleApprove(w)}
+                    onClick={() => handleMarkPaid(w)}
                     disabled={busy === w.id}
                     className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-sm transition active:scale-95"
                   >
-                    {busy === w.id ? '…' : '✓ Approuver'}
+                    {busy === w.id ? '…' : '✓ Marquer payé'}
                   </button>
                   <button
                     onClick={() => handleReject(w)}

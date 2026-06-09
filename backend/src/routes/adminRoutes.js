@@ -7,7 +7,8 @@
 const express = require('express');
 const router = express.Router();
 const {
-  adminListWithdrawals, adminApproveWithdrawal, adminRejectWithdrawal, adminResetBalances,
+  adminListWithdrawals, adminApproveWithdrawal, adminRejectWithdrawal, adminMarkPaidWithdrawal,
+  adminResetBalances,
 } = require('../controllers/cryptoController');
 const { requireAdmin } = require('../middleware/auth');
 const backup = require('../backup');
@@ -19,6 +20,7 @@ router.get('/ping', (req, res) => res.json({ ok: true }));
 
 router.get('/withdrawals', adminListWithdrawals);
 router.post('/withdrawals/:id/approve', adminApproveWithdrawal);
+router.post('/withdrawals/:id/mark-paid', adminMarkPaidWithdrawal);
 router.post('/withdrawals/:id/reject', adminRejectWithdrawal);
 router.post('/reset-balances', adminResetBalances);
 

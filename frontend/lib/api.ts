@@ -393,6 +393,25 @@ export const adminApproveWithdrawal = async (
   return res.json();
 };
 
+/** Marks a withdrawal as paid manually (admin sent it from their own wallet). */
+export const adminMarkPaidWithdrawal = async (
+  token: string,
+  id: string,
+  txid: string,
+  note = ''
+): Promise<{ id: string; status: string; txid: string }> => {
+  const res = await fetch(`${BASE_URL}/api/admin/withdrawals/${id}/mark-paid`, {
+    method: 'POST',
+    headers: adminHeaders(token, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ txid, note }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Échec');
+  }
+  return res.json();
+};
+
 export const adminRejectWithdrawal = async (
   token: string,
   id: string,

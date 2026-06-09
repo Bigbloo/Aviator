@@ -352,6 +352,25 @@ const adminApproveWithdrawal = async (req, res) => {
   return res.json({ id: w.id, status: result.status, txid: result.txid || null });
 };
 
+// ── ADMIN: POST /api/admin/withdrawals/:id/mark-paid ──────────────────────────
+// Manual payout: the admin sent the funds from their own wallet and records the
+// on-chain tx hash. Does NOT touch the balance (already debited at request).
+const adminMarkPaidWithdrawal = (req, res) => {
+  const w = db.prepare('SELECT * FROM crypto_withdrawals WHERE id = ?').get(req.params.id);
+  if (!w) return res.status(404).json({ error: 'Retrait introuvable.' });
+  if (!['pending_review', 'processing', 'failed'].includes(w.status)) {
+    return res.status(409).json({ error: `Déjà traité (statut: ${w.status}).` });
+  }
+  const txid = (req.body && req.body.txid ? String(req.body.txid) : '').trim();
+  if (txid.length < 6) {
+    return res.status(400).json({ error: 'Renseigne le hash de transaction (txid).' });
+  }
+  const note = (req.body && req.body.note ? String(req.body.note) : 'Paiement manuel').slice(0, 500);
+  db.prepare("UPDATE crypto_withdrawals SET status='completed', txid=?, note=?, reviewed_at=?, updated_at=? WHERE id=?")
+    .run(txid, note, now(), now(), w.id);
+  return res.json({ id: w.id, status: 'completed', txid });
+};
+
 // ── ADMIN: POST /api/admin/withdrawals/:id/reject ─────────────────────────────
 // Refunds the held balance and marks the withdrawal rejected.
 const adminRejectWithdrawal = (req, res) => {
@@ -384,5 +403,6 @@ const adminResetBalances = (req, res) => {
 
 module.exports = {
   createDeposit, getDeposit, handleIpn, mockConfirm, createWithdrawal, listCurrencies,
-  adminListWithdrawals, adminApproveWithdrawal, adminRejectWithdrawal, adminResetBalances,
+  adminListWithdrawals, adminApproveWithdrawal, adminRejectWithdrawal, adminMarkPaidWithdrawal,
+  adminResetBalances,
 };
