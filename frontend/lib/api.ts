@@ -175,6 +175,24 @@ export interface CryptoCurrency {
   color?: string;   // brand color, e.g. "#9945FF"
 }
 
+// ── Provably Fair ────────────────────────────────────────────────────────────
+
+export interface FairRound {
+  roundId: string;
+  crashPoint: number;
+  seedHash: string;
+  serverSeed: string;
+  startedAt: number;
+}
+
+/** Recent crashed rounds with revealed seeds, for Provably Fair verification. */
+export const getFairRounds = async (): Promise<FairRound[]> => {
+  const res = await fetch(`${BASE_URL}/api/fair/rounds`);
+  if (!res.ok) throw new Error('Failed to fetch fair rounds');
+  const data = await res.json();
+  return data.rounds ?? [];
+};
+
 /** Lists the pay-in currencies the player can deposit with. */
 export const getCryptoCurrencies = async (): Promise<CryptoCurrency[]> => {
   const res = await fetch(`${BASE_URL}/api/crypto/currencies`, { headers: authHeaders() });

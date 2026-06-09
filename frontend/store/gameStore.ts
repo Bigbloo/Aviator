@@ -20,6 +20,8 @@ export interface GameState {
   currentMultiplier: number;
   crashPoint: number | null;
   crashHistory: number[];
+  // Provably Fair: SHA256(serverSeed) committed before the round
+  fairHash: string | null;
 
   // Bet
   betAmount: number;
@@ -36,6 +38,7 @@ export interface GameState {
   setMultiplier: (m: number) => void;
   setCrashPoint: (cp: number) => void;
   setCrashHistory: (h: number[]) => void;
+  setFairHash: (h: string | null) => void;
   setBetAmount: (amount: number) => void;
   setHasBet: (v: boolean) => void;
   setCashedOut: (v: boolean) => void;
@@ -56,6 +59,7 @@ export const useGameStore = create<GameState>((set) => ({
   currentMultiplier: 1.0,
   crashPoint: null,
   crashHistory: [],
+  fairHash: null,
   betAmount: 10,
   hasBet: false,
   cashedOut: false,
@@ -70,6 +74,7 @@ export const useGameStore = create<GameState>((set) => ({
   setMultiplier: (m) => set({ currentMultiplier: m }),
   setCrashPoint: (cp) => set({ crashPoint: cp }),
   setCrashHistory: (h) => set({ crashHistory: h }),
+  setFairHash: (h) => set({ fairHash: h }),
   setBetAmount: (amount) => set({ betAmount: amount }),
   setHasBet: (v) => set({ hasBet: v }),
   setCashedOut: (v) => set({ cashedOut: v }),

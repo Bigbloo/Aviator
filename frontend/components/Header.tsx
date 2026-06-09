@@ -11,6 +11,7 @@ import { useGameStore } from '@/store/gameStore';
 import DepositModal from './DepositModal';
 import WithdrawModal from './WithdrawModal';
 import AuthModal from './AuthModal';
+import ProvablyFairModal from './ProvablyFairModal';
 import PromoBanner from './PromoBanner';
 import { setMuted } from '@/lib/sound';
 import { isDemoLocal } from '@/lib/api';
@@ -20,6 +21,7 @@ const Header = () => {
   const [showDeposit, setShowDeposit] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [showFair, setShowFair] = useState(false);
   const [muted, setMutedState] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -109,6 +111,12 @@ const Header = () => {
                   >
                     💸 Retirer
                   </button>
+                  <button
+                    onClick={() => { setShowFair(true); setMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-[#2c2d30] flex items-center gap-2"
+                  >
+                    🛡️ Provably Fair
+                  </button>
                 </div>
               </>
             )}
@@ -124,6 +132,7 @@ const Header = () => {
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
       {showWithdraw && <WithdrawModal onClose={() => setShowWithdraw(false)} />}
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      {showFair && <ProvablyFairModal onClose={() => setShowFair(false)} />}
     </>
   );
 };

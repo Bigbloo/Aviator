@@ -145,6 +145,22 @@ db.exec(`
   );
 `);
 
+// Migration: Provably Fair commit-reveal columns on rounds.
+try {
+  const roundCols = db.prepare("PRAGMA table_info(rounds)").all();
+  const hasRound = (n) => roundCols.some((c) => c.name === n);
+  if (!hasRound('seed_hash')) {
+    db.exec('ALTER TABLE rounds ADD COLUMN seed_hash TEXT');
+    console.log('[DB] Migrated: added rounds.seed_hash');
+  }
+  if (!hasRound('server_seed')) {
+    db.exec('ALTER TABLE rounds ADD COLUMN server_seed TEXT');
+    console.log('[DB] Migrated: added rounds.server_seed');
+  }
+} catch (e) {
+  console.error('[DB] rounds fair migration check failed:', e.message);
+}
+
 // Migration: add bets.slot (double-bet feature) for pre-existing DBs.
 try {
   const betCols = db.prepare("PRAGMA table_info(bets)").all();

@@ -17,7 +17,8 @@ const gameRoutes = require('./routes/gameRoutes');
 const cryptoRoutes = require('./routes/cryptoRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const { isMock, providerName } = require('./config');
-const { generateCrashPoint, setLiveState } = require('./controllers/gameController');
+const { setLiveState } = require('./controllers/gameController');
+const fair = require('./fair');
 const db = require('./db/database');
 const topWins = require('./topWins');
 const { v4: uuidv4 } = require('uuid');
@@ -222,10 +223,14 @@ const startNewRound = () => {
   ).run();
 
   const roundId = uuidv4();
-  const crashPoint = generateCrashPoint();
+  // Provably Fair: commit to the seed hash before the round, derive the crash
+  // from the seed, reveal the seed after the crash.
+  const serverSeed = fair.newServerSeed();
+  const seedHash = fair.hashSeed(serverSeed);
+  const crashPoint = fair.crashFromSeed(serverSeed);
 
-  db.prepare('INSERT INTO rounds (id, crash_point, status) VALUES (?, ?, ?)').run(
-    roundId, crashPoint, 'active'
+  db.prepare('INSERT INTO rounds (id, crash_point, status, seed_hash, server_seed) VALUES (?, ?, ?, ?, ?)').run(
+    roundId, crashPoint, 'active', seedHash, serverSeed
   );
 
   // Pre-generate this round's bots with a target cashout each (live feed)
@@ -237,13 +242,14 @@ const startNewRound = () => {
     phase: 'betting',
     roundId,
     crashPoint,
+    seedHash,
     currentMultiplier: 1.0,
     startTime: null,
   };
   setLiveState(gameState);
 
   console.log(`[Round ${roundId}] Betting window (${BETTING_DURATION}ms) — crash at x${crashPoint}`);
-  io.emit('round:betting', { roundId, bettingMs: BETTING_DURATION });
+  io.emit('round:betting', { roundId, bettingMs: BETTING_DURATION, seedHash });
 
   // Announce active bots so the live table fills up DURING betting/flight
   io.emit('bets:active', {
@@ -326,7 +332,8 @@ const startNewRound = () => {
         }
 
         pushHistory(gameState.crashPoint);
-        io.emit('round:crash', { roundId, crashPoint: gameState.crashPoint });
+        // Reveal the seed so players can verify the commit and the crash point.
+        io.emit('round:crash', { roundId, crashPoint: gameState.crashPoint, serverSeed, seedHash });
         io.emit('bets:results', { roundId, crashPoint: gameState.crashPoint, results });
         io.emit('history:update', { history: crashHistory });
 
@@ -348,6 +355,7 @@ io.on('connection', (socket) => {
     phase: gameState.phase,
     roundId: gameState.roundId,
     currentMultiplier: gameState.currentMultiplier,
+    seedHash: gameState.seedHash || null,
   });
 
   // Send the crash history so the bar is populated immediately

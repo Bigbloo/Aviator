@@ -16,18 +16,6 @@ const db = require('../db/database');
 let liveState = null;
 const setLiveState = (stateRef) => { liveState = stateRef; };
 
-/**
- * Generates the round's crash point from an exponential distribution with a
- * fixed house edge.
- */
-const generateCrashPoint = () => {
-  const houseEdge = 0.05;
-  const r = Math.random();
-  if (r < houseEdge) return 1.0;
-  const crash = Math.max(1.0, 0.99 / (1 - r));
-  return Math.round(crash * 100) / 100;
-};
-
 const getRound = (req, res) => {
   const { roundId } = req.params;
   const round = db.prepare('SELECT * FROM rounds WHERE id = ?').get(roundId);
@@ -37,9 +25,35 @@ const getRound = (req, res) => {
     roundId: round.id,
     status: round.status,
     startedAt: round.started_at,
+    seedHash: round.seed_hash || null,
   };
-  if (round.status === 'crashed') response.crashPoint = round.crash_point;
+  if (round.status === 'crashed') {
+    response.crashPoint = round.crash_point;
+    // Reveal the seed only once the round is over (commit-reveal).
+    response.serverSeed = round.server_seed || null;
+  }
   return res.json(response);
+};
+
+/**
+ * GET /api/fair/rounds  (public)
+ * Recent crashed rounds with hash + revealed seed, for Provably Fair checks.
+ */
+const getFairRounds = (req, res) => {
+  const rows = db.prepare(
+    `SELECT id, crash_point, seed_hash, server_seed, started_at
+     FROM rounds WHERE status = 'crashed' AND server_seed IS NOT NULL
+     ORDER BY started_at DESC LIMIT 25`
+  ).all();
+  return res.json({
+    rounds: rows.map((r) => ({
+      roundId: r.id,
+      crashPoint: r.crash_point,
+      seedHash: r.seed_hash,
+      serverSeed: r.server_seed,
+      startedAt: r.started_at,
+    })),
+  });
 };
 
 /**
@@ -169,4 +183,4 @@ const getMyBets = (req, res) => {
   });
 };
 
-module.exports = { getRound, placeBet, cashout, getMyBets, generateCrashPoint, setLiveState };
+module.exports = { getRound, placeBet, cashout, getMyBets, getFairRounds, setLiveState };

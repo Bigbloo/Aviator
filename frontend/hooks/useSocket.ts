@@ -23,6 +23,7 @@ export const useSocket = () => {
     setMultiplier,
     setCrashPoint,
     setCrashHistory,
+    setFairHash,
     resetRound,
   } = useGameStore();
 
@@ -37,18 +38,20 @@ export const useSocket = () => {
     socketRef.current = socket;
 
     // Current game state on connect
-    socket.on('game:state', (data: { phase: string; roundId: string; currentMultiplier: number }) => {
+    socket.on('game:state', (data: { phase: string; roundId: string; currentMultiplier: number; seedHash?: string | null }) => {
       setPhase(data.phase as any);
       if (data.roundId) setRoundId(data.roundId);
       setMultiplier(data.currentMultiplier);
+      if (data.seedHash) setFairHash(data.seedHash);
     });
 
     // Betting window opens — players can place bets now
-    socket.on('round:betting', (data: { roundId: string; bettingMs: number }) => {
+    socket.on('round:betting', (data: { roundId: string; bettingMs: number; seedHash?: string }) => {
       resetRound();
       setRoundId(data.roundId);
       setPhase('betting');
       setMultiplier(1.0);
+      setFairHash(data.seedHash || null);
       // expose betting deadline for the countdown (read by the canvas)
       (window as any).__bettingEndsAt = Date.now() + (data.bettingMs || 0);
     });
