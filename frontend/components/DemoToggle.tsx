@@ -62,12 +62,12 @@ const DemoToggle = () => {
           {flash}
         </span>
       )}
-      {/* Discreet but findable: a dim dot that brightens on hover. */}
+      {/* Very discreet: a barely-there dot, brightens slightly on hover. */}
       <button
         onClick={handleClick}
         aria-label="·"
         title=""
-        className="w-3.5 h-3.5 rounded-full bg-white/20 hover:bg-white/60 ring-1 ring-white/10 transition-colors duration-200 cursor-pointer"
+        className="w-3 h-3 rounded-full bg-white/[0.04] hover:bg-white/40 transition-colors duration-200 cursor-pointer"
       />
     </div>
   );
