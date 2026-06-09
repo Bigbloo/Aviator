@@ -219,13 +219,6 @@ const BetPanel = ({ slot = 1 }: BetPanelProps) => {
           )}
         </div>
       </div>
-
-      {/* Last result line */}
-      {lastResult && !hasBet && (
-        <div className={`text-center text-xs font-bold mt-2 ${lastResult.result === 'won' ? 'text-green-400' : 'text-red-400'}`}>
-          {lastResult.result === 'won' ? `✅ Gagné +${lastResult.payout.toFixed(2)} USDT` : '❌ Perdu'}
-        </div>
-      )}
     </div>
   );
 };
