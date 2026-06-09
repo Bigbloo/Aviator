@@ -87,6 +87,17 @@ const AviatorCanvas = () => {
   // Timestamp when the current flying phase started (for the time axis)
   const flyStartRef = useRef<number>(0);
   const lastPhaseRef = useRef<string>('');
+  // Optional plane sprite (public/plane.png). Falls back to the vector plane.
+  const planeImg = useRef<HTMLImageElement | null>(null);
+  const planeReady = useRef(false);
+
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => { planeReady.current = true; };
+    img.onerror = () => { planeReady.current = false; };
+    img.src = '/plane.png';
+    planeImg.current = img;
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -203,8 +214,21 @@ const AviatorCanvas = () => {
         if (!crashed) {
           const ax = Math.min(Math.max(tip.x, originX + 20), W - PAD.right - 10);
           const ay = Math.min(Math.max(tip.y, PAD.top + 14), originY - 4);
-          const planeScale = Math.min(1.5, Math.max(0.85, Math.min(W, H) / 300));
-          drawPlane(ctx, ax, ay, planeScale);
+          const img = planeImg.current;
+          if (planeReady.current && img && img.width) {
+            // Use the PNG sprite, nose aligned to the curve tip.
+            const targetW = Math.min(130, Math.max(70, W * 0.13));
+            const targetH = targetW * (img.height / img.width);
+            ctx.save();
+            ctx.translate(ax, ay);
+            ctx.rotate(-0.08);
+            // nose of the sprite sits near its top-right → offset so it meets the tip
+            ctx.drawImage(img, -targetW * 0.86, -targetH * 0.34, targetW, targetH);
+            ctx.restore();
+          } else {
+            const planeScale = Math.min(1.5, Math.max(0.85, Math.min(W, H) / 300));
+            drawPlane(ctx, ax, ay, planeScale);
+          }
         }
       }
 
