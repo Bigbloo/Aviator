@@ -22,6 +22,24 @@ const NATIVE = {
   ton: 'TON',
 };
 
+// Plisio's API errors are raw English JSON-ish strings (e.g. '{"amount":"Invalid
+// minimal amount attribute value, it must be greater than: 2.918855808 TON"}').
+// Translate the known ones into a clear French message for the player.
+const friendlyError = (raw, native) => {
+  if (!raw) return 'Erreur du prestataire de paiement. Réessaie dans un instant.';
+  const msg = typeof raw === 'string' ? raw : JSON.stringify(raw);
+  const min = msg.match(/greater than:?\s*([\d.]+)\s*([A-Z_]+)/i);
+  if (min) {
+    const qty = Number(min[1]);
+    const cur = (min[2] || native).replace('_', ' ');
+    return `Montant trop faible pour cette crypto : le minimum est ${qty.toFixed(4)} ${cur}. Augmente le montant en USDT ou choisis une autre crypto.`;
+  }
+  if (/not supported|disabled|currency/i.test(msg)) {
+    return 'Cette crypto est momentanément indisponible. Choisis-en une autre.';
+  }
+  return 'Erreur du prestataire de paiement. Réessaie dans un instant.';
+};
+
 module.exports = {
   name: 'plisio',
   available: () => !!KEY,
@@ -45,7 +63,7 @@ module.exports = {
     const r = await fetch(`${API}/invoices/new?${params.toString()}`);
     const d = await r.json();
     if (!d || d.status !== 'success' || !d.data) {
-      throw new Error((d && d.data && d.data.message) || 'Erreur Plisio.');
+      throw new Error(friendlyError(d && d.data && d.data.message, native));
     }
     const data = d.data;
     return {
