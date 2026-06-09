@@ -208,9 +208,11 @@ const handleIpn = (req, res) => {
       return res.status(400).json({ error: 'bad signature' });
     }
     const { order_id, payment_status, actually_paid, pay_amount } = req.body;
+    console.log(`[IPN] order=${order_id} status=${payment_status} paid=${actually_paid}`);
     // Finished/confirmed → credit (idempotent). Failed/expired → mark failed.
     if (['finished', 'confirmed'].includes(payment_status)) {
-      creditDeposit(order_id, actually_paid || pay_amount);
+      const r = creditDeposit(order_id, actually_paid || pay_amount);
+      if (r.credited) console.log(`[IPN] credited ${r.amount} USDT to user ${r.userId}`);
     } else if (['failed', 'expired', 'refunded'].includes(payment_status)) {
       db.prepare("UPDATE crypto_deposits SET status='failed', updated_at=? WHERE id=? AND status!='finished'")
         .run(now(), order_id);
