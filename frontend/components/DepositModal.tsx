@@ -38,11 +38,14 @@ const DepositModal = ({ onClose }: Props) => {
   const [copied, setCopied] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Load the list of pay-in currencies once.
+  // Load the list of pay-in currencies once; default to the first available.
   useEffect(() => {
     getCryptoCurrencies()
       .then((list) => {
-        if (list.length) setCurrencies(list);
+        if (list.length) {
+          setCurrencies(list);
+          if (!list.some((c) => c.code === payCurrency)) setPayCurrency(list[0].code);
+        }
       })
       .catch(() => {});
   }, []);

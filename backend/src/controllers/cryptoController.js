@@ -39,6 +39,7 @@ const POPULAR = [
   { code: 'eth',       name: 'Ethereum', network: 'ERC-20' },
   { code: 'bnbbsc',    name: 'BNB', network: 'BEP-20 (BSC)' },
   { code: 'sol',       name: 'Solana', network: 'Solana' },
+  { code: 'ton',       name: 'Toncoin', network: 'TON' },
   { code: 'trx',       name: 'TRON', network: 'Tron' },
   { code: 'ltc',       name: 'Litecoin', network: 'Litecoin' },
   { code: 'usdcsol',   name: 'USDC', network: 'Solana' },

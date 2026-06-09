@@ -9,20 +9,19 @@ const API = 'https://api.plisio.net/api/v1';
 const KEY = process.env.PLISIO_SECRET;
 const callbackUrl = () => (process.env.PUBLIC_API_URL || '') + '/api/crypto/ipn';
 
-// generic code → Plisio currency code (psys cid). Adjust here if a code differs
-// for your account (Plisio shows them in Settings → supported currencies).
+// generic code → Plisio currency code (psys cid). ONLY the currencies enabled
+// in the Plisio account (Settings → Supported currencies) are accepted at
+// invoice creation. To add USDT TRC-20, enable "Tether TRC-20" in Plisio and
+// add `usdttrc20: 'USDT_TRX'` here.
 const NATIVE = {
-  usdttrc20: 'USDT_TRX',
-  usdterc20: 'USDT',
-  usdtbsc: 'USDT_BSC',
+  usdterc20: 'USDT', // the account's "USDT" chip = ERC-20
   btc: 'BTC',
   eth: 'ETH',
-  bnbbsc: 'BNB',
-  sol: 'SOL',
-  trx: 'TRX',
   ltc: 'LTC',
   xmr: 'XMR',
-  doge: 'DOGE',
+  sol: 'SOL',
+  bnbbsc: 'BNB',
+  ton: 'TON',
 };
 
 module.exports = {
@@ -30,15 +29,18 @@ module.exports = {
   available: () => !!KEY,
   supports: (g) => g in NATIVE,
 
-  // Hosted-invoice flow: the player pays on Plisio's secure page (picks the
-  // crypto + network there). Returns an invoiceUrl the frontend redirects to.
-  async createDeposit({ amount, orderId }) {
+  // White-label: returns a direct pay-in address (wallet_hash). Falls back to
+  // the hosted invoice_url if white-label is off for the chosen currency.
+  async createDeposit({ amount, genericCode, orderId }) {
+    const native = NATIVE[genericCode];
+    if (!native) throw new Error('Cette crypto n’est pas disponible.');
     const params = new URLSearchParams({
       api_key: KEY,
       order_number: orderId,
       order_name: 'Aviator deposit',
       source_currency: 'USD',
       source_amount: String(amount),
+      currency: native,
       callback_url: callbackUrl(),
       expire_min: '30',
     });
@@ -49,10 +51,10 @@ module.exports = {
     }
     const data = d.data;
     return {
-      address: data.wallet_hash || null,   // null in hosted mode (no white-label)
+      address: data.wallet_hash || null,
       payAmount: data.amount ? Number(data.amount) : null,
       paymentId: String(data.txn_id),
-      invoiceUrl: data.invoice_url,
+      invoiceUrl: data.wallet_hash ? null : data.invoice_url,
     };
   },
 
