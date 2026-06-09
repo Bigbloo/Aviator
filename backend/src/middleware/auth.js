@@ -64,19 +64,32 @@ const optionalAuth = (req, res, next) => {
  * the admin API is disabled entirely (503) rather than open.
  */
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+
+// Constant-time-ish check that a presented token equals ADMIN_TOKEN.
+const checkAdminToken = (token) => {
+  if (!ADMIN_TOKEN || ADMIN_TOKEN.length < 12) return false;
+  token = (token || '').toString();
+  if (token.length !== ADMIN_TOKEN.length) return false;
+  let diff = 0;
+  for (let i = 0; i < token.length; i++) diff |= token.charCodeAt(i) ^ ADMIN_TOKEN.charCodeAt(i);
+  return diff === 0;
+};
+
 const requireAdmin = (req, res, next) => {
   if (!ADMIN_TOKEN || ADMIN_TOKEN.length < 12) {
     return res.status(503).json({ error: 'Console admin désactivée (ADMIN_TOKEN non configuré).' });
   }
-  const token = req.headers['x-admin-token'] || '';
-  // Constant-time-ish comparison
-  if (token.length !== ADMIN_TOKEN.length) {
+  if (!checkAdminToken(req.headers['x-admin-token'])) {
     return res.status(401).json({ error: 'Accès admin refusé.' });
   }
-  let diff = 0;
-  for (let i = 0; i < token.length; i++) diff |= token.charCodeAt(i) ^ ADMIN_TOKEN.charCodeAt(i);
-  if (diff !== 0) return res.status(401).json({ error: 'Accès admin refusé.' });
   return next();
 };
 
-module.exports = { signToken, requireAuth, optionalAuth, requireAdmin };
+/**
+ * A request is in DEMO only when it carries a valid admin token in the
+ * x-demo-token header. This makes demo an ADMIN-ONLY, per-request opt-in:
+ * regular players never send it, so they always use the real money layer.
+ */
+const isDemoRequest = (req) => checkAdminToken(req.headers['x-demo-token']);
+
+module.exports = { signToken, requireAuth, optionalAuth, requireAdmin, isDemoRequest };

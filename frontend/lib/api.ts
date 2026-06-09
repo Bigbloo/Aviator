@@ -31,6 +31,19 @@ const authHeaders = (extra: Record<string, string> = {}): Record<string, string>
   return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
 };
 
+// Admin-only demo: when the local demo flag is on, attach the admin token as
+// x-demo-token on money calls. The backend only treats a request as demo if
+// this token is valid — so regular players are always on the real money layer.
+export const DEMO_FLAG_KEY = 'aviator_demo';
+const ADMIN_TOKEN_KEY = 'aviator_admin_token';
+export const isDemoLocal = (): boolean =>
+  typeof window !== 'undefined' && localStorage.getItem(DEMO_FLAG_KEY) === 'true';
+const demoHeaders = (): Record<string, string> => {
+  if (!isDemoLocal()) return {};
+  const t = typeof window !== 'undefined' ? localStorage.getItem(ADMIN_TOKEN_KEY) : null;
+  return t ? { 'x-demo-token': t } : {};
+};
+
 export interface AuthResponse {
   userId: string;
   username: string;
@@ -173,7 +186,7 @@ export const createCryptoDeposit = async (
 ): Promise<CryptoDeposit> => {
   const res = await fetch(`${BASE_URL}/api/crypto/deposit`, {
     method: 'POST',
-    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    headers: { ...authHeaders({ 'Content-Type': 'application/json' }), ...demoHeaders() },
     body: JSON.stringify({ amount, payCurrency }),
   });
   if (!res.ok) {
@@ -222,7 +235,7 @@ export const createCryptoWithdrawal = async (
 ): Promise<CryptoWithdrawal> => {
   const res = await fetch(`${BASE_URL}/api/crypto/withdraw`, {
     method: 'POST',
-    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    headers: { ...authHeaders({ 'Content-Type': 'application/json' }), ...demoHeaders() },
     body: JSON.stringify({ amount, address }),
   });
   if (!res.ok) {
@@ -307,17 +320,6 @@ export const getLeaderboard = async (): Promise<LeaderboardEntry[]> => {
   return data.leaderboard ?? [];
 };
 
-// ── Public client config (demo badge) ────────────────────────────────────────
-export const getConfig = async (): Promise<{ demo: boolean; simulated: boolean }> => {
-  try {
-    const res = await fetch(`${BASE_URL}/api/config`);
-    if (!res.ok) return { demo: false, simulated: false };
-    return res.json();
-  } catch {
-    return { demo: false, simulated: false };
-  }
-};
-
 // ── Admin: withdrawal review console ─────────────────────────────────────────
 
 const adminHeaders = (token: string, extra: Record<string, string> = {}) => ({
@@ -349,28 +351,6 @@ export const adminPing = async (token: string): Promise<boolean> => {
   return res.ok;
 };
 
-/** Reads the current money-layer config (demo on/off). Requires admin token. */
-export const adminGetConfig = async (
-  token: string
-): Promise<{ demo: boolean; simulated: boolean }> => {
-  const res = await fetch(`${BASE_URL}/api/admin/config`, { headers: adminHeaders(token) });
-  if (!res.ok) throw new Error('Accès refusé');
-  return res.json();
-};
-
-/** Toggles demo mode on/off. Requires admin token. */
-export const adminSetDemo = async (
-  token: string,
-  enabled: boolean
-): Promise<{ demo: boolean; simulated: boolean }> => {
-  const res = await fetch(`${BASE_URL}/api/admin/demo`, {
-    method: 'POST',
-    headers: adminHeaders(token, { 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ enabled }),
-  });
-  if (!res.ok) throw new Error('Accès refusé');
-  return res.json();
-};
 
 export const adminListWithdrawals = async (
   token: string,

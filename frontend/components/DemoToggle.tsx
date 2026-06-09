@@ -1,14 +1,15 @@
 /**
  * DemoToggle.tsx
- * A deliberately near-invisible owner control in the bottom corner. Click it to
- * flip the whole app between DEMO (simulated money) and LIVE. Protected by the
- * admin token — a normal player who stumbles on it can't toggle anything.
+ * Near-invisible owner control (bottom corner). Toggles an ADMIN-ONLY demo for
+ * THIS browser: when on, money calls carry the admin token and the backend
+ * simulates deposits/withdrawals — only for the admin. Everyone else stays on
+ * the real money layer regardless of this flag.
  */
 
 'use client';
 
 import { useState } from 'react';
-import { adminGetConfig, adminSetDemo } from '@/lib/api';
+import { adminPing, isDemoLocal, DEMO_FLAG_KEY } from '@/lib/api';
 
 const ADMIN_KEY = 'aviator_admin_token';
 
@@ -27,15 +28,14 @@ const DemoToggle = () => {
       token = (window.prompt('Token admin :') || '').trim();
       if (!token) return null;
     }
-    try {
-      await adminGetConfig(token); // validates
-      localStorage.setItem(ADMIN_KEY, token);
-      return token;
-    } catch {
+    const ok = await adminPing(token).catch(() => false);
+    if (!ok) {
       localStorage.removeItem(ADMIN_KEY);
       showFlash('Token invalide');
       return null;
     }
+    localStorage.setItem(ADMIN_KEY, token);
+    return token;
   };
 
   const handleClick = async () => {
@@ -44,12 +44,9 @@ const DemoToggle = () => {
     try {
       const token = await ensureToken();
       if (!token) return;
-      const cfg = await adminGetConfig(token);
-      const next = !cfg.demo;
-      const res = await adminSetDemo(token, next);
-      showFlash(res.demo ? '🟡 MODE DÉMO activé' : '🟢 MODE RÉEL activé');
-    } catch {
-      showFlash('Erreur');
+      const next = !isDemoLocal();
+      localStorage.setItem(DEMO_FLAG_KEY, next ? 'true' : 'false');
+      showFlash(next ? '🟡 DÉMO admin (cette session)' : '🟢 Mode réel');
     } finally {
       setBusy(false);
     }

@@ -17,7 +17,8 @@ const { v4: uuidv4 } = require('uuid');
 const db = require('../db/database');
 
 const API = 'https://api.nowpayments.io/v1';
-const { isMock, isDemo, setDemo } = require('../config');
+const { isMock } = require('../config');
+const { isDemoRequest } = require('../middleware/auth');
 const API_KEY = process.env.NOWPAYMENTS_API_KEY;
 const IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 const PAYOUT_KEY = process.env.NOWPAYMENTS_PAYOUT_KEY;
@@ -117,25 +118,20 @@ const createDeposit = async (req, res) => {
 
   const id = uuidv4();
 
-  if (isMock()) {
-    const address = (isDemo() ? 'TDemo' : 'TMock') + crypto.randomBytes(15).toString('hex').slice(0, 29);
+  // Demo = admin-only per-request (valid x-demo-token) OR local dev (no key).
+  const demo = isDemoRequest(req) || isMock();
+
+  if (demo) {
+    const address = 'TDemo' + crypto.randomBytes(15).toString('hex').slice(0, 29);
     db.prepare(
       "INSERT INTO crypto_deposits (id, user_id, amount, currency, address, payment_id, status) VALUES (?,?,?,?,?,?, 'waiting')"
-    ).run(id, userId, amount, payCurrency, address, (isDemo() ? 'demo_' : 'mock_') + id);
-
-    if (isDemo()) {
-      // Instant credit — no on-chain step in demo mode.
-      creditDeposit(id, amount);
-      const bal = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId).balance;
-      return res.json({
-        depositId: id, address, amount, payAmount: amount,
-        payCurrency, network: networkOf(payCurrency), status: 'finished', demo: true, balance: bal,
-      });
-    }
-
+    ).run(id, userId, amount, payCurrency, address, 'demo_' + id);
+    // Instant credit — no on-chain step in demo.
+    creditDeposit(id, amount);
+    const bal = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId).balance;
     return res.json({
       depositId: id, address, amount, payAmount: amount,
-      payCurrency, network: networkOf(payCurrency), status: 'waiting', mock: true,
+      payCurrency, network: networkOf(payCurrency), status: 'finished', demo: true, balance: bal,
     });
   }
 
@@ -246,17 +242,30 @@ const createWithdrawal = async (req, res) => {
   if (!user) return res.status(404).json({ error: 'Compte introuvable.' });
   if (user.balance < amount) return res.status(400).json({ error: 'Solde insuffisant.' });
 
+  // Admin demo (or local dev): instant simulated payout, no review queue.
+  const demo = isDemoRequest(req) || isMock();
   const id = uuidv4();
+
   const debit = db.transaction(() => {
     db.prepare('UPDATE users SET balance = balance - ? WHERE id = ?').run(amount, userId);
     db.prepare('INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)')
       .run(uuidv4(), userId, 'withdrawal', -amount);
-    db.prepare("INSERT INTO crypto_withdrawals (id, user_id, amount, address, status) VALUES (?,?,?,?, 'pending_review')")
-      .run(id, userId, amount, address);
+    db.prepare("INSERT INTO crypto_withdrawals (id, user_id, amount, address, status) VALUES (?,?,?,?,?)")
+      .run(id, userId, amount, address, demo ? 'completed' : 'pending_review');
   });
   debit();
 
   const balanceAfter = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId).balance;
+
+  if (demo) {
+    const txid = 'demo_tx_' + crypto.randomBytes(12).toString('hex');
+    db.prepare("UPDATE crypto_withdrawals SET txid=?, updated_at=? WHERE id=?").run(txid, now(), id);
+    return res.json({
+      withdrawalId: id, status: 'completed', txid, amount, address, balance: balanceAfter,
+      demo: true, message: `Retrait de ${amount} USDT envoyé (démo).`,
+    });
+  }
+
   return res.json({
     withdrawalId: id, status: 'pending_review', amount, address, balance: balanceAfter,
     message: `Retrait de ${amount} USDT enregistré — en attente de validation (conformité).`,
@@ -345,17 +354,7 @@ const adminRejectWithdrawal = (req, res) => {
   return res.json({ id: w.id, status: 'rejected', refunded: w.amount });
 };
 
-// ── ADMIN: demo mode toggle ───────────────────────────────────────────────────
-const adminGetConfig = (req, res) => res.json({ demo: isDemo(), simulated: isMock() });
-const adminSetDemo = (req, res) => {
-  const enabled = !!(req.body && req.body.enabled);
-  setDemo(enabled);
-  console.log(`[Config] DEMO mode -> ${isDemo()} (toggled via admin)`);
-  return res.json({ demo: isDemo(), simulated: isMock() });
-};
-
 module.exports = {
   createDeposit, getDeposit, handleIpn, mockConfirm, createWithdrawal, listCurrencies,
   adminListWithdrawals, adminApproveWithdrawal, adminRejectWithdrawal,
-  adminGetConfig, adminSetDemo,
 };
