@@ -26,8 +26,22 @@ const MIN_WITHDRAW = 1;           // USDT (baissé pour test — remettre ~10 en
 const MAX_AUTO_WITHDRAW = 1000;   // above this, hold for manual review (anti-abuse/AML)
 const PAY_CURRENCY = 'sol';
 
-// TRC-20 address: base58, starts with 'T', 34 chars total.
-const TRC20_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
+// Per-network payout address validators. Withdrawals can be paid on any of the
+// chains we accept for deposits. These are sane (not paranoid) checks — every
+// withdrawal is reviewed manually before payout, so a rare false-negative is
+// safer than a false-positive that locks a player out.
+const ADDRESS_RE = {
+  btc:    /^(bc1[a-z0-9]{11,71}|[13][a-km-zA-HJ-NP-Z1-9]{25,39})$/,
+  ltc:    /^(ltc1[a-z0-9]{11,71}|[LM][a-km-zA-HJ-NP-Z1-9]{26,33}|3[a-km-zA-HJ-NP-Z1-9]{25,33})$/,
+  sol:    /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
+  ton:    /^(?:[A-Za-z0-9_-]{48}|[0-9-]:[0-9a-fA-F]{64})$/,
+  bnbbsc: /^0x[0-9a-fA-F]{40}$/,
+  xmr:    /^[48][0-9AB][1-9A-HJ-NP-Za-km-z]{93,104}$/,
+};
+const validateAddress = (currency, address) => {
+  const re = ADDRESS_RE[currency];
+  return re ? re.test(address) : false;
+};
 
 // Curated list of pay-in currencies offered to the player. The account balance
 // stays in USDT; NOWPayments converts whatever they pay into that value.
@@ -194,12 +208,17 @@ const createWithdrawal = async (req, res) => {
   const userId = req.userId;
   const amount = Number(req.body.amount);
   const address = (req.body.address || '').toString().trim();
+  // Payout network chosen by the player (same chains as deposits).
+  const currency = (req.body.currency || 'sol').toString().toLowerCase().trim();
 
   if (!Number.isFinite(amount) || amount < MIN_WITHDRAW) {
     return res.status(400).json({ error: `Retrait minimum : ${MIN_WITHDRAW} USDT.` });
   }
-  if (!TRC20_RE.test(address)) {
-    return res.status(400).json({ error: 'Adresse USDT TRC-20 invalide.' });
+  if (!POPULAR_CODES.has(currency)) {
+    return res.status(400).json({ error: 'Réseau de retrait non supporté.' });
+  }
+  if (!validateAddress(currency, address)) {
+    return res.status(400).json({ error: `Adresse ${networkOf(currency)} invalide.` });
   }
 
   // Admin demo (or local dev): instant simulated payout, no review queue.
@@ -220,8 +239,8 @@ const createWithdrawal = async (req, res) => {
     db.prepare('UPDATE users SET balance = balance - ? WHERE id = ?').run(amount, userId);
     db.prepare('INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)')
       .run(uuidv4(), userId, 'withdrawal', -amount);
-    db.prepare("INSERT INTO crypto_withdrawals (id, user_id, amount, address, status) VALUES (?,?,?,?,?)")
-      .run(id, userId, amount, address, demo ? 'completed' : 'pending_review');
+    db.prepare("INSERT INTO crypto_withdrawals (id, user_id, amount, address, currency, status) VALUES (?,?,?,?,?,?)")
+      .run(id, userId, amount, address, currency, demo ? 'completed' : 'pending_review');
   });
   debit();
 
@@ -262,14 +281,18 @@ const adminListWithdrawals = (req, res) => {
   let where = '';
   if (status) { where = 'WHERE w.status = ?'; params.push(status); }
   const rows = db.prepare(
-    `SELECT w.id, w.amount, w.address, w.status, w.txid, w.payout_id, w.note,
+    `SELECT w.id, w.amount, w.address, w.currency, w.status, w.txid, w.payout_id, w.note,
             w.created_at, w.reviewed_at,
             u.id AS user_id, u.username, u.email, u.first_name, u.last_name, u.address AS user_address
      FROM crypto_withdrawals w JOIN users u ON u.id = w.user_id
      ${where}
      ORDER BY (w.status = 'pending_review') DESC, w.created_at DESC
      LIMIT 200`
-  ).all(...params);
+  ).all(...params).map((w) => ({
+    ...w,
+    // Legacy rows (pre multi-network) had no currency and were always TRC-20.
+    network: w.currency ? networkOf(w.currency) : 'USDT TRC-20 (Tron)',
+  }));
   const pending = db.prepare("SELECT COUNT(*) AS n FROM crypto_withdrawals WHERE status='pending_review'").get().n;
   return res.json({ withdrawals: rows, pendingCount: pending });
 };

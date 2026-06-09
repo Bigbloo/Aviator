@@ -185,6 +185,10 @@ try {
       db.exec('ALTER TABLE crypto_withdrawals ADD COLUMN reviewed_at INTEGER');
       console.log('[DB] Migrated: added crypto_withdrawals.reviewed_at');
     }
+    if (!wHas('currency')) {
+      db.exec('ALTER TABLE crypto_withdrawals ADD COLUMN currency TEXT');
+      console.log('[DB] Migrated: added crypto_withdrawals.currency');
+    }
   }
 } catch (e) {
   console.error('[DB] crypto_withdrawals migration check failed:', e.message);

@@ -98,7 +98,7 @@ export default function AdminPage() {
 
   const handleMarkPaid = async (w: AdminWithdrawal) => {
     const txid = prompt(
-      `Paiement manuel — envoie d'abord ${w.amount} USDT (TRC-20) à :\n${w.address}\n\nPuis colle ici le hash de transaction (txid) :`,
+      `Paiement manuel — envoie l'équivalent de ${w.amount} USDT en ${w.network} à :\n${w.address}\n\nPuis colle ici le hash de transaction (txid) :`,
       ''
     );
     if (txid === null) return;
@@ -233,7 +233,8 @@ export default function AdminPage() {
               <Detail label="Email" value={w.email || '—'} />
               <Detail label="Nom complet" value={[w.first_name, w.last_name].filter(Boolean).join(' ') || '—'} />
               <Detail label="Adresse postale" value={w.user_address || '—'} />
-              <Detail label="Adresse USDT (TRC-20)" value={w.address} mono />
+              <Detail label="Réseau de paiement" value={w.network} />
+              <Detail label={`Adresse ${w.network}`} value={w.address} mono />
               {w.txid && <Detail label="Tx" value={w.txid} mono />}
               {w.note && <Detail label="Note" value={w.note} />}
             </div>

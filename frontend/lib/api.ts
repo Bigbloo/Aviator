@@ -262,15 +262,16 @@ export interface CryptoWithdrawal {
   message: string;
 }
 
-/** Requests a USDT withdrawal to a TRC-20 address. */
+/** Requests a withdrawal, paid on the chosen network to the given address. */
 export const createCryptoWithdrawal = async (
   amount: number,
-  address: string
+  address: string,
+  currency: string
 ): Promise<CryptoWithdrawal> => {
   const res = await fetch(`${BASE_URL}/api/crypto/withdraw`, {
     method: 'POST',
     headers: { ...authHeaders({ 'Content-Type': 'application/json' }), ...demoHeaders() },
-    body: JSON.stringify({ amount, address }),
+    body: JSON.stringify({ amount, address, currency }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -366,6 +367,8 @@ export interface AdminWithdrawal {
   id: string;
   amount: number;
   address: string;
+  currency: string | null;  // payout network code (sol/btc/…); null = legacy TRC-20
+  network: string;          // human label, e.g. "Solana"
   status: string; // pending_review | processing | completed | rejected | failed
   txid: string | null;
   payout_id: string | null;

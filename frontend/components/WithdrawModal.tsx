@@ -1,38 +1,80 @@
 /**
  * WithdrawModal.tsx
- * USDT (TRC-20) withdrawal — sends winnings to a player-provided Tron address.
+ * Multi-network withdrawal — the player picks a payout chain (same chains as
+ * deposits) and provides an address on it. Balance stays in USDT; the admin
+ * sends the USDT-equivalent in the chosen crypto.
  */
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import { createCryptoWithdrawal } from '@/lib/api';
+import { createCryptoWithdrawal, getCryptoCurrencies, type CryptoCurrency } from '@/lib/api';
 
 interface Props {
   onClose: () => void;
 }
 
-const TRC20_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
 const MIN_WITHDRAW = 1; // baissé pour test — remettre ~10 ensuite
+
+// Per-network address validators + placeholder, mirrored from the backend.
+const NETWORKS: Record<string, { re: RegExp; placeholder: string }> = {
+  btc:    { re: /^(bc1[a-z0-9]{11,71}|[13][a-km-zA-HJ-NP-Z1-9]{25,39})$/, placeholder: 'bc1… ou 1…/3…' },
+  ltc:    { re: /^(ltc1[a-z0-9]{11,71}|[LM][a-km-zA-HJ-NP-Z1-9]{26,33}|3[a-km-zA-HJ-NP-Z1-9]{25,33})$/, placeholder: 'ltc1… ou L…/M…' },
+  sol:    { re: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/, placeholder: 'Adresse Solana' },
+  ton:    { re: /^(?:[A-Za-z0-9_-]{48}|[0-9-]:[0-9a-fA-F]{64})$/, placeholder: 'EQ… / UQ…' },
+  bnbbsc: { re: /^0x[0-9a-fA-F]{40}$/, placeholder: '0x…' },
+  xmr:    { re: /^[48][0-9AB][1-9A-HJ-NP-Za-km-z]{93,104}$/, placeholder: '4… / 8…' },
+};
+
+const FALLBACK: CryptoCurrency[] = [
+  { code: 'sol', name: 'Solana', network: 'Solana', symbol: '◎', color: '#9945FF' },
+];
+
+const CoinBadge = ({ c, size = 7 }: { c: CryptoCurrency; size?: number }) => (
+  <span
+    className={`inline-flex items-center justify-center rounded-full font-bold text-white shrink-0 ${size === 7 ? 'w-7 h-7 text-sm' : 'w-6 h-6 text-xs'}`}
+    style={{ backgroundColor: c.color || '#4b5563' }}
+  >
+    {c.symbol || c.name.charAt(0)}
+  </span>
+);
 
 const WithdrawModal = ({ onClose }: Props) => {
   const { balance, setBalance } = useGameStore();
-  const [amount, setAmount] = useState(10);
+  const [amount, setAmount] = useState(Math.max(MIN_WITHDRAW, Math.min(10, balance)));
   const [address, setAddress] = useState('');
+  const [currencies, setCurrencies] = useState<CryptoCurrency[]>([]);
+  const [currency, setCurrency] = useState('sol');
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const addressValid = TRC20_RE.test(address.trim());
+  useEffect(() => {
+    getCryptoCurrencies()
+      .then((list) => {
+        if (list.length) {
+          setCurrencies(list);
+          if (!list.some((c) => c.code === currency)) setCurrency(list[0].code);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const net = NETWORKS[currency];
+  const addressValid = net ? net.re.test(address.trim()) : false;
   const canSubmit = amount >= MIN_WITHDRAW && amount <= balance && addressValid;
+
+  const list = currencies.length ? currencies : FALLBACK;
+  const selected = list.find((c) => c.code === currency) || list[0];
 
   const handleWithdraw = async () => {
     if (!canSubmit) return;
     setLoading(true);
     setError('');
     try {
-      const data = await createCryptoWithdrawal(amount, address.trim());
+      const data = await createCryptoWithdrawal(amount, address.trim(), currency);
       setBalance(data.balance);
       setMessage(data.message);
     } catch (err: unknown) {
@@ -83,12 +125,49 @@ const WithdrawModal = ({ onClose }: Props) => {
               <p className="text-gray-600 text-xs mt-1">Minimum {MIN_WITHDRAW} USDT</p>
             </div>
 
+            {/* Network selector — same style as the deposit picker */}
+            <div className="relative">
+              <label className="text-gray-400 text-sm mb-2 block">Réseau de retrait</label>
+              <button
+                type="button"
+                onClick={() => setPickerOpen((o) => !o)}
+                className="w-full flex items-center gap-3 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white hover:border-gray-600 focus:outline-none focus:border-orange-500 transition"
+              >
+                <CoinBadge c={selected} />
+                <span className="font-semibold">{selected.name}</span>
+                <span className="text-gray-500 text-sm">{selected.network}</span>
+                <span className={`ml-auto text-gray-500 text-xs transition-transform ${pickerOpen ? 'rotate-180' : ''}`}>▼</span>
+              </button>
+              {pickerOpen && (
+                <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-xl shadow-black/50 overflow-hidden">
+                  {list.map((c) => (
+                    <button
+                      key={c.code}
+                      type="button"
+                      onClick={() => {
+                        setCurrency(c.code);
+                        setAddress('');
+                        setPickerOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition ${
+                        c.code === currency ? 'bg-orange-500/15 text-orange-300' : 'text-white hover:bg-gray-700'
+                      }`}
+                    >
+                      <CoinBadge c={c} size={6} />
+                      <span className="font-semibold text-sm">{c.name}</span>
+                      <span className="text-gray-500 text-xs ml-auto">{c.network}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div>
-              <label className="text-gray-400 text-sm mb-2 block">Adresse USDT (TRC-20)</label>
+              <label className="text-gray-400 text-sm mb-2 block">Adresse {selected.network}</label>
               <input
                 type="text"
                 value={address}
-                placeholder="T..."
+                placeholder={net?.placeholder || 'Adresse'}
                 onChange={(e) => setAddress(e.target.value)}
                 className={`w-full bg-gray-800 border rounded-lg px-4 py-3 text-white text-xs font-mono focus:outline-none ${
                   address.length > 0 && !addressValid
@@ -97,7 +176,7 @@ const WithdrawModal = ({ onClose }: Props) => {
                 }`}
               />
               {address.length > 0 && !addressValid && (
-                <p className="text-red-400 text-xs mt-1">Adresse TRC-20 invalide (doit commencer par T, 34 caractères).</p>
+                <p className="text-red-400 text-xs mt-1">Adresse {selected.network} invalide.</p>
               )}
             </div>
 
@@ -112,7 +191,7 @@ const WithdrawModal = ({ onClose }: Props) => {
             </button>
 
             <p className="text-gray-600 text-xs text-center">
-              Réseau : USDT TRC-20 (Tron). Vérifie bien l&apos;adresse — une erreur est irréversible.
+              Payé en {selected.name} ({selected.network}) à la valeur du moment. Vérifie bien l&apos;adresse — une erreur est irréversible.
             </p>
           </>
         )}
