@@ -11,6 +11,7 @@ import { useGameStore } from '@/store/gameStore';
 import DepositModal from './DepositModal';
 import WithdrawModal from './WithdrawModal';
 import AuthModal from './AuthModal';
+import PromoBanner from './PromoBanner';
 import { setMuted } from '@/lib/sound';
 
 const Header = () => {
@@ -100,6 +101,8 @@ const Header = () => {
           </div>
         </div>
       </header>
+
+      <PromoBanner onClaim={() => setShowAuth(true)} />
 
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
       {showWithdraw && <WithdrawModal onClose={() => setShowWithdraw(false)} />}
