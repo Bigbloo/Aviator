@@ -1,28 +1,46 @@
 /**
  * PromoBanner.tsx
- * Promotional bar pinned at the very top: a continuously scrolling (marquee)
- * "50 USDT OFFERT" message with a prominent live countdown timer.
+ * Promo pill in the header: a continuously scrolling "50 USDT FREE" marquee with
+ * a prominent multi-day countdown (persisted per visitor, ~2 days + hours).
  */
 
 'use client';
 
 import { useEffect, useState } from 'react';
 
-// Rolling 15-minute countdown, synced to the clock so it never stalls.
-const WINDOW = 15 * 60;
-const remaining = () => WINDOW - (Math.floor(Date.now() / 1000) % WINDOW);
-const fmt = (s: number) =>
-  `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-
-const SEP = '  •  ';
+const SEP = '  •  ';
 const MSG =
-  `🎁 50 USDT OFFERTS à l’inscription${SEP}🚀 Bonus de bienvenue : 50 USDT gratuits${SEP}🔥 Offre limitée — réclame tes 50 USDT${SEP}`;
+  `🎁 50 USDT FREE on sign-up${SEP}🚀 Welcome bonus: 50 USDT${SEP}🔥 Limited offer — claim your 50 USDT${SEP}`;
+
+const KEY = 'aviator_promo_deadline';
+
+// Per-visitor deadline ~2 days + a few hours; resets once it expires.
+const computeDeadline = (): number => {
+  if (typeof window === 'undefined') return Date.now() + (2 * 86400 + 7 * 3600) * 1000;
+  let d = Number(localStorage.getItem(KEY) || 0);
+  if (!d || d < Date.now()) {
+    d = Date.now() + (2 * 86400 + (3 + Math.floor(Math.random() * 9)) * 3600) * 1000; // 2d + 3..11h
+    localStorage.setItem(KEY, String(d));
+  }
+  return d;
+};
+
+const fmt = (ms: number): string => {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d}d ${p(h)}:${p(m)}:${p(sec)}`;
+};
 
 const PromoBanner = ({ onClaim }: { onClaim?: () => void }) => {
-  const [left, setLeft] = useState(WINDOW);
+  const [left, setLeft] = useState((2 * 86400 + 7 * 3600) * 1000);
 
   useEffect(() => {
-    const tick = () => setLeft(remaining());
+    const dl = computeDeadline();
+    const tick = () => setLeft(dl - Date.now());
     tick();
     const t = setInterval(tick, 1000);
     return () => clearInterval(t);
@@ -31,7 +49,7 @@ const PromoBanner = ({ onClaim }: { onClaim?: () => void }) => {
   return (
     <button
       onClick={onClaim}
-      title="Réclamer 50 USDT"
+      title="Claim 50 USDT"
       className="group flex items-center gap-2 w-full max-w-md min-w-0 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-black pl-3 pr-1.5 py-1 overflow-hidden ring-1 ring-amber-300/40 active:scale-[0.99] transition"
     >
       {/* Scrolling message */}
@@ -43,7 +61,7 @@ const PromoBanner = ({ onClaim }: { onClaim?: () => void }) => {
       </div>
 
       {/* Prominent countdown */}
-      <span className="shrink-0 flex items-center gap-1 bg-black text-white rounded-full px-2.5 py-1 text-sm sm:text-base font-black tabular-nums ring-1 ring-white/20">
+      <span className="shrink-0 flex items-center gap-1 bg-black text-white rounded-full px-2.5 py-1 text-xs sm:text-sm font-black tabular-nums ring-1 ring-white/20">
         <span className="text-amber-400 text-[11px] animate-pulse">⏱</span>
         {fmt(left)}
       </span>

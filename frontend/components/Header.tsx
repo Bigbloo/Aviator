@@ -38,8 +38,8 @@ const Header = () => {
           </span>
         </button>
 
-        {/* Promo banner — centered between the logo and the wallet */}
-        <div className="flex-1 min-w-0 flex justify-center">
+        {/* Promo banner — between the logo and the wallet, nudged right */}
+        <div className="flex-1 min-w-0 flex justify-center pl-4 sm:pl-24">
           <PromoBanner onClaim={() => setShowAuth(true)} />
         </div>
 
