@@ -84,6 +84,11 @@ const DepositModal = ({ onClose }: Props) => {
     setError('');
     try {
       const d = await createCryptoDeposit(amount, payCurrency);
+      // Hosted-invoice provider (Plisio): redirect to the secure payment page.
+      if (d.invoiceUrl) {
+        window.location.href = d.invoiceUrl;
+        return;
+      }
       setDeposit(d);
       setStatus(d.status);
       // Demo mode credits instantly — reflect the new balance right away.
@@ -110,14 +115,14 @@ const DepositModal = ({ onClose }: Props) => {
   };
 
   const copyAddress = () => {
-    if (!deposit) return;
+    if (!deposit || !deposit.address) return;
     navigator.clipboard.writeText(deposit.address).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });
   };
 
-  const qrUrl = deposit
+  const qrUrl = deposit && deposit.address
     ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(deposit.address)}`
     : '';
 

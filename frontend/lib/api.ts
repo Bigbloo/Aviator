@@ -183,12 +183,13 @@ export const getCryptoCurrencies = async (): Promise<CryptoCurrency[]> => {
 
 export interface CryptoDeposit {
   depositId: string;
-  address: string;
+  address: string | null;
   amount: number;     // USDT value credited
-  payAmount: number;  // amount to send, in the chosen crypto
+  payAmount: number | null;  // amount to send, in the chosen crypto
   payCurrency: string;
   network: string;
   status: string;     // waiting | confirming | finished | failed
+  invoiceUrl?: string | null; // hosted payment page (Plisio): redirect here
   mock?: boolean;
 }
 

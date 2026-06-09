@@ -30,14 +30,15 @@ module.exports = {
   available: () => !!KEY,
   supports: (g) => g in NATIVE,
 
-  async createDeposit({ amount, genericCode, orderId }) {
+  // Hosted-invoice flow: the player pays on Plisio's secure page (picks the
+  // crypto + network there). Returns an invoiceUrl the frontend redirects to.
+  async createDeposit({ amount, orderId }) {
     const params = new URLSearchParams({
       api_key: KEY,
       order_number: orderId,
       order_name: 'Aviator deposit',
       source_currency: 'USD',
       source_amount: String(amount),
-      currency: NATIVE[genericCode],
       callback_url: callbackUrl(),
       expire_min: '30',
     });
@@ -48,8 +49,8 @@ module.exports = {
     }
     const data = d.data;
     return {
-      address: data.wallet_hash,
-      payAmount: Number(data.amount),
+      address: data.wallet_hash || null,   // null in hosted mode (no white-label)
+      payAmount: data.amount ? Number(data.amount) : null,
       paymentId: String(data.txn_id),
       invoiceUrl: data.invoice_url,
     };
