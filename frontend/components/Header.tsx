@@ -30,15 +30,18 @@ const Header = () => {
 
   return (
     <>
-      <PromoBanner onClaim={() => setShowAuth(true)} />
-
-      <header className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#1b1c1d] border-b border-black/40 gap-2">
+      <header className="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 bg-[#1b1c1d] border-b border-black/40">
         {/* Logo */}
         <button onClick={() => setShowAuth(true)} className="flex items-center shrink-0" title="Aviator">
           <span className="text-[#e50539] font-black italic text-xl sm:text-2xl tracking-tight select-none drop-shadow-[0_0_8px_rgba(229,5,57,0.5)]">
             Aviator
           </span>
         </button>
+
+        {/* Promo banner — centered between the logo and the wallet */}
+        <div className="flex-1 min-w-0 flex justify-center">
+          <PromoBanner onClaim={() => setShowAuth(true)} />
+        </div>
 
         {/* Balance + actions */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">

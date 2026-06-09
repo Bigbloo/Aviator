@@ -29,30 +29,25 @@ const PromoBanner = ({ onClaim }: { onClaim?: () => void }) => {
   }, []);
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-black">
-      <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1.5">
-        {/* Scrolling message */}
-        <div className="flex-1 overflow-hidden">
-          <div className="inline-flex whitespace-nowrap will-change-transform animate-[marquee_22s_linear_infinite] font-black text-xs sm:text-sm uppercase tracking-wide">
-            <span className="px-2">{MSG}</span>
-            <span className="px-2">{MSG}</span>
-          </div>
+    <button
+      onClick={onClaim}
+      title="Réclamer 50 USDT"
+      className="group flex items-center gap-2 w-full max-w-md min-w-0 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-black pl-3 pr-1.5 py-1 overflow-hidden ring-1 ring-amber-300/40 active:scale-[0.99] transition"
+    >
+      {/* Scrolling message */}
+      <div className="flex-1 overflow-hidden min-w-0">
+        <div className="inline-flex whitespace-nowrap will-change-transform animate-[marquee_20s_linear_infinite] font-black text-[11px] sm:text-xs uppercase tracking-wide">
+          <span className="px-2">{MSG}</span>
+          <span className="px-2">{MSG}</span>
         </div>
-
-        {/* Prominent countdown */}
-        <span className="shrink-0 flex items-center gap-1.5 bg-black text-white rounded-lg px-3 py-1 text-base sm:text-lg font-black tabular-nums shadow-md ring-1 ring-white/20">
-          <span className="text-amber-400 text-sm animate-pulse">⏱</span>
-          {fmt(left)}
-        </span>
-
-        <button
-          onClick={onClaim}
-          className="shrink-0 bg-black text-white text-[11px] sm:text-xs font-bold px-3 py-1.5 rounded-full hover:bg-gray-800 transition active:scale-95 whitespace-nowrap"
-        >
-          RÉCLAMER
-        </button>
       </div>
-    </div>
+
+      {/* Prominent countdown */}
+      <span className="shrink-0 flex items-center gap-1 bg-black text-white rounded-full px-2.5 py-1 text-sm sm:text-base font-black tabular-nums ring-1 ring-white/20">
+        <span className="text-amber-400 text-[11px] animate-pulse">⏱</span>
+        {fmt(left)}
+      </span>
+    </button>
   );
 };
 
