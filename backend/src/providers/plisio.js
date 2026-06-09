@@ -69,9 +69,11 @@ module.exports = {
       if (!d || d.status !== 'success' || !d.data) return null;
       const st = d.data.status;
       const orderId = body.order_number || d.data.order_number;
+      // Credit only on a clean 'completed' (within Plisio's underpayment
+      // tolerance). 'mismatch' (under/overpayment) stays pending for review.
       return {
         orderId,
-        paid: ['completed', 'mismatch'].includes(st),
+        paid: st === 'completed',
         failed: ['expired', 'cancelled', 'error'].includes(st),
       };
     } catch (e) {
