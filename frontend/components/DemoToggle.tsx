@@ -46,7 +46,10 @@ const DemoToggle = () => {
       if (!token) return;
       const next = !isDemoLocal();
       localStorage.setItem(DEMO_FLAG_KEY, next ? 'true' : 'false');
-      showFlash(next ? '🟡 DÉMO admin (cette session)' : '🟢 Mode réel');
+      showFlash(next ? '🟡 DÉMO admin…' : '🟢 Mode réel…');
+      // Reload so the session (and its balance) swaps cleanly between the
+      // isolated demo account and the real account.
+      setTimeout(() => window.location.reload(), 600);
     } finally {
       setBusy(false);
     }

@@ -29,7 +29,6 @@ export default function Home() {
   useEffect(() => {
     const startAnon = async () => {
       const user = await createUser();
-      localStorage.setItem('aviator_userId', user.userId);
       setUserId(user.userId);
       setBalance(user.balance);
       setUsername(null);
@@ -42,8 +41,7 @@ export default function Home() {
       }
       try {
         const me = await getBalance();
-        const storedId = localStorage.getItem('aviator_userId');
-        if (storedId) setUserId(storedId);
+        if (me.userId) setUserId(me.userId);
         setBalance(me.balance);
         setUsername(me.username);
       } catch (err) {

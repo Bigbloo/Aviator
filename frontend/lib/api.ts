@@ -10,17 +10,24 @@
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
+// Two separate sessions so demo and real balances never mix: the demo session
+// (admin only) is fully isolated from the real account.
 const TOKEN_KEY = 'aviator_token';
+const DEMO_TOKEN_KEY = 'aviator_demo_token';
+const tokenKey = (): string =>
+  typeof window !== 'undefined' && localStorage.getItem('aviator_demo') === 'true'
+    ? DEMO_TOKEN_KEY
+    : TOKEN_KEY;
 
 export const getToken = (): string | null =>
-  typeof window === 'undefined' ? null : localStorage.getItem(TOKEN_KEY);
+  typeof window === 'undefined' ? null : localStorage.getItem(tokenKey());
 
 export const setToken = (token: string): void => {
-  if (typeof window !== 'undefined') localStorage.setItem(TOKEN_KEY, token);
+  if (typeof window !== 'undefined') localStorage.setItem(tokenKey(), token);
 };
 
 export const clearToken = (): void => {
-  if (typeof window !== 'undefined') localStorage.removeItem(TOKEN_KEY);
+  if (typeof window !== 'undefined') localStorage.removeItem(tokenKey());
 };
 
 /** Thrown when the server rejects our token (401) — caller should re-auth. */
@@ -117,12 +124,12 @@ export const createUser = async (): Promise<{ userId: string; balance: number; t
  * Fetches the current balance + username for the authenticated user.
  * Throws AuthError on 401 so the caller can re-create an anon session.
  */
-export const getBalance = async (): Promise<{ balance: number; username: string | null }> => {
+export const getBalance = async (): Promise<{ balance: number; username: string | null; userId: string | null }> => {
   const res = await fetch(`${BASE_URL}/api/balance`, { headers: authHeaders() });
   if (res.status === 401) throw new AuthError('Session expired');
   if (!res.ok) throw new Error('Failed to fetch balance');
   const data = await res.json();
-  return { balance: data.balance, username: data.username ?? null };
+  return { balance: data.balance, username: data.username ?? null, userId: data.userId ?? null };
 };
 
 /**
