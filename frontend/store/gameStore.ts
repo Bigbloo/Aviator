@@ -43,8 +43,10 @@ export interface GameState {
   setHasBet: (v: boolean) => void;
   setCashedOut: (v: boolean) => void;
   setLastResult: (r: { result: 'won' | 'lost'; payout: number } | null) => void;
-  // Win/loss popup
-  result: { id: number; won: boolean; amount: number } | null;
+  // Win/loss popup. `ts` is the first-fire time of the current burst so that
+  // near-simultaneous results (e.g. both slots of a double bet) coalesce into a
+  // single net figure instead of overwriting each other.
+  result: { id: number; won: boolean; amount: number; ts: number } | null;
   showResult: (won: boolean, amount: number) => void;
   clearResult: () => void;
   resetRound: () => void;
@@ -79,7 +81,18 @@ export const useGameStore = create<GameState>((set) => ({
   setHasBet: (v) => set({ hasBet: v }),
   setCashedOut: (v) => set({ cashedOut: v }),
   setLastResult: (r) => set({ lastResult: r }),
-  showResult: (won, amount) => set({ result: { id: Date.now() + Math.random(), won, amount } }),
+  showResult: (won, amount) =>
+    set((state) => {
+      const now = Date.now();
+      const prev = state.result;
+      // Coalesce results fired within the same round resolution (~500ms): sum
+      // signed amounts so a double bet shows the net outcome of both slots.
+      if (prev && now - prev.ts < 500) {
+        const net = (prev.won ? prev.amount : -prev.amount) + (won ? amount : -amount);
+        return { result: { id: now + Math.random(), won: net >= 0, amount: Math.abs(net), ts: prev.ts } };
+      }
+      return { result: { id: now + Math.random(), won, amount, ts: now } };
+    }),
   clearResult: () => set({ result: null }),
   resetRound: () =>
     set({
