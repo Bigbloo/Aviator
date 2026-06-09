@@ -26,6 +26,7 @@ const AuthModal = ({ onClose }: Props) => {
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [agree, setAgree] = useState(false);
 
   const canSubmit =
     mode === 'register'
@@ -35,7 +36,8 @@ const AuthModal = ({ onClose }: Props) => {
         password === passwordConfirm &&
         firstName.trim().length >= 1 &&
         lastName.trim().length >= 1 &&
-        address.trim().length >= 5
+        address.trim().length >= 5 &&
+        agree
       : identifier.trim().length >= 3 && password.length >= 1;
 
   const handleSubmit = async () => {
@@ -224,6 +226,22 @@ const AuthModal = ({ onClose }: Props) => {
               <p className="text-red-400 text-xs mt-1">Les mots de passe ne correspondent pas.</p>
             )}
           </div>
+        )}
+
+        {mode === 'register' && (
+          <label className="flex items-start gap-2 text-[11px] text-gray-400 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={agree}
+              onChange={(e) => setAgree(e.target.checked)}
+              className="mt-0.5 w-4 h-4 accent-orange-500 shrink-0"
+            />
+            <span>
+              Je certifie avoir <b className="text-gray-200">18 ans ou plus</b> et j’accepte les{' '}
+              <a href="/terms" target="_blank" className="underline text-orange-400">CGU</a> et la{' '}
+              <a href="/privacy" target="_blank" className="underline text-orange-400">Politique de confidentialité</a>.
+            </span>
+          </label>
         )}
 
         {error && <p className="text-red-400 text-sm text-center">{error}</p>}

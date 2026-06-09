@@ -363,6 +363,8 @@ const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
   console.log(`[Server] Aviator backend running on port ${PORT}`);
   console.log(`[Crypto] USDT payments mode: ${isMock() ? 'MOCK (no API key)' : 'LIVE (NOWPayments) — demo is admin-only per request'}`);
+  // Automatic DB backups
+  try { require('./backup').start(); } catch (e) { console.error('[Backup] init failed:', e.message); }
   // Start the game loop after a short delay
   setTimeout(startNewRound, WAITING_DURATION);
 });

@@ -17,7 +17,8 @@ let liveState = null;
 const setLiveState = (stateRef) => { liveState = stateRef; };
 
 /**
- * Generates a provably fair crash point using exponential distribution.
+ * Generates the round's crash point from an exponential distribution with a
+ * fixed house edge.
  */
 const generateCrashPoint = () => {
   const houseEdge = 0.05;

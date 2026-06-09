@@ -76,7 +76,7 @@ export default function Home() {
 
       <main className="flex-1 w-full p-2 gap-2
         grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)_320px]
-        lg:h-[calc(100vh-56px)]">
+        lg:h-[calc(100vh-88px)]">
 
         {/* LEFT — All Bets sidebar (desktop only here) */}
         <aside className="hidden lg:block lg:h-full lg:min-h-0">
@@ -109,6 +109,15 @@ export default function Home() {
           <TopWinners />
         </aside>
       </main>
+
+      {/* Legal footer */}
+      <footer className="px-3 py-2 border-t border-black/40 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-gray-600">
+        <span className="font-black text-amber-500">18+</span>
+        <span>Jouer comporte des risques (dépendance, isolement, endettement).</span>
+        <a href="/terms" className="hover:text-gray-400">CGU</a>
+        <a href="/privacy" className="hover:text-gray-400">Confidentialité</a>
+        <a href="/responsible-gambling" className="hover:text-gray-400">Jeu responsable</a>
+      </footer>
     </div>
   );
 }

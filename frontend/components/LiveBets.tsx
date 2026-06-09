@@ -235,11 +235,6 @@ const LiveBets = () => {
           </>
         )}
       </div>
-
-      <div className="px-3 py-2 border-t border-black/30 flex items-center gap-1.5">
-        <span className="text-emerald-400 text-[10px]">🛡️</span>
-        <span className="text-gray-500 text-[10px]">Provably Fair</span>
-      </div>
     </div>
   );
 };

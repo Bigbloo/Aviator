@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import DemoToggle from '@/components/DemoToggle';
 import ResultPopup from '@/components/ResultPopup';
+import AgeGate from '@/components/AgeGate';
 
 export const metadata: Metadata = {
   title: 'Aviator — Crash Game',
@@ -27,6 +28,7 @@ export default function RootLayout({
         {children}
         <ResultPopup />
         <DemoToggle />
+        <AgeGate />
       </body>
     </html>
   );
