@@ -354,7 +354,17 @@ const adminRejectWithdrawal = (req, res) => {
   return res.json({ id: w.id, status: 'rejected', refunded: w.amount });
 };
 
+// ── ADMIN: reset all balances to 0 (test/maintenance) ────────────────────────
+const adminResetBalances = (req, res) => {
+  if (!req.body || req.body.confirm !== true) {
+    return res.status(400).json({ error: 'Confirmation requise ({ "confirm": true }).' });
+  }
+  const info = db.prepare('UPDATE users SET balance = 0').run();
+  console.log(`[Admin] Reset balances of ${info.changes} users to 0`);
+  return res.json({ reset: info.changes });
+};
+
 module.exports = {
   createDeposit, getDeposit, handleIpn, mockConfirm, createWithdrawal, listCurrencies,
-  adminListWithdrawals, adminApproveWithdrawal, adminRejectWithdrawal,
+  adminListWithdrawals, adminApproveWithdrawal, adminRejectWithdrawal, adminResetBalances,
 };

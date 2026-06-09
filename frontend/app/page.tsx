@@ -8,7 +8,7 @@
 
 import { useEffect } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import { createUser, getBalance, getToken, AuthError } from '@/lib/api';
+import { createUser, getBalance, getToken, AuthError, isDemoLocal, createCryptoDeposit } from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
 import Header from '@/components/Header';
 import HistoryBar from '@/components/HistoryBar';
@@ -51,7 +51,23 @@ export default function Home() {
       }
     };
 
-    init().catch(console.error);
+    // In demo, seed the isolated demo account with a play bankroll so it's
+    // clearly funded (and distinct from the real account).
+    const fundDemoIfNeeded = async () => {
+      if (!isDemoLocal()) return;
+      try {
+        const me = await getBalance();
+        if (me.balance === 0) {
+          await createCryptoDeposit(1000, 'usdttrc20');
+          const after = await getBalance();
+          setBalance(after.balance);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+
+    init().then(fundDemoIfNeeded).catch(console.error);
   }, []);
 
   return (
