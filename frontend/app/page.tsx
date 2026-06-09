@@ -58,7 +58,7 @@ export default function Home() {
       try {
         const me = await getBalance();
         if (me.balance === 0) {
-          await createCryptoDeposit(1000, 'usdttrc20');
+          await createCryptoDeposit(1000, 'sol');
           const after = await getBalance();
           setBalance(after.balance);
         }

@@ -30,7 +30,7 @@ const DepositModal = ({ onClose }: Props) => {
   const { setBalance } = useGameStore();
   const [amount, setAmount] = useState(5);
   const [currencies, setCurrencies] = useState<CryptoCurrency[]>([]);
-  const [payCurrency, setPayCurrency] = useState('usdttrc20');
+  const [payCurrency, setPayCurrency] = useState('sol');
   const [deposit, setDeposit] = useState<CryptoDeposit | null>(null);
   const [status, setStatus] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -181,7 +181,7 @@ const DepositModal = ({ onClose }: Props) => {
                 onChange={(e) => setPayCurrency(e.target.value)}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
               >
-                {(currencies.length ? currencies : [{ code: 'usdttrc20', name: 'USDT', network: 'TRC-20 (Tron)' }]).map((c) => (
+                {(currencies.length ? currencies : [{ code: 'sol', name: 'Solana', network: 'Solana' }]).map((c) => (
                   <option key={c.code} value={c.code}>
                     {c.name} — {c.network}
                   </option>

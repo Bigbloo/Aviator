@@ -24,7 +24,7 @@ const provider = require('../providers');
 const MIN_DEPOSIT = 1;            // USD (Plisio enforces its own per-currency min)
 const MIN_WITHDRAW = 10;          // USDT
 const MAX_AUTO_WITHDRAW = 1000;   // above this, hold for manual review (anti-abuse/AML)
-const PAY_CURRENCY = 'usdttrc20';
+const PAY_CURRENCY = 'sol';
 
 // TRC-20 address: base58, starts with 'T', 34 chars total.
 const TRC20_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
