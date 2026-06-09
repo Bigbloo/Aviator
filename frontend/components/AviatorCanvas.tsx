@@ -19,6 +19,68 @@
 import { useEffect, useRef } from 'react';
 import { useGameStore } from '@/store/gameStore';
 
+/**
+ * Draws a stylized red prop-plane silhouette (Aviator-style) with the nose at
+ * (x, y), pointing up-right along the flight path. `s` scales it to the canvas.
+ */
+function drawPlane(ctx: CanvasRenderingContext2D, x: number, y: number, s: number) {
+  const BODY = '#e8112d';
+  const DARK = '#9c0f20';
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(-0.22);
+  ctx.scale(s, s);
+
+  // Tail fin (back-left)
+  ctx.fillStyle = DARK;
+  ctx.beginPath();
+  ctx.moveTo(-22, 3);
+  ctx.lineTo(-32, -9);
+  ctx.lineTo(-15, 1);
+  ctx.closePath();
+  ctx.fill();
+
+  // Lower wing
+  ctx.beginPath();
+  ctx.moveTo(0, 4);
+  ctx.lineTo(-16, 22);
+  ctx.lineTo(11, 6);
+  ctx.closePath();
+  ctx.fill();
+
+  // Upper wing / cockpit canopy
+  ctx.fillStyle = BODY;
+  ctx.beginPath();
+  ctx.moveTo(-2, -4);
+  ctx.lineTo(-12, -18);
+  ctx.lineTo(9, -5);
+  ctx.closePath();
+  ctx.fill();
+
+  // Fuselage (tail -> nose)
+  ctx.beginPath();
+  ctx.moveTo(-24, 4);
+  ctx.bezierCurveTo(-6, -4, 20, -5, 32, 1);
+  ctx.bezierCurveTo(20, 8, -6, 9, -24, 5);
+  ctx.closePath();
+  ctx.fill();
+
+  // Nose hub
+  ctx.fillStyle = DARK;
+  ctx.beginPath();
+  ctx.ellipse(31, 1, 3, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Spinning propeller (motion-blur ellipse)
+  ctx.strokeStyle = 'rgba(232,17,45,0.65)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(34, 1, 2, 12, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
 const AviatorCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
@@ -139,11 +201,10 @@ const AviatorCanvas = () => {
 
         // Airplane at the tip — clamped inside the plot so it never leaves
         if (!crashed) {
-          const ax = Math.min(Math.max(tip.x, originX), W - PAD.right - 6);
-          const ay = Math.min(Math.max(tip.y, PAD.top + 6), originY);
-          ctx.font = '28px serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('✈️', ax, ay);
+          const ax = Math.min(Math.max(tip.x, originX + 20), W - PAD.right - 10);
+          const ay = Math.min(Math.max(tip.y, PAD.top + 14), originY - 4);
+          const planeScale = Math.min(1.5, Math.max(0.85, Math.min(W, H) / 300));
+          drawPlane(ctx, ax, ay, planeScale);
         }
       }
 
