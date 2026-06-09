@@ -56,6 +56,13 @@ let _curCacheAt = 0;
 
 const now = () => Math.floor(Date.now() / 1000);
 
+// A "registered" account has credentials (email + password). Anonymous sessions
+// don't — they can play but cannot move real money.
+const isRegistered = (userId) => {
+  const u = db.prepare('SELECT email, password_hash FROM users WHERE id = ?').get(userId);
+  return !!(u && u.email && u.password_hash);
+};
+
 // ── Deposit crediting (idempotent) ────────────────────────────────────────────
 /**
  * Marks a deposit finished and credits the user, exactly once. Guarded by the
@@ -133,6 +140,11 @@ const createDeposit = async (req, res) => {
       depositId: id, address, amount, payAmount: amount,
       payCurrency, network: networkOf(payCurrency), status: 'finished', demo: true, balance: bal,
     });
+  }
+
+  // Real deposits require a registered account (no anonymous money movement).
+  if (!isRegistered(userId)) {
+    return res.status(403).json({ error: 'Crée un compte pour déposer.', needAccount: true });
   }
 
   try {
@@ -238,12 +250,18 @@ const createWithdrawal = async (req, res) => {
     return res.status(400).json({ error: 'Adresse USDT TRC-20 invalide.' });
   }
 
+  // Admin demo (or local dev): instant simulated payout, no review queue.
+  const demo = isDemoRequest(req) || isMock();
+
+  // Real withdrawals require a registered account.
+  if (!demo && !isRegistered(userId)) {
+    return res.status(403).json({ error: 'Crée un compte pour retirer.', needAccount: true });
+  }
+
   const user = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
   if (!user) return res.status(404).json({ error: 'Compte introuvable.' });
   if (user.balance < amount) return res.status(400).json({ error: 'Solde insuffisant.' });
 
-  // Admin demo (or local dev): instant simulated payout, no review queue.
-  const demo = isDemoRequest(req) || isMock();
   const id = uuidv4();
 
   const debit = db.transaction(() => {

@@ -13,6 +13,7 @@ import WithdrawModal from './WithdrawModal';
 import AuthModal from './AuthModal';
 import PromoBanner from './PromoBanner';
 import { setMuted } from '@/lib/sound';
+import { isDemoLocal } from '@/lib/api';
 
 const Header = () => {
   const { balance, username } = useGameStore();
@@ -27,6 +28,12 @@ const Header = () => {
     setMutedState(next);
     setMuted(next);
   };
+
+  // Real money moves require a registered account (anonymous players must sign
+  // up first). Admin demo sessions are exempt.
+  const requireAccount = () => !!username || isDemoLocal();
+  const goDeposit = () => (requireAccount() ? setShowDeposit(true) : setShowAuth(true));
+  const goWithdraw = () => (requireAccount() ? setShowWithdraw(true) : setShowAuth(true));
 
   return (
     <>
@@ -53,7 +60,7 @@ const Header = () => {
               {balance.toFixed(2)} <span className="text-gray-400 text-xs font-semibold">USDT</span>
             </span>
             <button
-              onClick={() => setShowDeposit(true)}
+              onClick={goDeposit}
               className="bg-[#28a909] hover:bg-[#23950a] text-white text-xs sm:text-sm font-bold px-3 py-1.5 rounded-full transition active:scale-95 whitespace-nowrap"
               title="Déposer"
             >
@@ -91,13 +98,13 @@ const Header = () => {
                     <span className="truncate">{username || 'Créer un compte'}</span>
                   </button>
                   <button
-                    onClick={() => { setShowDeposit(true); setMenuOpen(false); }}
+                    onClick={() => { goDeposit(); setMenuOpen(false); }}
                     className="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-[#2c2d30] flex items-center gap-2"
                   >
                     💰 Déposer
                   </button>
                   <button
-                    onClick={() => { setShowWithdraw(true); setMenuOpen(false); }}
+                    onClick={() => { goWithdraw(); setMenuOpen(false); }}
                     className="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-[#2c2d30] flex items-center gap-2"
                   >
                     💸 Retirer
