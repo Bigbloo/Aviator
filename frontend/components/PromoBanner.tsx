@@ -1,61 +1,53 @@
 /**
  * PromoBanner.tsx
- * Dynamic promotional slider under the top bar: rotating "50 USDT OFFERT"
- * messages with a live countdown timer to create urgency.
+ * Promotional bar pinned at the very top: a continuously scrolling (marquee)
+ * "50 USDT OFFERT" message with a prominent live countdown timer.
  */
 
 'use client';
 
 import { useEffect, useState } from 'react';
 
-const SLIDES = [
-  { icon: '🎁', text: '50 USDT OFFERTS à l’inscription' },
-  { icon: '🚀', text: 'Bonus de bienvenue : 50 USDT gratuits' },
-  { icon: '🔥', text: 'Offre limitée — réclame tes 50 USDT' },
-];
-
 // Rolling 15-minute countdown, synced to the clock so it never stalls.
 const WINDOW = 15 * 60;
-const remainingSeconds = () => WINDOW - (Math.floor(Date.now() / 1000) % WINDOW);
-const fmt = (s: number) => {
-  const m = Math.floor(s / 60).toString().padStart(2, '0');
-  const sec = Math.floor(s % 60).toString().padStart(2, '0');
-  return `${m}:${sec}`;
-};
+const remaining = () => WINDOW - (Math.floor(Date.now() / 1000) % WINDOW);
+const fmt = (s: number) =>
+  `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+const SEP = '  •  ';
+const MSG =
+  `🎁 50 USDT OFFERTS à l’inscription${SEP}🚀 Bonus de bienvenue : 50 USDT gratuits${SEP}🔥 Offre limitée — réclame tes 50 USDT${SEP}`;
 
 const PromoBanner = ({ onClaim }: { onClaim?: () => void }) => {
-  const [i, setI] = useState(0);
   const [left, setLeft] = useState(WINDOW);
 
   useEffect(() => {
-    const tick = () => setLeft(remainingSeconds());
+    const tick = () => setLeft(remaining());
     tick();
     const t = setInterval(tick, 1000);
     return () => clearInterval(t);
   }, []);
 
-  useEffect(() => {
-    const r = setInterval(() => setI((v) => (v + 1) % SLIDES.length), 4000);
-    return () => clearInterval(r);
-  }, []);
-
-  const s = SLIDES[i];
-
   return (
-    <div className="relative overflow-hidden bg-gradient-to-r from-amber-500 via-orange-500 to-red-500">
-      {/* shimmer */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-[shimmer_2.5s_linear_infinite]" />
-      <div className="relative flex items-center justify-center gap-2 sm:gap-3 px-3 py-1.5 text-black">
-        <span key={i} className="flex items-center gap-2 text-xs sm:text-sm font-black animate-[fadeIn_0.4s_ease] min-w-0">
-          <span className="text-base shrink-0">{s.icon}</span>
-          <span className="uppercase tracking-wide truncate">{s.text}</span>
+    <div className="relative overflow-hidden bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-black">
+      <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1.5">
+        {/* Scrolling message */}
+        <div className="flex-1 overflow-hidden">
+          <div className="inline-flex whitespace-nowrap will-change-transform animate-[marquee_22s_linear_infinite] font-black text-xs sm:text-sm uppercase tracking-wide">
+            <span className="px-2">{MSG}</span>
+            <span className="px-2">{MSG}</span>
+          </div>
+        </div>
+
+        {/* Prominent countdown */}
+        <span className="shrink-0 flex items-center gap-1.5 bg-black text-white rounded-lg px-3 py-1 text-base sm:text-lg font-black tabular-nums shadow-md ring-1 ring-white/20">
+          <span className="text-amber-400 text-sm animate-pulse">⏱</span>
+          {fmt(left)}
         </span>
-        <span className="flex items-center gap-1 bg-black/25 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums shrink-0">
-          ⏱ {fmt(left)}
-        </span>
+
         <button
           onClick={onClaim}
-          className="bg-black text-white text-[11px] font-bold px-3 py-1 rounded-full hover:bg-gray-800 transition active:scale-95 whitespace-nowrap shrink-0"
+          className="shrink-0 bg-black text-white text-[11px] sm:text-xs font-bold px-3 py-1.5 rounded-full hover:bg-gray-800 transition active:scale-95 whitespace-nowrap"
         >
           RÉCLAMER
         </button>

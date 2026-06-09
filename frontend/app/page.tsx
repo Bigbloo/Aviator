@@ -76,7 +76,7 @@ export default function Home() {
 
       <main className="flex-1 w-full p-2 gap-2
         grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)_320px]
-        lg:h-[calc(100vh-56px)]">
+        lg:h-[calc(100vh-94px)]">
 
         {/* LEFT — All Bets sidebar (desktop only here) */}
         <aside className="hidden lg:block lg:h-full lg:min-h-0">

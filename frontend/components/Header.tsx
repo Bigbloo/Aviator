@@ -30,6 +30,8 @@ const Header = () => {
 
   return (
     <>
+      <PromoBanner onClaim={() => setShowAuth(true)} />
+
       <header className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#1b1c1d] border-b border-black/40 gap-2">
         {/* Logo */}
         <button onClick={() => setShowAuth(true)} className="flex items-center shrink-0" title="Aviator">
@@ -101,8 +103,6 @@ const Header = () => {
           </div>
         </div>
       </header>
-
-      <PromoBanner onClaim={() => setShowAuth(true)} />
 
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
       {showWithdraw && <WithdrawModal onClose={() => setShowWithdraw(false)} />}
