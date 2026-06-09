@@ -14,9 +14,7 @@ const callbackUrl = () => (process.env.PUBLIC_API_URL || '') + '/api/crypto/ipn'
 // invoice creation. To add USDT TRC-20, enable "Tether TRC-20" in Plisio and
 // add `usdttrc20: 'USDT_TRX'` here.
 const NATIVE = {
-  usdterc20: 'USDT', // the account's "USDT" chip = ERC-20
   btc: 'BTC',
-  eth: 'ETH',
   ltc: 'LTC',
   xmr: 'XMR',
   sol: 'SOL',
