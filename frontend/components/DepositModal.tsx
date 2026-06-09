@@ -23,12 +23,12 @@ interface Props {
   onClose: () => void;
 }
 
-const presets = [15, 25, 50, 100, 200];
-const MIN_DEPOSIT = 15;
+const presets = [2, 5, 10, 25, 50];
+const MIN_DEPOSIT = 1;
 
 const DepositModal = ({ onClose }: Props) => {
   const { setBalance } = useGameStore();
-  const [amount, setAmount] = useState(20);
+  const [amount, setAmount] = useState(5);
   const [currencies, setCurrencies] = useState<CryptoCurrency[]>([]);
   const [payCurrency, setPayCurrency] = useState('usdttrc20');
   const [deposit, setDeposit] = useState<CryptoDeposit | null>(null);

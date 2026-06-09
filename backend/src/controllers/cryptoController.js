@@ -21,7 +21,7 @@ const { isDemoRequest } = require('../middleware/auth');
 const provider = require('../providers');
 
 // Tunables
-const MIN_DEPOSIT = 15;           // USDT (NOWPayments min for usdttrc20 ≈ 11 + margin)
+const MIN_DEPOSIT = 1;            // USD (Plisio enforces its own per-currency min)
 const MIN_WITHDRAW = 10;          // USDT
 const MAX_AUTO_WITHDRAW = 1000;   // above this, hold for manual review (anti-abuse/AML)
 const PAY_CURRENCY = 'usdttrc20';
