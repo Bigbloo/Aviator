@@ -106,24 +106,23 @@ const LiveBets = () => {
   const myWon = myBets.reduce((a, b) => a + (b.status === 'won' ? b.payout ?? 0 : 0), 0);
   const myNet = myBets.reduce((a, b) => a + ((b.payout ?? 0) - (b.status === 'pending' ? 0 : b.betAmount)), 0);
 
-  const Tab = ({ id, label }: { id: 'all' | 'my'; label: string }) => (
-    <button
-      onClick={() => setTab(id)}
-      className={`flex-1 py-1.5 rounded-full text-xs font-bold transition ${
-        tab === id ? 'bg-[#3a3b3e] text-white' : 'text-gray-400'
-      }`}
-    >
-      {label}
-    </button>
-  );
-
   return (
     <div className="bg-[#1b1c1d] rounded-2xl border border-black/30 overflow-hidden flex flex-col lg:h-full">
       {/* Tabs */}
       <div className="p-2 border-b border-black/30">
         <div className="flex bg-[#101112] rounded-full p-0.5">
-          <Tab id="all" label="All Bets" />
-          <Tab id="my" label="My Bets" />
+          {(['all', 'my'] as const).map((id) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              className={`flex-1 py-1.5 rounded-full text-xs font-bold transition touch-manipulation ${
+                tab === id ? 'bg-[#3a3b3e] text-white' : 'text-gray-400'
+              }`}
+            >
+              {id === 'all' ? 'All Bets' : 'My Bets'}
+            </button>
+          ))}
         </div>
       </div>
 
