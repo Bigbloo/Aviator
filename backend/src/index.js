@@ -16,7 +16,7 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const gameRoutes = require('./routes/gameRoutes');
 const cryptoRoutes = require('./routes/cryptoRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const { isMock } = require('./config');
+const { isMock, providerName } = require('./config');
 const { generateCrashPoint, setLiveState } = require('./controllers/gameController');
 const db = require('./db/database');
 const topWins = require('./topWins');
@@ -362,7 +362,7 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
   console.log(`[Server] Aviator backend running on port ${PORT}`);
-  console.log(`[Crypto] USDT payments mode: ${isMock() ? 'MOCK (no API key)' : 'LIVE (NOWPayments) — demo is admin-only per request'}`);
+  console.log(`[Crypto] provider=${providerName} | mode: ${isMock() ? 'MOCK (no key)' : 'LIVE'} — demo is admin-only per request`);
   // Automatic DB backups
   try { require('./backup').start(); } catch (e) { console.error('[Backup] init failed:', e.message); }
   // Start the game loop after a short delay

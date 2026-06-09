@@ -16,12 +16,9 @@ const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db/database');
 
-const API = 'https://api.nowpayments.io/v1';
 const { isMock } = require('../config');
 const { isDemoRequest } = require('../middleware/auth');
-const API_KEY = process.env.NOWPAYMENTS_API_KEY;
-const IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
-const PAYOUT_KEY = process.env.NOWPAYMENTS_PAYOUT_KEY;
+const provider = require('../providers');
 
 // Tunables
 const MIN_DEPOSIT = 15;           // USDT (NOWPayments min for usdttrc20 ≈ 11 + margin)
@@ -50,9 +47,6 @@ const POPULAR = [
 ];
 const POPULAR_CODES = new Set(POPULAR.map((c) => c.code));
 const networkOf = (code) => (POPULAR.find((c) => c.code === code) || {}).network || code;
-
-let _curCache = null;
-let _curCacheAt = 0;
 
 const now = () => Math.floor(Date.now() / 1000);
 
@@ -92,20 +86,10 @@ const creditDeposit = (depositId, paidInCrypto) => {
 };
 
 // ── GET /api/crypto/currencies  (auth) — pay-in options ───────────────────────
-const listCurrencies = async (req, res) => {
-  if (isMock()) return res.json({ currencies: POPULAR });
-  try {
-    if (!_curCache || Date.now() - _curCacheAt > 3600 * 1000) {
-      const r = await fetch(`${API}/currencies`, { headers: { 'x-api-key': API_KEY } });
-      const d = await r.json();
-      _curCache = new Set((d.currencies || []).map((c) => String(c).toLowerCase()));
-      _curCacheAt = Date.now();
-    }
-    const available = POPULAR.filter((c) => _curCache.has(c.code));
-    return res.json({ currencies: available.length ? available : POPULAR });
-  } catch (e) {
-    return res.json({ currencies: POPULAR });
-  }
+const listCurrencies = (req, res) => {
+  // In mock/dev, offer all; otherwise only what the active provider maps.
+  const list = isMock() ? POPULAR : POPULAR.filter((c) => provider.supports(c.code));
+  return res.json({ currencies: list.length ? list : POPULAR });
 };
 
 // ── POST /api/crypto/deposit  (auth) ──────────────────────────────────────────
@@ -148,34 +132,20 @@ const createDeposit = async (req, res) => {
   }
 
   try {
-    const r = await fetch(`${API}/payment`, {
-      method: 'POST',
-      headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        price_amount: amount,
-        price_currency: 'usd',          // account unit ≈ USDT
-        pay_currency: payCurrency,
-        order_id: id,
-        ipn_callback_url: (process.env.PUBLIC_API_URL || '') + '/api/crypto/ipn',
-      }),
-    });
-    const data = await r.json();
-    if (!r.ok) {
-      console.error('[Crypto] deposit provider error', data);
-      return res.status(502).json({ error: data.message || 'Erreur du prestataire de paiement.' });
-    }
+    const out = await provider.createDeposit({ amount, genericCode: payCurrency, orderId: id });
     db.prepare(
       "INSERT INTO crypto_deposits (id, user_id, amount, currency, address, payment_id, status) VALUES (?,?,?,?,?,?,?)"
-    ).run(id, userId, amount, payCurrency, data.pay_address, String(data.payment_id), 'waiting');
+    ).run(id, userId, amount, payCurrency, out.address, out.paymentId, 'waiting');
     return res.json({
-      depositId: id, address: data.pay_address, amount,
-      payAmount: data.pay_amount, payCurrency,
-      network: data.network ? networkOf(payCurrency) : networkOf(payCurrency),
+      depositId: id, address: out.address, amount,
+      payAmount: out.payAmount, payCurrency,
+      network: networkOf(payCurrency),
+      invoiceUrl: out.invoiceUrl || null,
       status: 'waiting',
     });
   } catch (e) {
-    console.error('[Crypto] deposit error', e.message);
-    return res.status(502).json({ error: 'Impossible de créer le dépôt.' });
+    console.error(`[Crypto] deposit error (${provider.name}):`, e.message);
+    return res.status(502).json({ error: e.message || 'Impossible de créer le dépôt.' });
   }
 };
 
@@ -186,44 +156,30 @@ const getDeposit = (req, res) => {
   return res.json({ depositId: dep.id, status: dep.status, amount: dep.amount, received: dep.received, address: dep.address });
 };
 
-// ── POST /api/crypto/ipn  (public, HMAC-verified) ─────────────────────────────
-// NOWPayments signs the JSON body (keys sorted) with HMAC-SHA512(IPN_SECRET).
-const sortDeep = (obj) => {
-  if (Array.isArray(obj)) return obj.map(sortDeep);
-  if (obj && typeof obj === 'object') {
-    return Object.keys(obj).sort().reduce((acc, k) => { acc[k] = sortDeep(obj[k]); return acc; }, {});
-  }
-  return obj;
-};
-
-const handleIpn = (req, res) => {
+// ── POST /api/crypto/ipn  (public) — provider callback (verified per provider) ─
+const handleIpn = async (req, res) => {
   if (isMock()) return res.status(404).json({ error: 'Not found' });
   try {
-    const sig = req.headers['x-nowpayments-sig'];
-    const expected = crypto.createHmac('sha512', IPN_SECRET)
-      .update(JSON.stringify(sortDeep(req.body)))
-      .digest('hex');
-    if (!sig || sig !== expected) {
-      console.warn('[Crypto] IPN bad signature');
-      return res.status(400).json({ error: 'bad signature' });
+    const result = await provider.parseCallback(req);
+    if (!result || !result.orderId) {
+      console.warn(`[Callback:${provider.name}] rejected (invalid signature/status)`);
+      return res.status(400).json({ error: 'invalid callback' });
     }
-    const { order_id, payment_status, actually_paid, pay_amount } = req.body;
-    console.log(`[IPN] order=${order_id} status=${payment_status} paid=${actually_paid}`);
-    // Finished/confirmed → credit (idempotent). Failed/expired → mark failed.
-    if (['finished', 'confirmed'].includes(payment_status)) {
-      const r = creditDeposit(order_id, actually_paid || pay_amount);
-      if (r.credited) console.log(`[IPN] credited ${r.amount} USDT to user ${r.userId}`);
-    } else if (['failed', 'expired', 'refunded'].includes(payment_status)) {
+    console.log(`[Callback:${provider.name}] order=${result.orderId} paid=${result.paid} failed=${result.failed}`);
+    if (result.paid) {
+      const r = creditDeposit(result.orderId, null);
+      if (r.credited) console.log(`[Callback] credited ${r.amount} USDT to user ${r.userId}`);
+    } else if (result.failed) {
       db.prepare("UPDATE crypto_deposits SET status='failed', updated_at=? WHERE id=? AND status!='finished'")
-        .run(now(), order_id);
+        .run(now(), result.orderId);
     } else {
       db.prepare("UPDATE crypto_deposits SET status='confirming', updated_at=? WHERE id=? AND status='waiting'")
-        .run(now(), order_id);
+        .run(now(), result.orderId);
     }
     return res.json({ received: true });
   } catch (e) {
-    console.error('[Crypto] IPN error', e.message);
-    return res.status(400).json({ error: 'ipn error' });
+    console.error('[Crypto] callback error', e.message);
+    return res.status(400).json({ error: 'callback error' });
   }
 };
 
@@ -292,28 +248,16 @@ const createWithdrawal = async (req, res) => {
   });
 };
 
-// ── Shared payout executor (used by admin approval) ───────────────────────────
-// Sends the funds on-chain (real NOWPayments payout, or a mock txid). Returns
-// { ok, status, txid?, error? }. Does NOT touch the balance (already debited).
-const executePayout = async (w) => {
+// ── Shared payout executor (used by the legacy auto-approve) ───────────────────
+// Withdrawals are paid manually now (admin "mark-paid" with the on-chain txid),
+// so automated payout isn't wired to a provider. Mock instant-completes; real
+// returns an error so the admin uses the manual flow.
+const executePayout = async () => {
   if (isMock()) {
     const txid = 'mock_tx_' + crypto.randomBytes(16).toString('hex');
     return { ok: true, status: 'completed', txid };
   }
-  if (!PAYOUT_KEY) return { ok: false, error: 'payout key missing' };
-  try {
-    const r = await fetch(`${API}/payout`, {
-      method: 'POST',
-      headers: { 'x-api-key': PAYOUT_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ withdrawals: [{ address: w.address, currency: PAY_CURRENCY, amount: w.amount }] }),
-    });
-    const data = await r.json();
-    if (!r.ok) return { ok: false, error: data.message || 'payout failed' };
-    const payoutId = String(data.id || (data.withdrawals && data.withdrawals[0] && data.withdrawals[0].id) || '');
-    return { ok: true, status: 'processing', payoutId };
-  } catch (e) {
-    return { ok: false, error: e.message };
-  }
+  return { ok: false, error: 'paiement automatique indisponible — utilise « Marquer payé »' };
 };
 
 // ── ADMIN: GET /api/admin/withdrawals?status=pending_review ───────────────────
