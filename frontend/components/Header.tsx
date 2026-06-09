@@ -38,9 +38,11 @@ const Header = () => {
           </span>
         </button>
 
-        {/* Promo banner — between the logo and the wallet, nudged right */}
-        <div className="flex-1 min-w-0 flex justify-center pl-4 sm:pl-24">
-          <PromoBanner onClaim={() => setShowAuth(true)} />
+        {/* Promo banner — header center on desktop (no room on mobile, see below) */}
+        <div className="flex-1 min-w-0 flex justify-center sm:pl-20">
+          <div className="hidden sm:flex w-full justify-center min-w-0">
+            <PromoBanner onClaim={() => setShowAuth(true)} />
+          </div>
         </div>
 
         {/* Balance + actions */}
@@ -106,6 +108,11 @@ const Header = () => {
           </div>
         </div>
       </header>
+
+      {/* Promo banner — full-width strip under the header on mobile */}
+      <div className="sm:hidden px-2 py-1.5 bg-[#1b1c1d] border-b border-black/40">
+        <PromoBanner onClaim={() => setShowAuth(true)} />
+      </div>
 
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
       {showWithdraw && <WithdrawModal onClose={() => setShowWithdraw(false)} />}
