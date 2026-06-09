@@ -175,6 +175,28 @@ const makeBotBets = () => {
 };
 
 // ── Crash history (last 20 multipliers) ───────────────────────────────────────
+// ── Recover orphaned bets from an interrupted round (server restart) ──────────
+// A restart mid-round leaves bets stuck 'pending' (debited but never resolved).
+// Refund them so no player silently loses a stake to a redeploy/crash.
+try {
+  const orphans = db.prepare("SELECT id, user_id, bet_amount FROM bets WHERE status = 'pending'").all();
+  if (orphans.length) {
+    const refund = db.transaction(() => {
+      for (const b of orphans) {
+        db.prepare('UPDATE users SET balance = balance + ? WHERE id = ?').run(b.bet_amount, b.user_id);
+        db.prepare("INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)")
+          .run(uuidv4(), b.user_id, 'bet_refund', b.bet_amount);
+        db.prepare("UPDATE bets SET status = 'refunded' WHERE id = ?").run(b.id);
+      }
+      db.prepare("UPDATE rounds SET status = 'crashed', ended_at = strftime('%s','now') WHERE status = 'active'").run();
+    });
+    refund();
+    console.log(`[Recovery] Refunded ${orphans.length} orphaned pending bet(s) from a previous run`);
+  }
+} catch (e) {
+  console.error('[Recovery] orphaned-bet refund failed:', e.message);
+}
+
 let crashHistory = [];
 // On boot, load the last 20 crashed rounds from DB so history survives restarts
 try {
