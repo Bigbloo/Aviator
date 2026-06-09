@@ -20,7 +20,7 @@ const presets = [1, 2, 5, 10];
 const MIN_BET = 1;
 
 const BetPanel = ({ slot = 1 }: BetPanelProps) => {
-  const { userId, balance, phase, roundId, currentMultiplier, setBalance } = useGameStore();
+  const { userId, balance, phase, roundId, currentMultiplier, setBalance, showResult } = useGameStore();
 
   const [tab, setTab] = useState<'bet' | 'auto'>('bet');
   const [betAmount, setBetAmount] = useState(1);
@@ -38,6 +38,7 @@ const BetPanel = ({ slot = 1 }: BetPanelProps) => {
     }
     if (phase === 'crashed' && prevPhase.current === 'flying' && hasBet && !cashedOut) {
       setLastResult({ result: 'lost', payout: 0 });
+      showResult(false, betAmount);
     }
     prevPhase.current = phase;
   }, [phase, hasBet, cashedOut]);
@@ -72,6 +73,7 @@ const BetPanel = ({ slot = 1 }: BetPanelProps) => {
       setCashedOut(true);
       setBalance(result.balance);
       setLastResult({ result: 'won', payout: result.payout });
+      showResult(true, result.payout);
       playCashout();
     } catch (err) {
       console.error('[Cashout Error]', err);

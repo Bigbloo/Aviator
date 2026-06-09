@@ -98,6 +98,10 @@ const LiveBets = () => {
     if (tab === 'my') getMyBets().then(setMyBets).catch(() => {});
   }, [tab, userId]);
 
+  const myStaked = myBets.reduce((a, b) => a + b.betAmount, 0);
+  const myWon = myBets.reduce((a, b) => a + (b.status === 'won' ? b.payout ?? 0 : 0), 0);
+  const myNet = myBets.reduce((a, b) => a + ((b.payout ?? 0) - (b.status === 'pending' ? 0 : b.betAmount)), 0);
+
   const Tab = ({ id, label }: { id: 'all' | 'my'; label: string }) => (
     <button
       onClick={() => setTab(id)}
@@ -177,6 +181,24 @@ const LiveBets = () => {
             {username && myBets.length === 0 && (
               <p className="text-gray-600 text-xs text-center py-6 px-3">Aucun pari pour l’instant — place ta première mise !</p>
             )}
+            {myBets.length > 0 && (
+              <div className="grid grid-cols-3 gap-1 px-3 py-2 border-b border-black/30 text-center bg-[#161717]">
+                <div>
+                  <p className="text-[9px] uppercase text-gray-500">Misé</p>
+                  <p className="text-xs font-bold text-gray-300 tabular-nums">{myStaked.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] uppercase text-gray-500">Gagné</p>
+                  <p className="text-xs font-bold text-emerald-400 tabular-nums">{myWon.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] uppercase text-gray-500">Net</p>
+                  <p className={`text-xs font-bold tabular-nums ${myNet >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {myNet >= 0 ? '+' : ''}{myNet.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            )}
             {myBets.map((b) => {
               const won = b.status === 'won';
               const lost = b.status === 'lost';
@@ -189,7 +211,12 @@ const LiveBets = () => {
                 >
                   <span className="flex items-center gap-2 min-w-0 text-gray-400">
                     <span className="text-sm">{won ? '🟢' : lost ? '🔴' : '🕐'}</span>
-                    <span className="truncate">{fmtTime(b.createdAt)}</span>
+                    <span className="flex flex-col leading-tight min-w-0">
+                      <span className="truncate">{fmtTime(b.createdAt)}</span>
+                      {b.crashPoint != null && (
+                        <span className="text-[9px] text-gray-600">crash {b.crashPoint.toFixed(2)}×</span>
+                      )}
+                    </span>
                   </span>
                   <span className="text-right text-gray-300 font-mono tabular-nums pr-2 flex items-center justify-end gap-1.5">
                     {b.betAmount.toFixed(2)}

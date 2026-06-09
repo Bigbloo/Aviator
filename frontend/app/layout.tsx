@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import DemoToggle from '@/components/DemoToggle';
+import ResultPopup from '@/components/ResultPopup';
 
 export const metadata: Metadata = {
   title: 'Aviator — Crash Game',
@@ -24,6 +25,7 @@ export default function RootLayout({
     <html lang="fr">
       <body className="bg-gray-950 text-white antialiased">
         {children}
+        <ResultPopup />
         <DemoToggle />
       </body>
     </html>

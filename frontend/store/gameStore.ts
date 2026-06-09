@@ -40,6 +40,10 @@ export interface GameState {
   setHasBet: (v: boolean) => void;
   setCashedOut: (v: boolean) => void;
   setLastResult: (r: { result: 'won' | 'lost'; payout: number } | null) => void;
+  // Win/loss popup
+  result: { id: number; won: boolean; amount: number } | null;
+  showResult: (won: boolean, amount: number) => void;
+  clearResult: () => void;
   resetRound: () => void;
 }
 
@@ -56,6 +60,7 @@ export const useGameStore = create<GameState>((set) => ({
   hasBet: false,
   cashedOut: false,
   lastResult: null,
+  result: null,
 
   setUserId: (id) => set({ userId: id }),
   setUsername: (name) => set({ username: name }),
@@ -69,6 +74,8 @@ export const useGameStore = create<GameState>((set) => ({
   setHasBet: (v) => set({ hasBet: v }),
   setCashedOut: (v) => set({ cashedOut: v }),
   setLastResult: (r) => set({ lastResult: r }),
+  showResult: (won, amount) => set({ result: { id: Date.now() + Math.random(), won, amount } }),
+  clearResult: () => set({ result: null }),
   resetRound: () =>
     set({
       phase: 'waiting',

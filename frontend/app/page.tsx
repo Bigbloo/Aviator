@@ -71,7 +71,7 @@ export default function Home() {
 
         {/* CENTER — history + game + bet panels */}
         <section className="min-w-0 flex flex-col gap-2 lg:h-full lg:min-h-0">
-          <div className="rounded-2xl overflow-hidden border border-black/30 flex flex-col flex-1 min-h-[260px]">
+          <div className="rounded-2xl overflow-hidden border border-black/30 flex flex-col flex-1 min-h-[42vh] lg:min-h-[260px]">
             <HistoryBar />
             <div className="relative flex-1 min-h-0 bg-[#0d1117]">
               <AviatorCanvas />
