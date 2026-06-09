@@ -16,7 +16,7 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const gameRoutes = require('./routes/gameRoutes');
 const cryptoRoutes = require('./routes/cryptoRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const { MOCK: CRYPTO_MOCK } = require('./controllers/cryptoController');
+const { isDemo, isMock } = require('./config');
 const { generateCrashPoint, setLiveState } = require('./controllers/gameController');
 const db = require('./db/database');
 const { v4: uuidv4 } = require('uuid');
@@ -92,6 +92,9 @@ app.use('/api', adminRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: Date.now() }));
+
+// Public client config (drives the "DEMO" badge, etc.)
+app.get('/api/config', (req, res) => res.json({ demo: isDemo(), simulated: isMock() }));
 
 // ── Game Loop (Socket.IO) ─────────────────────────────────────────────────────
 /**
@@ -320,7 +323,7 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
   console.log(`[Server] Aviator backend running on port ${PORT}`);
-  console.log(`[Crypto] USDT payments mode: ${CRYPTO_MOCK ? 'MOCK (no API key)' : 'LIVE (NOWPayments)'}`);
+  console.log(`[Crypto] USDT payments mode: ${isDemo() ? 'DEMO (simulated, instant credit)' : isMock() ? 'MOCK (no API key)' : 'LIVE (NOWPayments)'}`);
   // Start the game loop after a short delay
   setTimeout(startNewRound, WAITING_DURATION);
 });

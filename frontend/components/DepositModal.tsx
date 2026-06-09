@@ -86,6 +86,8 @@ const DepositModal = ({ onClose }: Props) => {
       const d = await createCryptoDeposit(amount, payCurrency);
       setDeposit(d);
       setStatus(d.status);
+      // Demo mode credits instantly — reflect the new balance right away.
+      if (d.status === 'finished') await refreshBalance();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur lors du dépôt');
     } finally {

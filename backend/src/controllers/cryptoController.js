@@ -17,10 +17,10 @@ const { v4: uuidv4 } = require('uuid');
 const db = require('../db/database');
 
 const API = 'https://api.nowpayments.io/v1';
+const { isMock, isDemo, setDemo } = require('../config');
 const API_KEY = process.env.NOWPAYMENTS_API_KEY;
 const IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 const PAYOUT_KEY = process.env.NOWPAYMENTS_PAYOUT_KEY;
-const MOCK = !API_KEY;
 
 // Tunables
 const MIN_DEPOSIT = 15;           // USDT (NOWPayments min for usdttrc20 ≈ 11 + margin)
@@ -85,7 +85,7 @@ const creditDeposit = (depositId, paidInCrypto) => {
 
 // ── GET /api/crypto/currencies  (auth) — pay-in options ───────────────────────
 const listCurrencies = async (req, res) => {
-  if (MOCK) return res.json({ currencies: POPULAR });
+  if (isMock()) return res.json({ currencies: POPULAR });
   try {
     if (!_curCache || Date.now() - _curCacheAt > 3600 * 1000) {
       const r = await fetch(`${API}/currencies`, { headers: { 'x-api-key': API_KEY } });
@@ -117,11 +117,22 @@ const createDeposit = async (req, res) => {
 
   const id = uuidv4();
 
-  if (MOCK) {
-    const address = 'TMock' + crypto.randomBytes(15).toString('hex').slice(0, 29);
+  if (isMock()) {
+    const address = (isDemo() ? 'TDemo' : 'TMock') + crypto.randomBytes(15).toString('hex').slice(0, 29);
     db.prepare(
       "INSERT INTO crypto_deposits (id, user_id, amount, currency, address, payment_id, status) VALUES (?,?,?,?,?,?, 'waiting')"
-    ).run(id, userId, amount, payCurrency, address, 'mock_' + id);
+    ).run(id, userId, amount, payCurrency, address, (isDemo() ? 'demo_' : 'mock_') + id);
+
+    if (isDemo()) {
+      // Instant credit — no on-chain step in demo mode.
+      creditDeposit(id, amount);
+      const bal = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId).balance;
+      return res.json({
+        depositId: id, address, amount, payAmount: amount,
+        payCurrency, network: networkOf(payCurrency), status: 'finished', demo: true, balance: bal,
+      });
+    }
+
     return res.json({
       depositId: id, address, amount, payAmount: amount,
       payCurrency, network: networkOf(payCurrency), status: 'waiting', mock: true,
@@ -178,7 +189,7 @@ const sortDeep = (obj) => {
 };
 
 const handleIpn = (req, res) => {
-  if (MOCK) return res.status(404).json({ error: 'Not found' });
+  if (isMock()) return res.status(404).json({ error: 'Not found' });
   try {
     const sig = req.headers['x-nowpayments-sig'];
     const expected = crypto.createHmac('sha512', IPN_SECRET)
@@ -256,7 +267,7 @@ const createWithdrawal = async (req, res) => {
 // Sends the funds on-chain (real NOWPayments payout, or a mock txid). Returns
 // { ok, status, txid?, error? }. Does NOT touch the balance (already debited).
 const executePayout = async (w) => {
-  if (MOCK) {
+  if (isMock()) {
     const txid = 'mock_tx_' + crypto.randomBytes(16).toString('hex');
     return { ok: true, status: 'completed', txid };
   }
@@ -334,7 +345,17 @@ const adminRejectWithdrawal = (req, res) => {
   return res.json({ id: w.id, status: 'rejected', refunded: w.amount });
 };
 
+// ── ADMIN: demo mode toggle ───────────────────────────────────────────────────
+const adminGetConfig = (req, res) => res.json({ demo: isDemo(), simulated: isMock() });
+const adminSetDemo = (req, res) => {
+  const enabled = !!(req.body && req.body.enabled);
+  setDemo(enabled);
+  console.log(`[Config] DEMO mode -> ${isDemo()} (toggled via admin)`);
+  return res.json({ demo: isDemo(), simulated: isMock() });
+};
+
 module.exports = {
   createDeposit, getDeposit, handleIpn, mockConfirm, createWithdrawal, listCurrencies,
-  adminListWithdrawals, adminApproveWithdrawal, adminRejectWithdrawal, MOCK,
+  adminListWithdrawals, adminApproveWithdrawal, adminRejectWithdrawal,
+  adminGetConfig, adminSetDemo,
 };
