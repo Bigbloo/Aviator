@@ -6,13 +6,12 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import DepositModal from './DepositModal';
 import WithdrawModal from './WithdrawModal';
 import AuthModal from './AuthModal';
 import { setMuted } from '@/lib/sound';
-import { getConfig } from '@/lib/api';
 
 const Header = () => {
   const { balance, username } = useGameStore();
@@ -21,16 +20,6 @@ const Header = () => {
   const [showAuth, setShowAuth] = useState(false);
   const [muted, setMutedState] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [demo, setDemo] = useState(false);
-
-  // Poll the public config so the DEMO badge reflects a runtime toggle.
-  useEffect(() => {
-    let alive = true;
-    const load = () => getConfig().then((c) => alive && setDemo(c.demo)).catch(() => {});
-    load();
-    const id = setInterval(load, 15000);
-    return () => { alive = false; clearInterval(id); };
-  }, []);
 
   const toggleMute = () => {
     const next = !muted;
@@ -42,18 +31,11 @@ const Header = () => {
     <>
       <header className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#1b1c1d] border-b border-black/40 gap-2">
         {/* Logo */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button onClick={() => setShowAuth(true)} className="flex items-center" title="Aviator">
-            <span className="text-[#e50539] font-black italic text-xl sm:text-2xl tracking-tight select-none drop-shadow-[0_0_8px_rgba(229,5,57,0.5)]">
-              Aviator
-            </span>
-          </button>
-          {demo && (
-            <span className="bg-amber-500 text-black text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide">
-              Démo
-            </span>
-          )}
-        </div>
+        <button onClick={() => setShowAuth(true)} className="flex items-center shrink-0" title="Aviator">
+          <span className="text-[#e50539] font-black italic text-xl sm:text-2xl tracking-tight select-none drop-shadow-[0_0_8px_rgba(229,5,57,0.5)]">
+            Aviator
+          </span>
+        </button>
 
         {/* Balance + actions */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
