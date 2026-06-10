@@ -45,6 +45,11 @@ export const DEMO_FLAG_KEY = 'aviator_demo';
 const ADMIN_TOKEN_KEY = 'aviator_admin_token';
 export const isDemoLocal = (): boolean =>
   typeof window !== 'undefined' && localStorage.getItem(DEMO_FLAG_KEY) === 'true';
+// Leave the demo namespace. Called before real auth so the session token lands
+// in the real keyspace (otherwise a stuck demo flag isolates the login).
+export const exitDemo = (): void => {
+  if (typeof window !== 'undefined') localStorage.setItem(DEMO_FLAG_KEY, 'false');
+};
 const demoHeaders = (): Record<string, string> => {
   if (!isDemoLocal()) return {};
   const t = typeof window !== 'undefined' ? localStorage.getItem(ADMIN_TOKEN_KEY) : null;
@@ -77,6 +82,7 @@ export interface RegisterInput {
  * account so the balance is preserved.
  */
 export const register = async (input: RegisterInput): Promise<AuthResponse> => {
+  exitDemo(); // real credentials → operate on the real account, not the demo one
   const res = await fetch(`${BASE_URL}/api/register`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
@@ -128,6 +134,7 @@ export const resendVerification = async (): Promise<void> => {
  * Logs in with email-or-username + password (bcrypt-verified server-side).
  */
 export const login = async (identifier: string, password: string): Promise<AuthResponse> => {
+  exitDemo(); // real credentials → operate on the real account, not the demo one
   const res = await fetch(`${BASE_URL}/api/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
