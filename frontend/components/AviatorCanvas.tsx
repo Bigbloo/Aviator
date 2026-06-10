@@ -81,6 +81,27 @@ function drawPlane(ctx: CanvasRenderingContext2D, x: number, y: number, s: numbe
   ctx.restore();
 }
 
+/**
+ * Honest "tension" intensity in [0,1], derived purely from the LIVE multiplier
+ * the player already sees on screen. It drives presentation only — background
+ * warmth and haptic pulses. It never touches the multiplier, the crash point,
+ * or any game logic, so it cannot affect fairness or outcomes. The ramp is
+ * monotonic (higher multiplier = more intense), with no slow-downs or
+ * "false hope" shaping of the curve.
+ */
+function tensionFromMultiplier(mult: number): number {
+  const t = Math.min(1, Math.max(0, (mult - 1) / (5 - 1))); // 1x → 0, 5x → 1
+  return t * t * (3 - 2 * t); // smoothstep for a soft feel
+}
+
+/** Linear blend between two #rrggbb hex colors. f in [0,1]. */
+function mixHex(a: string, b: string, f: number): string {
+  const pa = [parseInt(a.slice(1, 3), 16), parseInt(a.slice(3, 5), 16), parseInt(a.slice(5, 7), 16)];
+  const pb = [parseInt(b.slice(1, 3), 16), parseInt(b.slice(3, 5), 16), parseInt(b.slice(5, 7), 16)];
+  const c = pa.map((v, i) => Math.round(v + (pb[i] - v) * f));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
 const AviatorCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
@@ -90,6 +111,8 @@ const AviatorCanvas = () => {
   // Optional plane sprite (public/plane.png). Falls back to the vector plane.
   const planeImg = useRef<HTMLImageElement | null>(null);
   const planeReady = useRef(false);
+  // Throttle for the optional haptic feedback (mobile only, opt-in by browser).
+  const lastHapticRef = useRef<number>(0);
 
   useEffect(() => {
     const img = new Image();
@@ -135,12 +158,48 @@ const AviatorCanvas = () => {
       if (phase === 'flying' && lastPhaseRef.current !== 'flying') {
         flyStartRef.current = performance.now();
       }
+      const prevPhase = lastPhaseRef.current;
       lastPhaseRef.current = phase;
 
+      // Honest tension intensity from the live multiplier (presentation only).
+      const tension = phase === 'flying' ? tensionFromMultiplier(mult) : 0;
+
       // ── Clear + background ──
+      // While flying, the background warms slightly as the multiplier the
+      // player already sees climbs. Pure presentation — no game logic touched.
       ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = '#0d1117';
+      ctx.fillStyle = mixHex('#0d1117', '#4a0f16', tension * 0.9);
       ctx.fillRect(0, 0, W, H);
+
+      // Warm vignette that grows with tension — darker, redder edges as the
+      // multiplier climbs. Presentation only.
+      if (tension > 0.01) {
+        const vg = ctx.createRadialGradient(
+          W / 2, H / 2, Math.min(W, H) * 0.2,
+          W / 2, H / 2, Math.max(W, H) * 0.75
+        );
+        vg.addColorStop(0, 'rgba(0,0,0,0)');
+        vg.addColorStop(1, `rgba(150,20,30,${(tension * 0.45).toFixed(3)})`);
+        ctx.fillStyle = vg;
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      // ── Haptic feedback (optional, mobile browsers that support it) ──
+      // Tied strictly to the visible multiplier; intensity and cadence rise
+      // with tension. Crash fires one distinct buzz. No-op where unsupported.
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        const now = performance.now();
+        if (phase === 'flying') {
+          // Pulse every 600ms→260ms as tension rises; pulse length 6→26ms.
+          const interval = 600 - tension * 340;
+          if (now - lastHapticRef.current >= interval) {
+            lastHapticRef.current = now;
+            navigator.vibrate(Math.round(6 + tension * 20));
+          }
+        } else if (phase === 'crashed' && prevPhase === 'flying') {
+          navigator.vibrate([40, 30, 80]);
+        }
+      }
 
       // ── Auto-scaling ──
       // Y axis spans from 1x up to at least 2x, growing with the multiplier
