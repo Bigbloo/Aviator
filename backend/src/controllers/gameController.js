@@ -69,7 +69,7 @@ const getSlotLeaderboard = (req, res) => {
     const rows = db.prepare(`
       SELECT
         u.id as userId,
-        COALESCE(u.username, 'Joueur ' || substr(u.id, 1, 6)) as username,
+        'Joueur ' || substr(u.id, 1, 6) as username,
         SUM(CASE WHEN b.status = 'won' THEN b.payout - b.bet_amount ELSE -b.bet_amount END) as netGain,
         COUNT(b.id) as totalBets,
         SUM(CASE WHEN b.status = 'won' THEN 1 ELSE 0 END) as wins
