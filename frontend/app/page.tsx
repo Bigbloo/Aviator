@@ -71,12 +71,11 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0e0e10] flex flex-col">
+    <div className="min-h-[100dvh] lg:h-[100dvh] lg:overflow-hidden bg-[#0e0e10] flex flex-col">
       <Header />
 
-      <main className="flex-1 w-full p-2 gap-2
-        grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)_320px]
-        lg:h-[calc(100vh-88px)]">
+      <main className="flex-1 min-h-0 w-full p-2 gap-2
+        grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)_320px]">
 
         {/* LEFT — All Bets sidebar (desktop only here) */}
         <aside className="hidden lg:block lg:h-full lg:min-h-0">
@@ -111,7 +110,7 @@ export default function Home() {
       </main>
 
       {/* Legal footer */}
-      <footer className="px-3 py-2 border-t border-black/40 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-gray-600">
+      <footer className="shrink-0 px-3 py-2 border-t border-black/40 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-gray-600">
         <span className="font-black text-amber-500">18+</span>
         <span>Jouer comporte des risques (dépendance, isolement, endettement).</span>
         <a href="/terms" className="hover:text-gray-400">CGU</a>
