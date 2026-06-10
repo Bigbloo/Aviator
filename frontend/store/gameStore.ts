@@ -24,6 +24,10 @@ export interface GameState {
   hasBet: boolean;
   cashedOut: boolean;
   lastResult: { result: 'won' | 'lost'; payout: number } | null;
+  sessionSeed: string;
+  lossStreak: number;
+  revengeAvailable: boolean;
+  maxBetSuggestion: number | null;
 
   // Actions
   setUserId: (id: string) => void;
@@ -36,6 +40,9 @@ export interface GameState {
   setHasBet: (v: boolean) => void;
   setCashedOut: (v: boolean) => void;
   setLastResult: (r: { result: 'won' | 'lost'; payout: number } | null) => void;
+  setSessionSeed: (seed: string) => void;
+  registerResult: (r: { result: 'won' | 'lost'; payout: number }) => void;
+  consumeRevenge: () => void;
   resetRound: () => void;
 }
 
@@ -50,6 +57,10 @@ export const useGameStore = create<GameState>((set) => ({
   hasBet: false,
   cashedOut: false,
   lastResult: null,
+  sessionSeed: '',
+  lossStreak: 0,
+  revengeAvailable: false,
+  maxBetSuggestion: null,
 
   setUserId: (id) => set({ userId: id }),
   setBalance: (balance) => set({ balance }),
@@ -61,6 +72,27 @@ export const useGameStore = create<GameState>((set) => ({
   setHasBet: (v) => set({ hasBet: v }),
   setCashedOut: (v) => set({ cashedOut: v }),
   setLastResult: (r) => set({ lastResult: r }),
+  setSessionSeed: (seed) => set({ sessionSeed: seed }),
+  registerResult: (r) =>
+    set((state) => {
+      if (r.result === 'lost') {
+        const nextLossStreak = state.lossStreak + 1;
+        return {
+          lastResult: r,
+          lossStreak: nextLossStreak,
+          revengeAvailable: true,
+          maxBetSuggestion:
+            nextLossStreak >= 3 ? Number(state.balance.toFixed(2)) : null,
+        };
+      }
+      return {
+        lastResult: r,
+        lossStreak: 0,
+        revengeAvailable: false,
+        maxBetSuggestion: null,
+      };
+    }),
+  consumeRevenge: () => set({ revengeAvailable: false }),
   resetRound: () =>
     set({
       phase: 'waiting',
