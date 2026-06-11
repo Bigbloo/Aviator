@@ -307,7 +307,7 @@ const AviatorCanvas = () => {
       } else if (phase === 'betting') {
         ctx.font = `bold ${px(28)} monospace`;
         ctx.fillStyle = '#22c55e';
-        ctx.fillText('🎯 Place your bets !', W / 2, H / 2 - 12 * k);
+        ctx.fillText('Place your bets !', W / 2, H / 2 - 12 * k);
 
         // Progress gauge that fills as take-off approaches (replaces the
         // textual countdown). Driven purely by the betting-window timing.
