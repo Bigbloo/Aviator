@@ -105,6 +105,10 @@ const AviatorCanvas = () => {
   const planeReady = useRef(false);
   // Throttle for the optional haptic feedback (mobile only, opt-in by browser).
   const lastHapticRef = useRef<number>(0);
+  // Accumulated sunburst rotation angle + last frame time, so the spin is
+  // continuous (no jumps) and can smoothly change speed with tension.
+  const spinRef = useRef<number>(0);
+  const lastSpinTsRef = useRef<number>(0);
 
   useEffect(() => {
     const img = new Image();
@@ -163,18 +167,26 @@ const AviatorCanvas = () => {
       ctx.fillStyle = '#06070b';
       ctx.fillRect(0, 0, W, H);
 
-      // Dark blue-grey rays radiating from the plane's take-off origin, turning
-      // slowly. The spin quickens slightly with the live multiplier — pure
-      // presentation, no game logic touched.
+      // Dark blue-grey rays radiating from the plane's take-off origin. The
+      // rotation is integrated frame-by-frame so it never jumps; its angular
+      // speed rises smoothly with tension (faster as the multiplier climbs
+      // toward a likely crash, mirroring the warm glow). Pure presentation.
+      const nowMs = performance.now();
+      const dt = lastSpinTsRef.current ? Math.min(0.1, (nowMs - lastSpinTsRef.current) / 1000) : 0;
+      lastSpinTsRef.current = nowMs;
+      const angVel = 0.05 + tension * 0.45; // rad/s — slow at rest, fast near crash
+      spinRef.current = (spinRef.current + dt * angVel) % (Math.PI * 2);
+
       const rayR = Math.hypot(W, H) * 1.2;
-      const spin = (performance.now() / 1000) * (0.05 + tension * 0.12);
-      const NRAYS = 24; // 12 lit wedges + 12 gaps
-      const wedge = (Math.PI * 2) / NRAYS;
+      const RAY_COUNT = 12;
+      const slot = (Math.PI * 2) / RAY_COUNT; // angle between ray centers
+      const rayHalf = slot * 0.14;            // thin rays (~28% of each slot)
       ctx.save();
       ctx.fillStyle = '#141d2a';
-      for (let i = 0; i < NRAYS; i += 2) {
-        const a0 = spin + i * wedge;
-        const a1 = a0 + wedge;
+      for (let i = 0; i < RAY_COUNT; i++) {
+        const c = spinRef.current + i * slot;
+        const a0 = c - rayHalf;
+        const a1 = c + rayHalf;
         ctx.beginPath();
         ctx.moveTo(originX, originY);
         ctx.lineTo(originX + Math.cos(a0) * rayR, originY + Math.sin(a0) * rayR);
