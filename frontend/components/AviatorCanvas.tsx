@@ -148,6 +148,25 @@ const AviatorCanvas = () => {
       const originX = PAD.left;
       const originY = H - PAD.bottom; // bottom-left origin
 
+      // Draw the plane (PNG sprite, vector fallback) at a given anchor point.
+      const renderPlane = (ax: number, ay: number) => {
+        const img = planeImg.current;
+        if (planeReady.current && img && img.width) {
+          const targetW = Math.min(130, Math.max(70, W * 0.13));
+          const targetH = targetW * (img.height / img.width);
+          ctx.save();
+          ctx.translate(ax, ay);
+          ctx.rotate(-0.02); // near-level — keep the plane stable, not steeply tilted
+          // The curve meets the plane at its REAR (tail, lower-left of the
+          // sprite); the plane extends forward (up-right) from there.
+          ctx.drawImage(img, -targetW * 0.12, -targetH * 0.70, targetW, targetH);
+          ctx.restore();
+        } else {
+          const planeScale = Math.min(1.5, Math.max(0.85, Math.min(W, H) / 300));
+          drawPlane(ctx, ax, ay, planeScale);
+        }
+      };
+
       // Read live state each frame (no effect re-run, no stacked loops)
       const { phase, currentMultiplier, crashPoint } = useGameStore.getState();
       const mult = currentMultiplier || 1.0;
@@ -178,7 +197,7 @@ const AviatorCanvas = () => {
       spinRef.current = (spinRef.current + dt * angVel) % (Math.PI * 2);
 
       const rayR = Math.hypot(W, H) * 1.2;
-      const RAY_COUNT = 18;
+      const RAY_COUNT = 26;
       const slot = (Math.PI * 2) / RAY_COUNT; // angle between ray centers
       const rayHalf = slot * 0.14;            // thin rays (~28% of each slot)
       ctx.save();
@@ -285,22 +304,7 @@ const AviatorCanvas = () => {
         if (!crashed) {
           const ax = Math.min(Math.max(tip.x, originX + 20), W - PAD.right - 10);
           const ay = Math.min(Math.max(tip.y, PAD.top + 14), originY - 4);
-          const img = planeImg.current;
-          if (planeReady.current && img && img.width) {
-            // Use the PNG sprite, nose aligned to the curve tip.
-            const targetW = Math.min(130, Math.max(70, W * 0.13));
-            const targetH = targetW * (img.height / img.width);
-            ctx.save();
-            ctx.translate(ax, ay);
-            ctx.rotate(-0.02); // near-level — keep the plane stable, not steeply tilted
-            // The curve meets the plane at its REAR (tail, lower-left of the
-            // sprite); the plane extends forward (up-right) from there.
-            ctx.drawImage(img, -targetW * 0.12, -targetH * 0.70, targetW, targetH);
-            ctx.restore();
-          } else {
-            const planeScale = Math.min(1.5, Math.max(0.85, Math.min(W, H) / 300));
-            drawPlane(ctx, ax, ay, planeScale);
-          }
+          renderPlane(ax, ay);
         }
       }
 
@@ -317,6 +321,9 @@ const AviatorCanvas = () => {
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
         ctx.fillText('Next round starting soon...', W / 2, H / 2 + 34 * k);
       } else if (phase === 'betting') {
+        // Plane waiting on the runway (bottom-left) while the gauge charges.
+        renderPlane(W * 0.16, originY - Math.max(34, H * 0.12));
+
         ctx.font = `bold ${px(28)} monospace`;
         ctx.fillStyle = '#22c55e';
         ctx.fillText('Place your bets !', W / 2, H / 2 - 12 * k);
