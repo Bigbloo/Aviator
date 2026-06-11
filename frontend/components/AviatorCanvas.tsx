@@ -321,9 +321,10 @@ const AviatorCanvas = () => {
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
         ctx.fillText('Next round starting soon...', W / 2, H / 2 + 34 * k);
       } else if (phase === 'betting') {
-        // Plane waiting in the bottom-left corner — exactly where it sits at
-        // the start of flight, so it's the same plane that then takes off.
-        renderPlane(originX + 20, originY - 4);
+        // Plane waiting in the bottom-left corner. Lifted just enough that its
+        // rear/underside (which the sprite draws ~30% below the anchor) stays
+        // on-screen — it's the same plane that lifts off from here.
+        renderPlane(originX + 24, originY - Math.max(30, H * 0.08));
 
         ctx.font = `bold ${px(28)} monospace`;
         ctx.fillStyle = '#22c55e';
