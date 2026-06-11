@@ -28,7 +28,7 @@ function drawPlane(ctx: CanvasRenderingContext2D, x: number, y: number, s: numbe
   const DARK = '#9c0f20';
   ctx.save();
   ctx.translate(x, y);
-  ctx.rotate(-0.22);
+  ctx.rotate(-0.08);
   ctx.scale(s, s);
 
   // Tail fin (back-left)
@@ -178,7 +178,7 @@ const AviatorCanvas = () => {
       spinRef.current = (spinRef.current + dt * angVel) % (Math.PI * 2);
 
       const rayR = Math.hypot(W, H) * 1.2;
-      const RAY_COUNT = 12;
+      const RAY_COUNT = 18;
       const slot = (Math.PI * 2) / RAY_COUNT; // angle between ray centers
       const rayHalf = slot * 0.14;            // thin rays (~28% of each slot)
       ctx.save();
@@ -292,7 +292,7 @@ const AviatorCanvas = () => {
             const targetH = targetW * (img.height / img.width);
             ctx.save();
             ctx.translate(ax, ay);
-            ctx.rotate(-0.08);
+            ctx.rotate(-0.02); // near-level — keep the plane stable, not steeply tilted
             // The curve meets the plane at its REAR (tail, lower-left of the
             // sprite); the plane extends forward (up-right) from there.
             ctx.drawImage(img, -targetW * 0.12, -targetH * 0.70, targetW, targetH);
