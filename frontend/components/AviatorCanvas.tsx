@@ -90,7 +90,7 @@ function drawPlane(ctx: CanvasRenderingContext2D, x: number, y: number, s: numbe
  * "false hope" shaping of the curve.
  */
 function tensionFromMultiplier(mult: number): number {
-  const t = Math.min(1, Math.max(0, (mult - 1) / (5 - 1))); // 1x → 0, 5x → 1
+  const t = Math.min(1, Math.max(0, (mult - 1) / (3 - 1))); // 1x → 0, 3x → 1 (ramps up early)
   return t * t * (3 - 2 * t); // smoothstep for a soft feel
 }
 
@@ -147,6 +147,10 @@ const AviatorCanvas = () => {
       const plotH = H - PAD.top - PAD.bottom;
       const originX = PAD.left;
       const originY = H - PAD.bottom; // bottom-left origin
+      // Baseline plane height: parked here during betting AND where it starts
+      // flight, so it's the same plane lifting off (no jump). Lifted enough
+      // that the sprite's rear (drawn ~30% below the anchor) stays on-screen.
+      const planeFloorY = originY - Math.max(30, H * 0.08);
 
       // Draw the plane (PNG sprite, vector fallback) at a given anchor point.
       const renderPlane = (ax: number, ay: number) => {
@@ -193,7 +197,7 @@ const AviatorCanvas = () => {
       const nowMs = performance.now();
       const dt = lastSpinTsRef.current ? Math.min(0.1, (nowMs - lastSpinTsRef.current) / 1000) : 0;
       lastSpinTsRef.current = nowMs;
-      const angVel = 0.05 + tension * 0.45; // rad/s — slow at rest, fast near crash
+      const angVel = 0.14 + tension * 0.85; // rad/s — turning at rest, fast as it climbs
       spinRef.current = (spinRef.current + dt * angVel) % (Math.PI * 2);
 
       const rayR = Math.hypot(W, H) * 1.2;
@@ -303,7 +307,7 @@ const AviatorCanvas = () => {
         // Airplane at the tip — clamped inside the plot so it never leaves
         if (!crashed) {
           const ax = Math.min(Math.max(tip.x, originX + 20), W - PAD.right - 10);
-          const ay = Math.min(Math.max(tip.y, PAD.top + 14), originY - 4);
+          const ay = Math.min(Math.max(tip.y, PAD.top + 14), planeFloorY);
           renderPlane(ax, ay);
         }
       }
@@ -324,7 +328,7 @@ const AviatorCanvas = () => {
         // Plane waiting in the bottom-left corner. Lifted just enough that its
         // rear/underside (which the sprite draws ~30% below the anchor) stays
         // on-screen — it's the same plane that lifts off from here.
-        renderPlane(originX + 24, originY - Math.max(30, H * 0.08));
+        renderPlane(originX + 24, planeFloorY);
 
         ctx.font = `bold ${px(28)} monospace`;
         ctx.fillStyle = '#22c55e';
