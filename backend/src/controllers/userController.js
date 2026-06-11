@@ -162,7 +162,7 @@ const login = async (req, res) => {
   password   = (password || '').toString();
 
   if (!identifier || !password) {
-    return res.status(400).json({ error: 'Identifiant et mot de passe requis.' });
+    return res.status(400).json({ error: 'Identifier and password required.' });
   }
 
   const user =

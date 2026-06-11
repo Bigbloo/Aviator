@@ -49,7 +49,7 @@ module.exports = {
   // the hosted invoice_url if white-label is off for the chosen currency.
   async createDeposit({ amount, genericCode, orderId }) {
     const native = NATIVE[genericCode];
-    if (!native) throw new Error('Cette crypto n’est pas disponible.');
+    if (!native) throw new Error('This crypto is unavailable.');
     const params = new URLSearchParams({
       api_key: KEY,
       order_number: orderId,

@@ -300,7 +300,7 @@ const adminListWithdrawals = (req, res) => {
 // ── ADMIN: POST /api/admin/withdrawals/:id/approve ────────────────────────────
 const adminApproveWithdrawal = async (req, res) => {
   const w = db.prepare('SELECT * FROM crypto_withdrawals WHERE id = ?').get(req.params.id);
-  if (!w) return res.status(404).json({ error: 'Retrait introuvable.' });
+  if (!w) return res.status(404).json({ error: 'Withdrawal not found.' });
   if (w.status !== 'pending_review') {
     return res.status(409).json({ error: `Already processed (status: ${w.status}).` });
   }
@@ -320,13 +320,13 @@ const adminApproveWithdrawal = async (req, res) => {
 // on-chain tx hash. Does NOT touch the balance (already debited at request).
 const adminMarkPaidWithdrawal = (req, res) => {
   const w = db.prepare('SELECT * FROM crypto_withdrawals WHERE id = ?').get(req.params.id);
-  if (!w) return res.status(404).json({ error: 'Retrait introuvable.' });
+  if (!w) return res.status(404).json({ error: 'Withdrawal not found.' });
   if (!['pending_review', 'processing', 'failed'].includes(w.status)) {
     return res.status(409).json({ error: `Already processed (status: ${w.status}).` });
   }
   const txid = (req.body && req.body.txid ? String(req.body.txid) : '').trim();
   if (txid.length < 6) {
-    return res.status(400).json({ error: 'Renseigne le hash de transaction (txid).' });
+    return res.status(400).json({ error: 'Provide the transaction hash (txid).' });
   }
   const note = (req.body && req.body.note ? String(req.body.note) : 'Paiement manuel').slice(0, 500);
   db.prepare("UPDATE crypto_withdrawals SET status='completed', txid=?, note=?, reviewed_at=?, updated_at=? WHERE id=?")
@@ -338,7 +338,7 @@ const adminMarkPaidWithdrawal = (req, res) => {
 // Refunds the held balance and marks the withdrawal rejected.
 const adminRejectWithdrawal = (req, res) => {
   const w = db.prepare('SELECT * FROM crypto_withdrawals WHERE id = ?').get(req.params.id);
-  if (!w) return res.status(404).json({ error: 'Retrait introuvable.' });
+  if (!w) return res.status(404).json({ error: 'Withdrawal not found.' });
   if (w.status !== 'pending_review') {
     return res.status(409).json({ error: `Already processed (status: ${w.status}).` });
   }
@@ -357,7 +357,7 @@ const adminRejectWithdrawal = (req, res) => {
 // ── ADMIN: reset all balances to 0 (test/maintenance) ────────────────────────
 const adminResetBalances = (req, res) => {
   if (!req.body || req.body.confirm !== true) {
-    return res.status(400).json({ error: 'Confirmation requise ({ "confirm": true }).' });
+    return res.status(400).json({ error: 'Confirmation required ({ "confirm": true }).' });
   }
   const info = db.prepare('UPDATE users SET balance = 0').run();
   console.log(`[Admin] Reset balances of ${info.changes} users to 0`);

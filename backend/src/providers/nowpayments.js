@@ -43,7 +43,7 @@ module.exports = {
       }),
     });
     const d = await r.json();
-    if (!r.ok) throw new Error(d.message || 'Erreur du prestataire de paiement.');
+    if (!r.ok) throw new Error(d.message || 'Payment provider error.');
     return { address: d.pay_address, payAmount: d.pay_amount, paymentId: String(d.payment_id) };
   },
 

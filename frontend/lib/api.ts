@@ -90,7 +90,7 @@ export const register = async (input: RegisterInput): Promise<AuthResponse> => {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || 'Échec de la création du compte');
+    throw new Error(err.error || 'Failed to create account');
   }
   const data: AuthResponse = await res.json();
   setToken(data.token);
@@ -115,7 +115,7 @@ export const resetPassword = async (token: string, password: string): Promise<vo
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || 'Échec de la réinitialisation');
+    throw new Error(err.error || 'Reset failed');
   }
 };
 
@@ -142,7 +142,7 @@ export const login = async (identifier: string, password: string): Promise<AuthR
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || 'Connexion échouée');
+    throw new Error(err.error || 'Sign-in failed');
   }
   const data: AuthResponse = await res.json();
   setToken(data.token);
@@ -232,7 +232,7 @@ export const createCryptoDeposit = async (
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || 'Échec de la création du dépôt');
+    throw new Error(err.error || 'Failed to create deposit');
   }
   return res.json();
 };
@@ -282,7 +282,7 @@ export const createCryptoWithdrawal = async (
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || 'Échec du retrait');
+    throw new Error(err.error || 'Withdrawal failed');
   }
   return res.json();
 };
@@ -403,7 +403,7 @@ export const adminListWithdrawals = async (
 ): Promise<{ withdrawals: AdminWithdrawal[]; pendingCount: number }> => {
   const q = status ? `?status=${encodeURIComponent(status)}` : '';
   const res = await fetch(`${BASE_URL}/api/admin/withdrawals${q}`, { headers: adminHeaders(token) });
-  if (!res.ok) throw new Error('Accès refusé');
+  if (!res.ok) throw new Error('Access denied');
   return res.json();
 };
 

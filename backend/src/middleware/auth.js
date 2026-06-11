@@ -28,7 +28,7 @@ const requireAuth = (req, res, next) => {
   const header = req.headers['authorization'] || '';
   const match = header.match(/^Bearer\s+(.+)$/i);
   if (!match) {
-    return res.status(401).json({ error: 'Authentification requise.' });
+    return res.status(401).json({ error: 'Authentication required.' });
   }
   try {
     const payload = jwt.verify(match[1], JWT_SECRET);

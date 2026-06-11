@@ -2,7 +2,7 @@
    offline. Never touches the cross-origin API/socket (different host), so the
    live game is unaffected. */
 
-const CACHE = 'aviator-v2';
+const CACHE = 'aviator-v3';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
