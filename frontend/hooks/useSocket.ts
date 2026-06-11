@@ -52,7 +52,8 @@ export const useSocket = () => {
       setPhase('betting');
       setMultiplier(1.0);
       setFairHash(data.seedHash || null);
-      // expose betting deadline for the countdown (read by the canvas)
+      // expose betting deadline + total window for the countdown gauge (canvas)
+      (window as any).__bettingMs = data.bettingMs || 0;
       (window as any).__bettingEndsAt = Date.now() + (data.bettingMs || 0);
     });
 

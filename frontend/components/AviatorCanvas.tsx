@@ -307,13 +307,40 @@ const AviatorCanvas = () => {
       } else if (phase === 'betting') {
         ctx.font = `bold ${px(28)} monospace`;
         ctx.fillStyle = '#22c55e';
-        ctx.fillText('🎯 Place your bets !', W / 2, H / 2);
-        // Countdown until takeoff
+        ctx.fillText('🎯 Place your bets !', W / 2, H / 2 - 12 * k);
+
+        // Progress gauge that fills as take-off approaches (replaces the
+        // textual countdown). Driven purely by the betting-window timing.
         const endsAt = (window as any).__bettingEndsAt || 0;
-        const remain = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
-        ctx.font = `bold ${px(20)} monospace`;
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(`Take-off in ${remain}s`, W / 2, H / 2 + 36 * k);
+        const total = (window as any).__bettingMs || 0;
+        const remainMs = Math.max(0, endsAt - Date.now());
+        const frac = total > 0 ? Math.min(1, Math.max(0, 1 - remainMs / total)) : 0;
+
+        const barW = Math.min(W * 0.5, 280);
+        const barH = Math.max(8, 10 * k);
+        const barX = W / 2 - barW / 2;
+        const barY = H / 2 + 16 * k;
+        const r = barH / 2;
+        const roundRectPath = (x: number, y: number, w: number, h: number) => {
+          ctx.beginPath();
+          if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, w, h, r);
+          else ctx.rect(x, y, w, h);
+        };
+
+        // Track
+        ctx.fillStyle = 'rgba(255,255,255,0.12)';
+        roundRectPath(barX, barY, barW, barH);
+        ctx.fill();
+
+        // Fill (green → orange as it nears take-off)
+        if (frac > 0) {
+          const grad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+          grad.addColorStop(0, '#22c55e');
+          grad.addColorStop(1, '#ff7a00');
+          ctx.fillStyle = grad;
+          roundRectPath(barX, barY, Math.max(barH, barW * frac), barH);
+          ctx.fill();
+        }
       } else if (phase === 'flying') {
         ctx.font = `bold ${px(48)} monospace`;
         ctx.fillStyle = '#ff6a00';
