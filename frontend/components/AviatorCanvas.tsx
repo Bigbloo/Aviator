@@ -94,14 +94,6 @@ function tensionFromMultiplier(mult: number): number {
   return t * t * (3 - 2 * t); // smoothstep for a soft feel
 }
 
-/** Linear blend between two #rrggbb hex colors. f in [0,1]. */
-function mixHex(a: string, b: string, f: number): string {
-  const pa = [parseInt(a.slice(1, 3), 16), parseInt(a.slice(3, 5), 16), parseInt(a.slice(5, 7), 16)];
-  const pb = [parseInt(b.slice(1, 3), 16), parseInt(b.slice(3, 5), 16), parseInt(b.slice(5, 7), 16)];
-  const c = pa.map((v, i) => Math.round(v + (pb[i] - v) * f));
-  return `rgb(${c[0]},${c[1]},${c[2]})`;
-}
-
 const AviatorCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
@@ -128,7 +120,9 @@ const AviatorCanvas = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const PAD = { left: 50, bottom: 36, right: 24, top: 24 };
+    // No axis gutter on the left/bottom: the flight path and the sunburst both
+    // converge at the true bottom-left corner of the canvas.
+    const PAD = { left: 0, bottom: 0, right: 24, top: 24 };
 
     // Keep the canvas backing store matched to its displayed (CSS) size so the
     // game fills its container at any width/height without stretching.
@@ -164,25 +158,48 @@ const AviatorCanvas = () => {
       // Honest tension intensity from the live multiplier (presentation only).
       const tension = phase === 'flying' ? tensionFromMultiplier(mult) : 0;
 
-      // ── Clear + background ──
-      // While flying, the background warms slightly as the multiplier the
-      // player already sees climbs. Pure presentation — no game logic touched.
+      // ── Background: rotating sunburst + radial glow (Aviator look) ──
       ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = mixHex('#0d1117', '#4a0f16', tension * 0.9);
+      ctx.fillStyle = '#06070b';
       ctx.fillRect(0, 0, W, H);
 
-      // Warm vignette that grows with tension — darker, redder edges as the
-      // multiplier climbs. Presentation only.
-      if (tension > 0.01) {
-        const vg = ctx.createRadialGradient(
-          W / 2, H / 2, Math.min(W, H) * 0.2,
-          W / 2, H / 2, Math.max(W, H) * 0.75
-        );
-        vg.addColorStop(0, 'rgba(0,0,0,0)');
-        vg.addColorStop(1, `rgba(150,20,30,${(tension * 0.45).toFixed(3)})`);
-        ctx.fillStyle = vg;
-        ctx.fillRect(0, 0, W, H);
+      // Dark blue-grey rays radiating from the plane's take-off origin, turning
+      // slowly. The spin quickens slightly with the live multiplier — pure
+      // presentation, no game logic touched.
+      const rayR = Math.hypot(W, H) * 1.2;
+      const spin = (performance.now() / 1000) * (0.05 + tension * 0.12);
+      const NRAYS = 24; // 12 lit wedges + 12 gaps
+      const wedge = (Math.PI * 2) / NRAYS;
+      ctx.save();
+      ctx.fillStyle = '#141d2a';
+      for (let i = 0; i < NRAYS; i += 2) {
+        const a0 = spin + i * wedge;
+        const a1 = a0 + wedge;
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(originX + Math.cos(a0) * rayR, originY + Math.sin(a0) * rayR);
+        ctx.lineTo(originX + Math.cos(a1) * rayR, originY + Math.sin(a1) * rayR);
+        ctx.closePath();
+        ctx.fill();
       }
+      ctx.restore();
+
+      // Soft glow, upper-middle. Bluish at rest; warms toward orange as the
+      // multiplier the player already sees climbs.
+      const glowX = W * 0.52;
+      const glowY = H * 0.42;
+      const gr = Math.round(45 + tension * 150);
+      const gg = Math.round(95 - tension * 30);
+      const gb = Math.round(155 - tension * 110);
+      const glow = ctx.createRadialGradient(glowX, glowY, 0, glowX, glowY, Math.max(W, H) * 0.55);
+      glow.addColorStop(0, `rgba(${gr},${gg},${gb},0.55)`);
+      glow.addColorStop(0.5, `rgba(${gr},${gg},${gb},0.16)`);
+      glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
 
       // ── Haptic feedback (optional, mobile browsers that support it) ──
       // Tied strictly to the visible multiplier; intensity and cadence rise
@@ -213,23 +230,6 @@ const AviatorCanvas = () => {
       const mToY = (m: number) => originY - (plotH * (m - 1)) / (maxM - 1);
       // map time -> x
       const tToX = (t: number) => originX + (plotW * t) / maxT;
-
-      // ── Grid + Y labels (dynamic based on maxM) ──
-      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-      ctx.lineWidth = 1;
-      ctx.fillStyle = 'rgba(255,255,255,0.3)';
-      ctx.font = '11px monospace';
-      ctx.textAlign = 'left';
-      const steps = 5;
-      for (let i = 0; i <= steps; i++) {
-        const m = 1 + ((maxM - 1) * i) / steps;
-        const y = mToY(m);
-        ctx.beginPath();
-        ctx.moveTo(originX, y);
-        ctx.lineTo(W - PAD.right, y);
-        ctx.stroke();
-        ctx.fillText(`${m.toFixed(1)}x`, 6, y + 4);
-      }
 
       const crashed = phase === 'crashed';
       const flying = phase === 'flying';
