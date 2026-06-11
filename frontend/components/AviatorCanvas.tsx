@@ -321,8 +321,9 @@ const AviatorCanvas = () => {
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
         ctx.fillText('Next round starting soon...', W / 2, H / 2 + 34 * k);
       } else if (phase === 'betting') {
-        // Plane waiting on the runway (bottom-left) while the gauge charges.
-        renderPlane(W * 0.16, originY - Math.max(34, H * 0.12));
+        // Plane waiting in the bottom-left corner — exactly where it sits at
+        // the start of flight, so it's the same plane that then takes off.
+        renderPlane(originX + 20, originY - 4);
 
         ctx.font = `bold ${px(28)} monospace`;
         ctx.fillStyle = '#22c55e';
