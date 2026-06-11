@@ -1,46 +1,45 @@
 import LegalShell from '@/components/LegalShell';
 
-export const metadata = { title: 'Jeu responsable — Aviator' };
+export const metadata = { title: 'Responsible gambling — Aviator' };
 
 export default function ResponsibleGamblingPage() {
   return (
-    <LegalShell title="Jeu responsable">
+    <LegalShell title="Responsible gambling">
       <p>
-        Le jeu doit rester un divertissement. Il peut entraîner une dépendance et des difficultés financières,
-        sociales et personnelles. Voici nos conseils et les outils à votre disposition.
+        Gambling should stay a form of entertainment. It can lead to addiction and to financial, social and
+        personal difficulties. Here is our advice and the tools available to you.
       </p>
 
-      <h2>Garder le contrôle</h2>
+      <h2>Stay in control</h2>
       <p>
-        Ne jouez que l’argent que vous pouvez vous permettre de perdre. Fixez-vous une limite de temps et de
-        budget avant de commencer. Ne tentez jamais de « vous refaire » après une perte. N’empruntez pas pour
-        jouer. Faites des pauses régulières.
+        Only gamble money you can afford to lose. Set yourself a time and budget limit before you start. Never
+        try to “win it back” after a loss. Don’t borrow money to gamble. Take regular breaks.
       </p>
 
-      <h2>Signes d’alerte</h2>
+      <h2>Warning signs</h2>
       <p>
-        Vous jouez plus que prévu, vous mentez sur votre jeu, vous négligez vos obligations, vous jouez pour
-        échapper au stress ou pour récupérer des pertes : ce sont des signaux à ne pas ignorer.
+        You play more than you intended, you lie about your gambling, you neglect your responsibilities, you
+        gamble to escape stress or to recover losses: these are signals you should not ignore.
       </p>
 
-      <h2>Outils disponibles</h2>
+      <h2>Available tools</h2>
       <p>
-        Sur demande auprès du support, vous pouvez mettre en place des <b>limites de dépôt</b>, une{' '}
-        <b>pause (time-out)</b> ou une <b>auto-exclusion</b> de votre compte. Ces mesures prennent effet
-        immédiatement et ne peuvent pas être levées avant le délai choisi.
+        On request to support, you can set up <b>deposit limits</b>, a <b>time-out</b> or a{' '}
+        <b>self-exclusion</b> on your account. These measures take effect immediately and cannot be lifted
+        before the chosen period ends.
       </p>
 
-      <h2>Mineurs</h2>
+      <h2>Minors</h2>
       <p>
-        Le jeu est strictement réservé aux personnes de <b>18 ans et plus</b>. Protégez l’accès à vos appareils
-        et utilisez un contrôle parental si des mineurs y ont accès.
+        Gambling is strictly reserved for people <b>18 and over</b>. Protect access to your devices and use
+        parental controls if minors have access to them.
       </p>
 
-      <h2>Besoin d’aide ?</h2>
+      <h2>Need help?</h2>
       <p>
-        Si le jeu devient un problème, parlez-en. Des organismes d’aide existent dans la plupart des pays
-        (lignes d’écoute, associations spécialisées). En France : <b>Joueurs Info Service — 09 74 75 13 13</b>{' '}
-        (appel non surtaxé). Recherchez l’équivalent dans votre pays.
+        If gambling becomes a problem, talk about it. Support organizations exist in most countries (helplines,
+        specialized associations). In the UK: <b>GamCare — 0808 8020 133</b> (free helpline). Look up the
+        equivalent in your country.
       </p>
     </LegalShell>
   );

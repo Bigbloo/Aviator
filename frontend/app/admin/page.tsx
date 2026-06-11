@@ -25,11 +25,11 @@ const statusStyle: Record<string, string> = {
   failed: 'bg-red-500/15 text-red-300',
 };
 const statusLabel: Record<string, string> = {
-  pending_review: 'En attente',
-  processing: 'Envoi en cours',
-  completed: 'Validé / envoyé',
-  rejected: 'Rejeté',
-  failed: 'Échec',
+  pending_review: 'Pending',
+  processing: 'Sending',
+  completed: 'Approved / sent',
+  rejected: 'Rejected',
+  failed: 'Failed',
 };
 
 const fmtDate = (s: number) => new Date(s * 1000).toLocaleString('fr-FR');
@@ -65,7 +65,7 @@ export default function AdminPage() {
         setPendingCount(data.pendingCount);
         setError('');
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Erreur');
+        setError(e instanceof Error ? e.message : 'Error');
       }
     },
     []
@@ -92,18 +92,18 @@ export default function AdminPage() {
       setAuthed(true);
       setError('');
     } else {
-      setError('Token admin invalide.');
+      setError('Invalid admin token.');
     }
   };
 
   const handleMarkPaid = async (w: AdminWithdrawal) => {
     const txid = prompt(
-      `Paiement manuel — envoie l'équivalent de ${w.amount} USDT en ${w.network} à :\n${w.address}\n\nPuis colle ici le hash de transaction (txid) :`,
+      `Manual payment — send the equivalent of ${w.amount} USDT in ${w.network} to:\n${w.address}\n\nThen paste the transaction hash (txid) here:`,
       ''
     );
     if (txid === null) return;
     if (txid.trim().length < 6) {
-      alert('txid invalide.');
+      alert('Invalid txid.');
       return;
     }
     setBusy(w.id);
@@ -111,21 +111,21 @@ export default function AdminPage() {
       await adminMarkPaidWithdrawal(token, w.id, txid.trim());
       await load(token, filter);
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Erreur');
+      alert(e instanceof Error ? e.message : 'Error');
     } finally {
       setBusy(null);
     }
   };
 
   const handleReject = async (w: AdminWithdrawal) => {
-    const note = prompt(`Rejeter le retrait de ${w.amount} USDT ?\nLe solde sera recrédité au joueur.\n\nMotif (optionnel) :`, '');
+    const note = prompt(`Reject the withdrawal of ${w.amount} USDT?\nThe balance will be credited back to the player.\n\nReason (optional):`, '');
     if (note === null) return;
     setBusy(w.id);
     try {
       await adminRejectWithdrawal(token, w.id, note);
       await load(token, filter);
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Erreur');
+      alert(e instanceof Error ? e.message : 'Error');
     } finally {
       setBusy(null);
     }
@@ -144,13 +144,13 @@ export default function AdminPage() {
       <div className="min-h-screen bg-[#0e0e10] flex items-center justify-center p-4">
         <div className="bg-[#1b1c1d] border border-black/40 rounded-2xl p-6 w-full max-w-sm space-y-4">
           <h1 className="text-white font-bold text-xl">🔐 Console de validation</h1>
-          <p className="text-gray-400 text-sm">Entre le token administrateur pour gérer les retraits.</p>
+          <p className="text-gray-400 text-sm">Enter the administrator token to manage withdrawals.</p>
           <input
             type="password"
             value={tokenInput}
             onChange={(e) => setTokenInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-            placeholder="Token admin"
+            placeholder="Admin token"
             className="w-full bg-[#101112] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
           />
           {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -158,7 +158,7 @@ export default function AdminPage() {
             onClick={handleLogin}
             className="w-full py-3 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-400 transition active:scale-95"
           >
-            Accéder
+            Access
           </button>
         </div>
       </div>
@@ -171,7 +171,7 @@ export default function AdminPage() {
         <h1 className="font-bold text-lg flex items-center gap-2">
           🛡️ Validation des retraits
           {pendingCount > 0 && (
-            <span className="bg-amber-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">{pendingCount} en attente</span>
+            <span className="bg-amber-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">{pendingCount} pending</span>
           )}
         </h1>
         <div className="flex items-center gap-2">
@@ -180,17 +180,17 @@ export default function AdminPage() {
             onChange={(e) => setFilter(e.target.value as 'pending_review' | '')}
             className="bg-[#101112] border border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none"
           >
-            <option value="pending_review">En attente</option>
-            <option value="">Tous</option>
+            <option value="pending_review">Pending</option>
+            <option value="">All</option>
           </select>
           <button onClick={() => load(token, filter)} className="bg-[#2c2d30] hover:bg-[#3a3b3e] px-3 py-1.5 rounded-lg text-sm">↻</button>
-          <button onClick={logout} className="bg-[#2c2d30] hover:bg-[#3a3b3e] px-3 py-1.5 rounded-lg text-sm">Quitter</button>
+          <button onClick={logout} className="bg-[#2c2d30] hover:bg-[#3a3b3e] px-3 py-1.5 rounded-lg text-sm">Sign out</button>
         </div>
       </header>
 
       <main className="p-4 max-w-5xl mx-auto space-y-3">
         {error && <p className="text-red-400 text-sm">{error}</p>}
-        {rows.length === 0 && <p className="text-gray-500 text-center py-12">Aucun retrait {filter === 'pending_review' ? 'en attente' : ''}.</p>}
+        {rows.length === 0 && <p className="text-gray-500 text-center py-12">No {filter === 'pending_review' ? 'pending ' : ''}withdrawals.</p>}
 
         {rows.map((w) => (
           <div key={w.id} className="bg-[#1b1c1d] border border-black/40 rounded-2xl p-4">
@@ -203,7 +203,7 @@ export default function AdminPage() {
                     {statusLabel[w.status] || w.status}
                   </span>
                 </div>
-                <p className="text-gray-500 text-xs mt-1">Demandé le {fmtDate(w.created_at)}</p>
+                <p className="text-gray-500 text-xs mt-1">Requested on {fmtDate(w.created_at)}</p>
               </div>
 
               {/* Actions */}
@@ -214,14 +214,14 @@ export default function AdminPage() {
                     disabled={busy === w.id}
                     className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-sm transition active:scale-95"
                   >
-                    {busy === w.id ? '…' : '✓ Marquer payé'}
+                    {busy === w.id ? '…' : '✓ Mark as paid'}
                   </button>
                   <button
                     onClick={() => handleReject(w)}
                     disabled={busy === w.id}
                     className="bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-sm transition active:scale-95"
                   >
-                    ✕ Rejeter
+                    ✕ Reject
                   </button>
                 </div>
               )}
@@ -229,12 +229,12 @@ export default function AdminPage() {
 
             {/* KYC / compliance details */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 mt-3 pt-3 border-t border-black/40 text-sm">
-              <Detail label="Joueur" value={w.username || '(anonyme)'} />
+              <Detail label="Player" value={w.username || '(anonymous)'} />
               <Detail label="Email" value={w.email || '—'} />
-              <Detail label="Nom complet" value={[w.first_name, w.last_name].filter(Boolean).join(' ') || '—'} />
-              <Detail label="Adresse postale" value={w.user_address || '—'} />
-              <Detail label="Réseau de paiement" value={w.network} />
-              <Detail label={`Adresse ${w.network}`} value={w.address} mono />
+              <Detail label="Full name" value={[w.first_name, w.last_name].filter(Boolean).join(' ') || '—'} />
+              <Detail label="Postal address" value={w.user_address || '—'} />
+              <Detail label="Payout network" value={w.network} />
+              <Detail label={`${w.network} address`} value={w.address} mono />
               {w.txid && <Detail label="Tx" value={w.txid} mono />}
               {w.note && <Detail label="Note" value={w.note} />}
             </div>

@@ -96,7 +96,7 @@ const DepositModal = ({ onClose }: Props) => {
 
   const handleCreate = async () => {
     if (amount < MIN_DEPOSIT) {
-      setError(`Dépôt minimum : ${MIN_DEPOSIT} USDT.`);
+      setError(`Minimum deposit: ${MIN_DEPOSIT} USDT.`);
       return;
     }
     setLoading(true);
@@ -113,7 +113,7 @@ const DepositModal = ({ onClose }: Props) => {
       // Demo mode credits instantly — reflect the new balance right away.
       if (d.status === 'finished') await refreshBalance();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erreur lors du dépôt');
+      setError(err instanceof Error ? err.message : 'Deposit error');
     } finally {
       setLoading(false);
     }
@@ -127,7 +127,7 @@ const DepositModal = ({ onClose }: Props) => {
       setStatus('finished');
       setBalance(r.balance);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erreur');
+      setError(err instanceof Error ? err.message : 'Error');
     } finally {
       setLoading(false);
     }
@@ -149,22 +149,22 @@ const DepositModal = ({ onClose }: Props) => {
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-gray-900 border border-orange-900/40 rounded-2xl p-6 w-full max-w-sm space-y-5 my-8">
         <div className="flex justify-between items-center">
-          <h2 className="text-white font-bold text-xl">₮ Déposer en USDT</h2>
+          <h2 className="text-white font-bold text-xl">₮ Deposit in USDT</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white text-xl">✕</button>
         </div>
 
         {status === 'finished' ? (
           <div className="text-center py-6 space-y-2">
             <div className="text-4xl">✅</div>
-            <p className="text-green-400 font-bold">Dépôt de {deposit?.amount} USDT confirmé !</p>
+            <p className="text-green-400 font-bold">Deposit of {deposit?.amount} USDT confirmed!</p>
             <button onClick={onClose} className="mt-2 w-full py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition">
-              Fermer
+              Close
             </button>
           </div>
         ) : !deposit ? (
           <>
             <div>
-              <label className="text-gray-400 text-sm mb-2 block">Montant (USDT)</label>
+              <label className="text-gray-400 text-sm mb-2 block">Amount (USDT)</label>
               <input
                 type="number"
                 min={MIN_DEPOSIT}
@@ -186,12 +186,12 @@ const DepositModal = ({ onClose }: Props) => {
                   </button>
                 ))}
               </div>
-              <p className="text-gray-600 text-xs mt-1">Solde crédité en USDT · minimum {MIN_DEPOSIT}</p>
+              <p className="text-gray-600 text-xs mt-1">Balance credited in USDT · minimum {MIN_DEPOSIT}</p>
             </div>
 
             {/* Crypto selector — custom dropdown styled like the rest of the site */}
             <div className="relative">
-              <label className="text-gray-400 text-sm mb-2 block">Payer avec</label>
+              <label className="text-gray-400 text-sm mb-2 block">Pay with</label>
               {(() => {
                 const list = currencies.length ? currencies : FALLBACK_CURRENCIES;
                 const selected = list.find((c) => c.code === payCurrency) || list[0];
@@ -240,40 +240,40 @@ const DepositModal = ({ onClose }: Props) => {
               disabled={loading || amount < MIN_DEPOSIT}
               className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 disabled:opacity-40 transition active:scale-95"
             >
-              {loading ? '⏳ Génération...' : `Générer l'adresse de dépôt`}
+              {loading ? '⏳ Generating...' : 'Generate deposit address'}
             </button>
           </>
         ) : (
           <>
             <p className="text-gray-400 text-sm text-center">
-              Envoie exactement{' '}
+              Send exactly{' '}
               <span className="text-orange-400 font-bold">
                 {deposit.payAmount} {deposit.payCurrency.toUpperCase().replace(/(TRC20|ERC20|BSC|SOL)$/,'')}
               </span>{' '}
-              <span className="text-gray-500">({deposit.network})</span> à l&apos;adresse ci-dessous.
+              <span className="text-gray-500">({deposit.network})</span> to the address below.
               <br />
-              <span className="text-gray-500 text-xs">Tu seras crédité de {deposit.amount} USDT.</span>
+              <span className="text-gray-500 text-xs">You will be credited {deposit.amount} USDT.</span>
             </p>
 
             {qrUrl && (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={qrUrl} alt="QR adresse de dépôt" className="mx-auto rounded-lg bg-white p-2" width={180} height={180} />
+              <img src={qrUrl} alt="Deposit address QR code" className="mx-auto rounded-lg bg-white p-2" width={180} height={180} />
             )}
 
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
-              <p className="text-gray-500 text-xs mb-1">Adresse de dépôt ({deposit.network})</p>
+              <p className="text-gray-500 text-xs mb-1">Deposit address ({deposit.network})</p>
               <p className="text-white text-xs font-mono break-all">{deposit.address}</p>
               <button
                 onClick={copyAddress}
                 className="mt-2 w-full py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded-md transition"
               >
-                {copied ? '✓ Copié' : '📋 Copier l’adresse'}
+                {copied ? '✓ Copied' : '📋 Copy address'}
               </button>
             </div>
 
             <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
               <span className="inline-block w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-              {status === 'confirming' ? 'Paiement détecté, confirmation…' : 'En attente du paiement…'}
+              {status === 'confirming' ? 'Payment detected, confirming…' : 'Waiting for payment…'}
             </div>
 
             {deposit.mock && (
@@ -282,7 +282,7 @@ const DepositModal = ({ onClose }: Props) => {
                 disabled={loading}
                 className="w-full py-2.5 rounded-lg font-bold text-black bg-yellow-400 hover:bg-yellow-300 disabled:opacity-40 transition"
               >
-                {loading ? '⏳…' : '🧪 Simuler le paiement reçu (test)'}
+                {loading ? '⏳…' : '🧪 Simulate payment received (test)'}
               </button>
             )}
 

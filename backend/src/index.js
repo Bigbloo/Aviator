@@ -69,7 +69,7 @@ const actionLimiter = rateLimit({
   max: 30,             // max 30 actions / 10s / IP (3/s sustained)
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Trop de requêtes, ralentissez un instant.' },
+  message: { error: 'Too many requests, please slow down for a moment.' },
 });
 
 // Stricter limiter for auth & money endpoints (register/login/deposit/withdraw).
@@ -78,7 +78,7 @@ const authLimiter = rateLimit({
   max: 15,             // max 15 / min / IP
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Trop de tentatives, réessayez dans une minute.' },
+  message: { error: 'Too many attempts, please try again in a minute.' },
 });
 
 app.use(['/api/bet', '/api/cashout'], actionLimiter);
@@ -131,9 +131,9 @@ const calcMultiplier = (elapsedMs) => {
 // Generates a handful of fake bet results each round so the live feed looks
 // active. Purely cosmetic — these never touch real balances.
 const BOT_NAMES = [
-  'Lucas', 'Emma', 'Hugo', 'Léa', 'Nathan', 'Chloé', 'Gabriel', 'Manon',
-  'Louis', 'Inès', 'Jules', 'Sarah', 'Adam', 'Camille', 'Raphaël', 'Zoé',
-  'Tom', 'Lina', 'Noah', 'Jade', 'Enzo', 'Alice', 'Liam', 'Rose',
+  'Lucas', 'Emma', 'Hugo', 'Mia', 'Nathan', 'Chloe', 'Gabriel', 'Olivia',
+  'Louis', 'Ava', 'Jules', 'Sarah', 'Adam', 'Grace', 'Ryan', 'Zoe',
+  'Tom', 'Lina', 'Noah', 'Jade', 'Leo', 'Alice', 'Liam', 'Rose',
 ];
 
 // Spribe-style masked handles (e.g. "5***7", "d***2") so the feed looks busy

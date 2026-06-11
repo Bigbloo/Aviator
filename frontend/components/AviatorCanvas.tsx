@@ -300,20 +300,20 @@ const AviatorCanvas = () => {
       if (crashed) {
         ctx.font = `bold ${px(44)} monospace`;
         ctx.fillStyle = '#ff3333';
-        ctx.fillText(`CRASH ! ${(crashPoint ?? mult).toFixed(2)}x`, W / 2, H / 2);
+        ctx.fillText(`CRASHED ! ${(crashPoint ?? mult).toFixed(2)}x`, W / 2, H / 2);
         ctx.font = `${px(15)} monospace`;
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        ctx.fillText('Nouvelle manche bientôt...', W / 2, H / 2 + 34 * k);
+        ctx.fillText('Next round starting soon...', W / 2, H / 2 + 34 * k);
       } else if (phase === 'betting') {
         ctx.font = `bold ${px(28)} monospace`;
         ctx.fillStyle = '#22c55e';
-        ctx.fillText('🎯 Faites vos jeux !', W / 2, H / 2);
+        ctx.fillText('🎯 Place your bets !', W / 2, H / 2);
         // Countdown until takeoff
         const endsAt = (window as any).__bettingEndsAt || 0;
         const remain = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
         ctx.font = `bold ${px(20)} monospace`;
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(`Décollage dans ${remain}s`, W / 2, H / 2 + 36 * k);
+        ctx.fillText(`Take-off in ${remain}s`, W / 2, H / 2 + 36 * k);
       } else if (phase === 'flying') {
         ctx.font = `bold ${px(48)} monospace`;
         ctx.fillStyle = '#ff6a00';
@@ -321,7 +321,7 @@ const AviatorCanvas = () => {
       } else {
         ctx.font = `bold ${px(26)} monospace`;
         ctx.fillStyle = 'rgba(255,255,255,0.6)';
-        ctx.fillText('En attente...', W / 2, H / 2);
+        ctx.fillText('Waiting...', W / 2, H / 2);
       }
       ctx.textAlign = 'left';
     };

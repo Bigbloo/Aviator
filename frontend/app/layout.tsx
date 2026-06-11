@@ -8,7 +8,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 
 export const metadata: Metadata = {
   title: 'Aviator — Crash Game',
-  description: 'Aviator crash game — mise, envole-toi, encaisse avant le crash !',
+  description: 'Aviator crash game — bet, take off, cash out before the crash!',
   applicationName: 'Aviator',
   manifest: '/manifest.webmanifest',
   appleWebApp: {

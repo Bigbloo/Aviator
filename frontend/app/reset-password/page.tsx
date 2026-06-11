@@ -26,7 +26,7 @@ export default function ResetPasswordPage() {
       await resetPassword(token, password);
       setDone(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur');
+      setError(e instanceof Error ? e.message : 'Error');
     } finally {
       setLoading(false);
     }
@@ -36,18 +36,18 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen bg-[#0e0e10] flex items-center justify-center p-4">
       <div className="bg-[#1b1c1d] border border-black/40 rounded-2xl p-6 w-full max-w-sm space-y-4">
         <h1 className="text-[#e50539] font-black italic text-2xl text-center">Aviator</h1>
-        <h2 className="text-white font-bold text-lg text-center">Nouveau mot de passe</h2>
+        <h2 className="text-white font-bold text-lg text-center">New password</h2>
 
         {done ? (
           <div className="text-center space-y-3">
             <div className="text-4xl">✅</div>
-            <p className="text-gray-300 text-sm">Ton mot de passe a été réinitialisé.</p>
+            <p className="text-gray-300 text-sm">Your password has been reset.</p>
             <a href="/" className="block w-full py-2.5 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-xl transition">
-              Aller au jeu
+              Go to the game
             </a>
           </div>
         ) : !token ? (
-          <p className="text-gray-400 text-sm text-center">Lien invalide ou expiré.</p>
+          <p className="text-gray-400 text-sm text-center">Invalid or expired link.</p>
         ) : (
           <>
             <input
@@ -55,7 +55,7 @@ export default function ResetPasswordPage() {
               value={password}
               maxLength={128}
               autoComplete="new-password"
-              placeholder="Nouveau mot de passe (8 min.)"
+              placeholder="New password (min. 8)"
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
             />
@@ -64,7 +64,7 @@ export default function ResetPasswordPage() {
               value={confirm}
               maxLength={128}
               autoComplete="new-password"
-              placeholder="Confirme le mot de passe"
+              placeholder="Confirm password"
               onChange={(e) => setConfirm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && submit()}
               className={`w-full bg-gray-800 border rounded-lg px-4 py-2.5 text-white focus:outline-none ${
@@ -72,7 +72,7 @@ export default function ResetPasswordPage() {
               }`}
             />
             {confirm.length > 0 && password !== confirm && (
-              <p className="text-red-400 text-xs">Les mots de passe ne correspondent pas.</p>
+              <p className="text-red-400 text-xs">Passwords do not match.</p>
             )}
             {error && <p className="text-red-400 text-sm text-center">{error}</p>}
             <button
@@ -80,7 +80,7 @@ export default function ResetPasswordPage() {
               disabled={loading || !canSubmit}
               className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 disabled:opacity-40 transition active:scale-95"
             >
-              {loading ? '⏳ ...' : 'Réinitialiser'}
+              {loading ? '⏳ ...' : 'Reset'}
             </button>
           </>
         )}

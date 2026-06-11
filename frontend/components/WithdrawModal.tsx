@@ -15,13 +15,13 @@ interface Props {
   onClose: () => void;
 }
 
-const MIN_WITHDRAW = 1; // baissé pour test — remettre ~10 ensuite
+const MIN_WITHDRAW = 1; // lowered for testing — restore to ~10 later
 
 // Per-network address validators + placeholder, mirrored from the backend.
 const NETWORKS: Record<string, { re: RegExp; placeholder: string }> = {
-  btc:    { re: /^(bc1[a-z0-9]{11,71}|[13][a-km-zA-HJ-NP-Z1-9]{25,39})$/, placeholder: 'bc1… ou 1…/3…' },
-  ltc:    { re: /^(ltc1[a-z0-9]{11,71}|[LM][a-km-zA-HJ-NP-Z1-9]{26,33}|3[a-km-zA-HJ-NP-Z1-9]{25,33})$/, placeholder: 'ltc1… ou L…/M…' },
-  sol:    { re: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/, placeholder: 'Adresse Solana' },
+  btc:    { re: /^(bc1[a-z0-9]{11,71}|[13][a-km-zA-HJ-NP-Z1-9]{25,39})$/, placeholder: 'bc1… or 1…/3…' },
+  ltc:    { re: /^(ltc1[a-z0-9]{11,71}|[LM][a-km-zA-HJ-NP-Z1-9]{26,33}|3[a-km-zA-HJ-NP-Z1-9]{25,33})$/, placeholder: 'ltc1… or L…/M…' },
+  sol:    { re: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/, placeholder: 'Solana address' },
   ton:    { re: /^(?:[A-Za-z0-9_-]{48}|[0-9-]:[0-9a-fA-F]{64})$/, placeholder: 'EQ… / UQ…' },
   bnbbsc: { re: /^0x[0-9a-fA-F]{40}$/, placeholder: '0x…' },
   xmr:    { re: /^[48][0-9AB][1-9A-HJ-NP-Za-km-z]{93,104}$/, placeholder: '4… / 8…' },
@@ -78,7 +78,7 @@ const WithdrawModal = ({ onClose }: Props) => {
       setBalance(data.balance);
       setMessage(data.message);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erreur lors du retrait');
+      setError(err instanceof Error ? err.message : 'Withdrawal error');
     } finally {
       setLoading(false);
     }
@@ -88,7 +88,7 @@ const WithdrawModal = ({ onClose }: Props) => {
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-gray-900 border border-orange-900/40 rounded-2xl p-6 w-full max-w-sm space-y-5 my-8">
         <div className="flex justify-between items-center">
-          <h2 className="text-white font-bold text-xl">₮ Retirer en USDT</h2>
+          <h2 className="text-white font-bold text-xl">₮ Withdraw in USDT</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white text-xl">✕</button>
         </div>
 
@@ -97,20 +97,20 @@ const WithdrawModal = ({ onClose }: Props) => {
             <div className="text-4xl">✅</div>
             <p className="text-green-400 text-sm">{message}</p>
             <p className="text-gray-400 text-sm">
-              Nouveau solde : <span className="text-orange-400 font-bold">{balance.toFixed(2)} USDT</span>
+              New balance: <span className="text-orange-400 font-bold">{balance.toFixed(2)} USDT</span>
             </p>
             <button onClick={onClose} className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition">
-              Fermer
+              Close
             </button>
           </div>
         ) : (
           <>
             <div className="text-gray-400 text-sm">
-              Solde disponible : <span className="text-orange-400 font-bold">{balance.toFixed(2)} USDT</span>
+              Available balance: <span className="text-orange-400 font-bold">{balance.toFixed(2)} USDT</span>
             </div>
 
             <div>
-              <label className="text-gray-400 text-sm mb-2 block">Montant (USDT)</label>
+              <label className="text-gray-400 text-sm mb-2 block">Amount (USDT)</label>
               <input
                 type="number"
                 min={MIN_WITHDRAW}
@@ -127,7 +127,7 @@ const WithdrawModal = ({ onClose }: Props) => {
 
             {/* Network selector — same style as the deposit picker */}
             <div className="relative">
-              <label className="text-gray-400 text-sm mb-2 block">Réseau de retrait</label>
+              <label className="text-gray-400 text-sm mb-2 block">Withdrawal network</label>
               <button
                 type="button"
                 onClick={() => setPickerOpen((o) => !o)}
@@ -163,11 +163,11 @@ const WithdrawModal = ({ onClose }: Props) => {
             </div>
 
             <div>
-              <label className="text-gray-400 text-sm mb-2 block">Adresse {selected.network}</label>
+              <label className="text-gray-400 text-sm mb-2 block">{selected.network} address</label>
               <input
                 type="text"
                 value={address}
-                placeholder={net?.placeholder || 'Adresse'}
+                placeholder={net?.placeholder || 'Address'}
                 onChange={(e) => setAddress(e.target.value)}
                 className={`w-full bg-gray-800 border rounded-lg px-4 py-3 text-white text-xs font-mono focus:outline-none ${
                   address.length > 0 && !addressValid
@@ -176,7 +176,7 @@ const WithdrawModal = ({ onClose }: Props) => {
                 }`}
               />
               {address.length > 0 && !addressValid && (
-                <p className="text-red-400 text-xs mt-1">Adresse {selected.network} invalide.</p>
+                <p className="text-red-400 text-xs mt-1">Invalid {selected.network} address.</p>
               )}
             </div>
 
@@ -187,11 +187,11 @@ const WithdrawModal = ({ onClose }: Props) => {
               disabled={loading || !canSubmit}
               className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 disabled:opacity-40 transition active:scale-95"
             >
-              {loading ? '⏳ Traitement...' : `Retirer ${amount} USDT`}
+              {loading ? '⏳ Processing...' : `Withdraw ${amount} USDT`}
             </button>
 
             <p className="text-gray-600 text-xs text-center">
-              Payé en {selected.name} ({selected.network}) à la valeur du moment. Vérifie bien l&apos;adresse — une erreur est irréversible.
+              Paid in {selected.name} ({selected.network}) at the current rate. Double-check the address — a mistake is irreversible.
             </p>
           </>
         )}

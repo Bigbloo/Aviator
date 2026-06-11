@@ -35,7 +35,7 @@ const requireAuth = (req, res, next) => {
     req.userId = payload.sub;
     return next();
   } catch (e) {
-    return res.status(401).json({ error: 'Session invalide ou expirée.' });
+    return res.status(401).json({ error: 'Invalid or expired session.' });
   }
 };
 
@@ -77,10 +77,10 @@ const checkAdminToken = (token) => {
 
 const requireAdmin = (req, res, next) => {
   if (!ADMIN_TOKEN || ADMIN_TOKEN.length < 12) {
-    return res.status(503).json({ error: 'Console admin désactivée (ADMIN_TOKEN non configuré).' });
+    return res.status(503).json({ error: 'Admin console disabled (ADMIN_TOKEN not configured).' });
   }
   if (!checkAdminToken(req.headers['x-admin-token'])) {
-    return res.status(401).json({ error: 'Accès admin refusé.' });
+    return res.status(401).json({ error: 'Admin access denied.' });
   }
   return next();
 };

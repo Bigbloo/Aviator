@@ -76,31 +76,31 @@ const ProvablyFairModal = ({ onClose }: Props) => {
 
         <div className="text-gray-400 text-sm space-y-1.5">
           <p>
-            Chaque round est <span className="text-white font-semibold">prouvé équitable</span> :
+            Every round is <span className="text-white font-semibold">provably fair</span>:
           </p>
           <ol className="list-decimal list-inside space-y-1 text-xs text-gray-500">
-            <li>Avant le décollage, le serveur publie l&apos;empreinte <span className="font-mono text-gray-400">SHA256(seed)</span> du round.</li>
-            <li>Le point de crash est calculé uniquement à partir de ce seed — il ne peut plus changer.</li>
-            <li>Après le crash, le seed est révélé : tu peux recalculer l&apos;empreinte et le crash toi-même.</li>
+            <li>Before take-off, the server publishes the round&apos;s <span className="font-mono text-gray-400">SHA256(seed)</span> hash.</li>
+            <li>The crash point is derived solely from that seed — it can no longer change.</li>
+            <li>After the crash, the seed is revealed: you can recompute the hash and the crash yourself.</li>
           </ol>
           <p className="text-xs text-gray-600">
-            Les coches ✓ ci-dessous sont recalculées par <span className="text-gray-400">ton navigateur</span>, pas par le serveur.
+            The ✓ checks below are recomputed by <span className="text-gray-400">your browser</span>, not by the server.
           </p>
         </div>
 
         {/* Current round commit */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
-          <p className="text-gray-500 text-xs mb-1">Empreinte du round en cours (engagement)</p>
-          <p className="text-orange-300 text-xs font-mono break-all">{fairHash || '— en attente du prochain round —'}</p>
+          <p className="text-gray-500 text-xs mb-1">Current round hash (commitment)</p>
+          <p className="text-orange-300 text-xs font-mono break-all">{fairHash || '— waiting for the next round —'}</p>
         </div>
 
         {/* Verified history */}
         <div>
-          <p className="text-gray-400 text-sm mb-2">Derniers rounds vérifiés</p>
+          <p className="text-gray-400 text-sm mb-2">Latest verified rounds</p>
           {loading ? (
-            <p className="text-gray-600 text-sm text-center py-4">Chargement…</p>
+            <p className="text-gray-600 text-sm text-center py-4">Loading…</p>
           ) : rounds.length === 0 ? (
-            <p className="text-gray-600 text-sm text-center py-4">Aucun round révélé pour l&apos;instant.</p>
+            <p className="text-gray-600 text-sm text-center py-4">No revealed round yet.</p>
           ) : (
             <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
               {rounds.map((r) => {
@@ -122,18 +122,18 @@ const ProvablyFairModal = ({ onClose }: Props) => {
                     {open && (
                       <div className="px-3 pb-3 space-y-1.5 text-xs">
                         <div>
-                          <p className="text-gray-500">Empreinte publiée avant le round</p>
+                          <p className="text-gray-500">Hash published before the round</p>
                           <p className="font-mono text-gray-300 break-all">{r.seedHash}</p>
                         </div>
                         <div>
-                          <p className="text-gray-500">Seed révélé après le crash</p>
+                          <p className="text-gray-500">Seed revealed after the crash</p>
                           <p className="font-mono text-gray-300 break-all">{r.serverSeed}</p>
                         </div>
                         <p className={r.hashOk ? 'text-green-400' : 'text-red-400'}>
-                          {r.hashOk ? '✓ SHA256(seed) = empreinte publiée' : '✗ L’empreinte ne correspond pas'}
+                          {r.hashOk ? '✓ SHA256(seed) = published hash' : '✗ Hash does not match'}
                         </p>
                         <p className={r.crashOk ? 'text-green-400' : 'text-red-400'}>
-                          {r.crashOk ? `✓ Crash recalculé = x${r.crashPoint.toFixed(2)}` : '✗ Le crash ne correspond pas au seed'}
+                          {r.crashOk ? `✓ Recomputed crash = x${r.crashPoint.toFixed(2)}` : '✗ Crash does not match the seed'}
                         </p>
                       </div>
                     )}
@@ -145,8 +145,8 @@ const ProvablyFairModal = ({ onClose }: Props) => {
         </div>
 
         <p className="text-gray-600 text-[11px] leading-snug">
-          Formule : r = 13 premiers hex de SHA256(seed + «&nbsp;{CRASH_SALT}&nbsp;») ÷ 2⁵²&nbsp;;
-          crash = 1.00 si r &lt; 0.05, sinon 0.99 ÷ (1 − r). Avantage maison : 5%.
+          Formula: r = first 13 hex of SHA256(seed + «&nbsp;{CRASH_SALT}&nbsp;») ÷ 2⁵²&nbsp;;
+          crash = 1.00 if r &lt; 0.05, otherwise 0.99 ÷ (1 − r). House edge: 5%.
         </p>
       </div>
     </div>

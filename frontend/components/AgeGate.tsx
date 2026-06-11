@@ -29,29 +29,29 @@ const AgeGate = () => {
     <div className="fixed inset-0 z-[100] bg-[#0e0e10] flex items-center justify-center p-4">
       <div className="max-w-sm w-full bg-[#1b1c1d] border border-black/40 rounded-2xl p-6 text-center space-y-4">
         <div className="text-5xl">🔞</div>
-        <h2 className="text-white font-black text-xl">Vérification de l’âge</h2>
+        <h2 className="text-white font-black text-xl">Age verification</h2>
         <p className="text-gray-300 text-sm">
-          Ce site propose des jeux d’argent. Tu dois avoir{' '}
-          <b className="text-white">18 ans ou plus</b> et accepter nos{' '}
-          <a href="/terms" className="underline text-orange-400">CGU</a> et notre{' '}
-          <a href="/privacy" className="underline text-orange-400">Politique de confidentialité</a>.
+          This site offers real-money gambling. You must be{' '}
+          <b className="text-white">18 or older</b> and accept our{' '}
+          <a href="/terms" className="underline text-orange-400">Terms</a> and our{' '}
+          <a href="/privacy" className="underline text-orange-400">Privacy Policy</a>.
         </p>
         <p className="text-gray-500 text-xs">
-          Jouer comporte des risques : endettement, isolement, dépendance.{' '}
-          <a href="/responsible-gambling" className="underline">Jouer responsable</a>.
+          Gambling involves risks: debt, isolation, addiction.{' '}
+          <a href="/responsible-gambling" className="underline">Responsible gambling</a>.
         </p>
         <div className="flex gap-2 pt-1">
           <a
             href="https://www.google.com"
             className="flex-1 py-2.5 rounded-xl bg-[#2c2d30] text-gray-300 text-sm font-bold flex items-center justify-center"
           >
-            J’ai moins de 18 ans
+            I’m under 18
           </a>
           <button
             onClick={accept}
             className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white text-sm font-bold transition active:scale-95"
           >
-            J’ai 18 ans ou plus
+            I’m 18 or older
           </button>
         </div>
       </div>

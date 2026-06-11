@@ -42,11 +42,11 @@ const sendVerificationEmail = async (user) => {
   const link = `${WEB}/verify-email?token=${token}`;
   await send(
     user.email,
-    'Confirme ton adresse e-mail — Aviator',
-    `<p>Bienvenue ${user.username || ''} !</p>
-     <p>Confirme ton adresse e-mail en cliquant sur ce lien :</p>
+    'Confirm your email address — Aviator',
+    `<p>Welcome ${user.username || ''}!</p>
+     <p>Confirm your email address by clicking this link:</p>
      <p><a href="${link}">${link}</a></p>
-     <p style="color:#888;font-size:12px">Ce lien expire dans 3 jours.</p>`
+     <p style="color:#888;font-size:12px">This link expires in 3 days.</p>`
   );
 };
 
@@ -63,7 +63,7 @@ const getBalance = (req, res) => {
   let user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
   if (!user) {
     // Token references a user that no longer exists (e.g. wiped DB).
-    return res.status(401).json({ error: 'Compte introuvable, reconnecte-toi.' });
+    return res.status(401).json({ error: 'Account not found, please sign in again.' });
   }
   return res.json(publicUser(user));
 };
@@ -98,34 +98,34 @@ const register = async (req, res) => {
   address   = (address   || '').toString().trim();
 
   if (username.length < 3 || username.length > 20) {
-    return res.status(400).json({ error: 'Le pseudo doit faire entre 3 et 20 caractères.' });
+    return res.status(400).json({ error: 'Username must be between 3 and 20 characters.' });
   }
   if (!USERNAME_RE.test(username)) {
-    return res.status(400).json({ error: 'Pseudo invalide (lettres, chiffres, _).' });
+    return res.status(400).json({ error: 'Invalid username (letters, digits, _).' });
   }
   if (!EMAIL_RE.test(email) || email.length > 254) {
-    return res.status(400).json({ error: 'Email invalide.' });
+    return res.status(400).json({ error: 'Invalid email.' });
   }
   if (password.length < 8 || password.length > 128) {
-    return res.status(400).json({ error: 'Le mot de passe doit faire au moins 8 caractères.' });
+    return res.status(400).json({ error: 'Password must be at least 8 characters.' });
   }
   if (firstName.length < 1 || firstName.length > 80) {
-    return res.status(400).json({ error: 'Prénom requis (1-80 caractères).' });
+    return res.status(400).json({ error: 'First name required (1-80 characters).' });
   }
   if (lastName.length < 1 || lastName.length > 80) {
-    return res.status(400).json({ error: 'Nom requis (1-80 caractères).' });
+    return res.status(400).json({ error: 'Last name required (1-80 characters).' });
   }
   if (address.length < 5 || address.length > 250) {
-    return res.status(400).json({ error: 'Adresse requise (5-250 caractères).' });
+    return res.status(400).json({ error: 'Address required (5-250 characters).' });
   }
 
   const takenName = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
   if (takenName && takenName.id !== userId) {
-    return res.status(409).json({ error: 'Ce pseudo est déjà pris.' });
+    return res.status(409).json({ error: 'This username is already taken.' });
   }
   const takenEmail = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
   if (takenEmail && takenEmail.id !== userId) {
-    return res.status(409).json({ error: 'Cet email est déjà utilisé.' });
+    return res.status(409).json({ error: 'This email is already in use.' });
   }
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
@@ -170,11 +170,11 @@ const login = async (req, res) => {
     db.prepare('SELECT * FROM users WHERE LOWER(username) = ?').get(identifier);
 
   if (!user || !user.password_hash) {
-    return res.status(401).json({ error: 'Identifiants invalides.' });
+    return res.status(401).json({ error: 'Invalid credentials.' });
   }
   const ok = await bcrypt.compare(password, user.password_hash);
   if (!ok) {
-    return res.status(401).json({ error: 'Identifiants invalides.' });
+    return res.status(401).json({ error: 'Invalid credentials.' });
   }
   return res.json(authPayload(user));
 };
@@ -184,7 +184,7 @@ const verifyEmail = (req, res) => {
   const token = (req.query.token || '').toString();
   const row = db.prepare("SELECT * FROM auth_tokens WHERE token = ? AND type = 'verify' AND used = 0").get(token);
   if (!row || row.expires_at < nowS()) {
-    return res.status(400).json({ error: 'Lien invalide ou expiré.' });
+    return res.status(400).json({ error: 'Invalid or expired link.' });
   }
   db.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').run(row.user_id);
   db.prepare('UPDATE auth_tokens SET used = 1 WHERE token = ?').run(token);
@@ -194,7 +194,7 @@ const verifyEmail = (req, res) => {
 // ── POST /api/resend-verification  (auth) ─────────────────────────────────────
 const resendVerification = async (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
-  if (!user || !user.email) return res.status(400).json({ error: 'Aucune adresse e-mail sur ce compte.' });
+  if (!user || !user.email) return res.status(400).json({ error: 'No email address on this account.' });
   if (user.email_verified) return res.json({ ok: true, alreadyVerified: true });
   await sendVerificationEmail(user).catch((e) => console.error('[Mail] resend:', e.message));
   return res.json({ ok: true });
@@ -209,10 +209,10 @@ const forgotPassword = async (req, res) => {
     const link = `${WEB}/reset-password?token=${token}`;
     await send(
       user.email,
-      'Réinitialise ton mot de passe — Aviator',
-      `<p>Tu as demandé à réinitialiser ton mot de passe.</p>
+      'Reset your password — Aviator',
+      `<p>You requested to reset your password.</p>
        <p><a href="${link}">${link}</a></p>
-       <p style="color:#888;font-size:12px">Ce lien expire dans 1 heure. Si tu n'es pas à l'origine de cette demande, ignore cet e-mail.</p>`
+       <p style="color:#888;font-size:12px">This link expires in 1 hour. If you did not request this, ignore this email.</p>`
     ).catch((e) => console.error('[Mail] reset:', e.message));
   }
   // Always succeed to avoid revealing whether an email exists.
@@ -224,11 +224,11 @@ const resetPassword = async (req, res) => {
   const token = (req.body && req.body.token ? req.body.token : '').toString();
   const password = (req.body && req.body.password ? req.body.password : '').toString();
   if (password.length < 8 || password.length > 128) {
-    return res.status(400).json({ error: 'Le mot de passe doit faire au moins 8 caractères.' });
+    return res.status(400).json({ error: 'Password must be at least 8 characters.' });
   }
   const row = db.prepare("SELECT * FROM auth_tokens WHERE token = ? AND type = 'reset' AND used = 0").get(token);
   if (!row || row.expires_at < nowS()) {
-    return res.status(400).json({ error: 'Lien invalide ou expiré.' });
+    return res.status(400).json({ error: 'Invalid or expired link.' });
   }
   const hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
   const apply = db.transaction(() => {

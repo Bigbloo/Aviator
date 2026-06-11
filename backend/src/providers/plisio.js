@@ -24,20 +24,20 @@ const NATIVE = {
 
 // Plisio's API errors are raw English JSON-ish strings (e.g. '{"amount":"Invalid
 // minimal amount attribute value, it must be greater than: 2.918855808 TON"}').
-// Translate the known ones into a clear French message for the player.
+// Translate the known ones into a clear English message for the player.
 const friendlyError = (raw, native) => {
-  if (!raw) return 'Erreur du prestataire de paiement. Réessaie dans un instant.';
+  if (!raw) return 'Payment provider error. Please try again in a moment.';
   const msg = typeof raw === 'string' ? raw : JSON.stringify(raw);
   const min = msg.match(/greater than:?\s*([\d.]+)\s*([A-Z_]+)/i);
   if (min) {
     const qty = Number(min[1]);
     const cur = (min[2] || native).replace('_', ' ');
-    return `Montant trop faible pour cette crypto : le minimum est ${qty.toFixed(4)} ${cur}. Augmente le montant en USDT ou choisis une autre crypto.`;
+    return `Amount too low for this crypto: the minimum is ${qty.toFixed(4)} ${cur}. Increase the USDT amount or choose another crypto.`;
   }
   if (/not supported|disabled|currency/i.test(msg)) {
-    return 'Cette crypto est momentanément indisponible. Choisis-en une autre.';
+    return 'This crypto is temporarily unavailable. Please choose another one.';
   }
-  return 'Erreur du prestataire de paiement. Réessaie dans un instant.';
+  return 'Payment provider error. Please try again in a moment.';
 };
 
 module.exports = {

@@ -22,7 +22,7 @@ const provider = require('../providers');
 
 // Tunables
 const MIN_DEPOSIT = 1;            // USD (Plisio enforces its own per-currency min)
-const MIN_WITHDRAW = 1;           // USDT (baissé pour test — remettre ~10 ensuite)
+const MIN_WITHDRAW = 1;           // USDT (lowered for testing — restore to ~10 later)
 const MAX_AUTO_WITHDRAW = 1000;   // above this, hold for manual review (anti-abuse/AML)
 const PAY_CURRENCY = 'sol';
 
@@ -105,14 +105,14 @@ const createDeposit = async (req, res) => {
   const userId = req.userId;
   const amount = Number(req.body.amount);
   if (!Number.isFinite(amount) || amount < MIN_DEPOSIT) {
-    return res.status(400).json({ error: `Dépôt minimum : ${MIN_DEPOSIT} USDT.` });
+    return res.status(400).json({ error: `Minimum deposit: ${MIN_DEPOSIT} USDT.` });
   }
 
   // Pay-in currency chosen by the player (defaults to USDT TRC-20). Restricted
   // to our curated list so arbitrary values can't be injected.
   const payCurrency = (req.body.payCurrency || PAY_CURRENCY).toString().toLowerCase().trim();
   if (!POPULAR_CODES.has(payCurrency)) {
-    return res.status(400).json({ error: 'Crypto non supportée.' });
+    return res.status(400).json({ error: 'Unsupported crypto.' });
   }
 
   const id = uuidv4();
@@ -136,7 +136,7 @@ const createDeposit = async (req, res) => {
 
   // Real deposits require a registered account (no anonymous money movement).
   if (!isRegistered(userId)) {
-    return res.status(403).json({ error: 'Crée un compte pour déposer.', needAccount: true });
+    return res.status(403).json({ error: 'Create an account to deposit.', needAccount: true });
   }
 
   try {
@@ -153,14 +153,14 @@ const createDeposit = async (req, res) => {
     });
   } catch (e) {
     console.error(`[Crypto] deposit error (${provider.name}):`, e.message);
-    return res.status(502).json({ error: e.message || 'Impossible de créer le dépôt.' });
+    return res.status(502).json({ error: e.message || 'Unable to create the deposit.' });
   }
 };
 
 // ── GET /api/crypto/deposit/:id  (auth) — poll status ─────────────────────────
 const getDeposit = (req, res) => {
   const dep = db.prepare('SELECT * FROM crypto_deposits WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
-  if (!dep) return res.status(404).json({ error: 'Dépôt introuvable.' });
+  if (!dep) return res.status(404).json({ error: 'Deposit not found.' });
   return res.json({ depositId: dep.id, status: dep.status, amount: dep.amount, received: dep.received, address: dep.address });
 };
 
@@ -194,7 +194,7 @@ const handleIpn = async (req, res) => {
 // ── POST /api/crypto/_mock/confirm  (dev only) — simulate a paid deposit ──────
 const mockConfirm = (req, res) => {
   const dep = db.prepare('SELECT * FROM crypto_deposits WHERE id = ? AND user_id = ?').get(req.body.depositId, req.userId);
-  if (!dep) return res.status(404).json({ error: 'Dépôt introuvable.' });
+  if (!dep) return res.status(404).json({ error: 'Deposit not found.' });
   const result = creditDeposit(dep.id, dep.amount);
   const user = db.prepare('SELECT balance FROM users WHERE id = ?').get(req.userId);
   return res.json({ status: 'finished', credited: result.credited, balance: user.balance });
@@ -212,13 +212,13 @@ const createWithdrawal = async (req, res) => {
   const currency = (req.body.currency || 'sol').toString().toLowerCase().trim();
 
   if (!Number.isFinite(amount) || amount < MIN_WITHDRAW) {
-    return res.status(400).json({ error: `Retrait minimum : ${MIN_WITHDRAW} USDT.` });
+    return res.status(400).json({ error: `Minimum withdrawal: ${MIN_WITHDRAW} USDT.` });
   }
   if (!POPULAR_CODES.has(currency)) {
-    return res.status(400).json({ error: 'Réseau de retrait non supporté.' });
+    return res.status(400).json({ error: 'Unsupported withdrawal network.' });
   }
   if (!validateAddress(currency, address)) {
-    return res.status(400).json({ error: `Adresse ${networkOf(currency)} invalide.` });
+    return res.status(400).json({ error: `Invalid ${networkOf(currency)} address.` });
   }
 
   // Admin demo (or local dev): instant simulated payout, no review queue.
@@ -226,12 +226,12 @@ const createWithdrawal = async (req, res) => {
 
   // Real withdrawals require a registered account.
   if (!demo && !isRegistered(userId)) {
-    return res.status(403).json({ error: 'Crée un compte pour retirer.', needAccount: true });
+    return res.status(403).json({ error: 'Create an account to withdraw.', needAccount: true });
   }
 
   const user = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
-  if (!user) return res.status(404).json({ error: 'Compte introuvable.' });
-  if (user.balance < amount) return res.status(400).json({ error: 'Solde insuffisant.' });
+  if (!user) return res.status(404).json({ error: 'Account not found.' });
+  if (user.balance < amount) return res.status(400).json({ error: 'Insufficient balance.' });
 
   const id = uuidv4();
 
@@ -251,13 +251,13 @@ const createWithdrawal = async (req, res) => {
     db.prepare("UPDATE crypto_withdrawals SET txid=?, updated_at=? WHERE id=?").run(txid, now(), id);
     return res.json({
       withdrawalId: id, status: 'completed', txid, amount, address, balance: balanceAfter,
-      demo: true, message: `Retrait de ${amount} USDT envoyé (démo).`,
+      demo: true, message: `Withdrawal of ${amount} USDT sent (demo).`,
     });
   }
 
   return res.json({
     withdrawalId: id, status: 'pending_review', amount, address, balance: balanceAfter,
-    message: `Retrait de ${amount} USDT enregistré — en attente de validation (conformité).`,
+    message: `Withdrawal of ${amount} USDT recorded — pending review (compliance).`,
   });
 };
 
@@ -270,7 +270,7 @@ const executePayout = async () => {
     const txid = 'mock_tx_' + crypto.randomBytes(16).toString('hex');
     return { ok: true, status: 'completed', txid };
   }
-  return { ok: false, error: 'paiement automatique indisponible — utilise « Marquer payé »' };
+  return { ok: false, error: 'automatic payout unavailable — use “Mark as paid”' };
 };
 
 // ── ADMIN: GET /api/admin/withdrawals?status=pending_review ───────────────────
@@ -302,7 +302,7 @@ const adminApproveWithdrawal = async (req, res) => {
   const w = db.prepare('SELECT * FROM crypto_withdrawals WHERE id = ?').get(req.params.id);
   if (!w) return res.status(404).json({ error: 'Retrait introuvable.' });
   if (w.status !== 'pending_review') {
-    return res.status(409).json({ error: `Déjà traité (statut: ${w.status}).` });
+    return res.status(409).json({ error: `Already processed (status: ${w.status}).` });
   }
   const result = await executePayout(w);
   if (!result.ok) {
@@ -322,7 +322,7 @@ const adminMarkPaidWithdrawal = (req, res) => {
   const w = db.prepare('SELECT * FROM crypto_withdrawals WHERE id = ?').get(req.params.id);
   if (!w) return res.status(404).json({ error: 'Retrait introuvable.' });
   if (!['pending_review', 'processing', 'failed'].includes(w.status)) {
-    return res.status(409).json({ error: `Déjà traité (statut: ${w.status}).` });
+    return res.status(409).json({ error: `Already processed (status: ${w.status}).` });
   }
   const txid = (req.body && req.body.txid ? String(req.body.txid) : '').trim();
   if (txid.length < 6) {
@@ -340,7 +340,7 @@ const adminRejectWithdrawal = (req, res) => {
   const w = db.prepare('SELECT * FROM crypto_withdrawals WHERE id = ?').get(req.params.id);
   if (!w) return res.status(404).json({ error: 'Retrait introuvable.' });
   if (w.status !== 'pending_review') {
-    return res.status(409).json({ error: `Déjà traité (statut: ${w.status}).` });
+    return res.status(409).json({ error: `Already processed (status: ${w.status}).` });
   }
   const note = (req.body && req.body.note ? String(req.body.note) : '').slice(0, 500);
   const refund = db.transaction(() => {

@@ -40,7 +40,7 @@ const multBadge = (m: number) => {
 };
 
 const fmtTime = (s: number) =>
-  new Date(s * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  new Date(s * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
 const LiveBets = () => {
   const userId = useGameStore((s) => s.userId);
@@ -137,7 +137,7 @@ const LiveBets = () => {
       </div>
 
       <div className="grid grid-cols-[1fr_auto_auto] gap-2 px-3 py-1 text-[10px] uppercase text-gray-500 font-bold border-b border-black/30">
-        <span>{tab === 'my' ? 'Heure' : 'User'}</span>
+        <span>{tab === 'my' ? 'Time' : 'User'}</span>
         <span className="text-right pr-2">Bet USDT</span>
         <span className="text-right">Cash out</span>
       </div>
@@ -146,7 +146,7 @@ const LiveBets = () => {
       <div className="max-h-[60vh] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto scrollbar-none">
         {tab === 'all' ? (
           <>
-            {rows.length === 0 && <p className="text-gray-600 text-xs text-center py-6">En attente des paris…</p>}
+            {rows.length === 0 && <p className="text-gray-600 text-xs text-center py-6">Waiting for bets…</p>}
             {rows.map((r) => (
               <div
                 key={r.key}
@@ -179,16 +179,16 @@ const LiveBets = () => {
         ) : (
           <>
             {myBets.length === 0 && (
-              <p className="text-gray-600 text-xs text-center py-6 px-3">Aucun pari pour l’instant — place ta première mise !</p>
+              <p className="text-gray-600 text-xs text-center py-6 px-3">No bets yet — place your first bet!</p>
             )}
             {myBets.length > 0 && (
               <div className="grid grid-cols-3 gap-1 px-3 py-2 border-b border-black/30 text-center bg-[#161717]">
                 <div>
-                  <p className="text-[9px] uppercase text-gray-500">Misé</p>
+                  <p className="text-[9px] uppercase text-gray-500">Staked</p>
                   <p className="text-xs font-bold text-gray-300 tabular-nums">{myStaked.toFixed(2)}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] uppercase text-gray-500">Gagné</p>
+                  <p className="text-[9px] uppercase text-gray-500">Won</p>
                   <p className="text-xs font-bold text-emerald-400 tabular-nums">{myWon.toFixed(2)}</p>
                 </div>
                 <div>

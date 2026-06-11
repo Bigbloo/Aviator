@@ -64,17 +64,17 @@ const Header = () => {
             <button
               onClick={goDeposit}
               className="bg-[#28a909] hover:bg-[#23950a] text-white text-xs sm:text-sm font-bold px-3 py-1.5 rounded-full transition active:scale-95 whitespace-nowrap"
-              title="Déposer"
+              title="Deposit"
             >
-              Dépôt
+              Deposit
             </button>
           </div>
 
           <button
             onClick={toggleMute}
             className="bg-[#2c2d30] hover:bg-[#3a3b3e] text-white text-base w-8 h-8 flex items-center justify-center rounded-full transition active:scale-95"
-            title={muted ? 'Activer le son' : 'Couper le son'}
-            aria-label={muted ? 'Activer le son' : 'Couper le son'}
+            title={muted ? 'Unmute' : 'Mute'}
+            aria-label={muted ? 'Unmute' : 'Mute'}
           >
             {muted ? '🔇' : '🔊'}
           </button>
@@ -97,19 +97,19 @@ const Header = () => {
                     className="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-[#2c2d30] flex items-center gap-2"
                   >
                     <span>{username ? '👤' : '➕'}</span>
-                    <span className="truncate">{username || 'Créer un compte'}</span>
+                    <span className="truncate">{username || 'Create an account'}</span>
                   </button>
                   <button
                     onClick={() => { goDeposit(); setMenuOpen(false); }}
                     className="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-[#2c2d30] flex items-center gap-2"
                   >
-                    💰 Déposer
+                    💰 Deposit
                   </button>
                   <button
                     onClick={() => { goWithdraw(); setMenuOpen(false); }}
                     className="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-[#2c2d30] flex items-center gap-2"
                   >
-                    💸 Retirer
+                    💸 Withdraw
                   </button>
                   <button
                     onClick={() => { setShowFair(true); setMenuOpen(false); }}

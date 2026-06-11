@@ -29,10 +29,10 @@ const multColor = (m: number) => {
 
 const ago = (s: number) => {
   const d = Math.max(0, Math.floor(Date.now() / 1000) - s);
-  if (d < 60) return "à l'instant";
-  if (d < 3600) return `il y a ${Math.floor(d / 60)} min`;
-  if (d < 86400) return `il y a ${Math.floor(d / 3600)} h`;
-  return `il y a ${Math.floor(d / 86400)} j`;
+  if (d < 60) return 'just now';
+  if (d < 3600) return `${Math.floor(d / 60)} min ago`;
+  if (d < 86400) return `${Math.floor(d / 3600)} h ago`;
+  return `${Math.floor(d / 86400)} d ago`;
 };
 
 const TopWinners = () => {
@@ -68,7 +68,7 @@ const TopWinners = () => {
       </div>
 
       <div className="overflow-y-auto scrollbar-none lg:flex-1 lg:min-h-0">
-        {rows.length === 0 && <p className="text-gray-600 text-sm text-center py-8">Chargement…</p>}
+        {rows.length === 0 && <p className="text-gray-600 text-sm text-center py-8">Loading…</p>}
         {rows.map((r) => (
           <div
             key={`${r.rank}-${r.name}-${r.at}`}
@@ -86,7 +86,7 @@ const TopWinners = () => {
                 </span>
               </div>
               <p className="text-gray-500 text-[10px]">
-                Mise {r.bet.toFixed(2)} · {ago(r.at)}
+                Bet {r.bet.toFixed(2)} · {ago(r.at)}
               </p>
             </div>
             <span className="text-sm font-bold tabular-nums text-emerald-400 shrink-0">

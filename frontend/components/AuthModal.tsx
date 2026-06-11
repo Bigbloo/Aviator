@@ -44,7 +44,7 @@ const AuthModal = ({ onClose }: Props) => {
   const handleSubmit = async () => {
     if (!canSubmit) return;
     if (mode === 'register' && password !== passwordConfirm) {
-      setError('Les mots de passe ne correspondent pas.');
+      setError('Passwords do not match.');
       return;
     }
     setLoading(true);
@@ -69,7 +69,7 @@ const AuthModal = ({ onClose }: Props) => {
       setBalance(data.balance);
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue.');
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
       setLoading(false);
     }
@@ -85,7 +85,7 @@ const AuthModal = ({ onClose }: Props) => {
 
   const handleForgot = async () => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setError('Entre une adresse e-mail valide.');
+      setError('Enter a valid email address.');
       return;
     }
     setLoading(true);
@@ -104,7 +104,7 @@ const AuthModal = ({ onClose }: Props) => {
       <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto">
         <div className="bg-gray-900 border border-orange-900/40 rounded-2xl p-6 w-full max-w-sm space-y-4 my-8">
           <div className="flex justify-between items-center">
-            <h2 className="text-white font-bold text-xl">🔒 Mot de passe oublié</h2>
+            <h2 className="text-white font-bold text-xl">🔒 Forgot password</h2>
             <button onClick={onClose} className="text-gray-500 hover:text-white text-xl">✕</button>
           </div>
 
@@ -112,21 +112,21 @@ const AuthModal = ({ onClose }: Props) => {
             <div className="text-center py-4 space-y-3">
               <div className="text-4xl">📧</div>
               <p className="text-gray-300 text-sm">
-                Si un compte existe avec cet e-mail, un lien de réinitialisation vient d’être envoyé.
-                Vérifie ta boîte de réception (et tes spams).
+                If an account exists for this email, a reset link has just been sent.
+                Check your inbox (and your spam folder).
               </p>
               <button onClick={() => switchMode('login')} className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition">
-                Retour à la connexion
+                Back to sign in
               </button>
             </div>
           ) : (
             <>
-              <p className="text-gray-400 text-sm">Entre ton e-mail, on t’envoie un lien pour réinitialiser ton mot de passe.</p>
+              <p className="text-gray-400 text-sm">Enter your email and we’ll send you a link to reset your password.</p>
               <input
                 type="email"
                 value={email}
                 autoComplete="email"
-                placeholder="toi@exemple.com"
+                placeholder="you@example.com"
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleForgot()}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
@@ -137,10 +137,10 @@ const AuthModal = ({ onClose }: Props) => {
                 disabled={loading}
                 className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 disabled:opacity-40 transition active:scale-95"
               >
-                {loading ? '⏳ Envoi...' : 'Envoyer le lien'}
+                {loading ? '⏳ Sending...' : 'Send link'}
               </button>
               <button onClick={() => switchMode('login')} className="w-full text-gray-500 hover:text-gray-300 text-sm">
-                ← Retour à la connexion
+                ← Back to sign in
               </button>
             </>
           )}
@@ -154,7 +154,7 @@ const AuthModal = ({ onClose }: Props) => {
       <div className="bg-gray-900 border border-orange-900/40 rounded-2xl p-6 w-full max-w-sm space-y-4 my-8">
         <div className="flex justify-between items-center">
           <h2 className="text-white font-bold text-xl">
-            {mode === 'register' ? '👤 Créer un compte' : '🔑 Se connecter'}
+            {mode === 'register' ? '👤 Create an account' : '🔑 Sign in'}
           </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white text-xl">
             ✕
@@ -168,7 +168,7 @@ const AuthModal = ({ onClose }: Props) => {
               mode === 'register' ? 'bg-orange-500 text-white' : 'text-gray-400'
             }`}
           >
-            Créer un compte
+            Create account
           </button>
           <button
             onClick={() => switchMode('login')}
@@ -176,7 +176,7 @@ const AuthModal = ({ onClose }: Props) => {
               mode === 'login' ? 'bg-orange-500 text-white' : 'text-gray-400'
             }`}
           >
-            Se connecter
+            Sign in
           </button>
         </div>
 
@@ -184,38 +184,38 @@ const AuthModal = ({ onClose }: Props) => {
           <>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-gray-400 text-sm mb-1 block">Prénom</label>
+                <label className="text-gray-400 text-sm mb-1 block">First name</label>
                 <input
                   type="text"
                   value={firstName}
                   maxLength={80}
                   autoComplete="given-name"
-                  placeholder="Jean"
+                  placeholder="John"
                   onChange={(e) => setFirstName(e.target.value)}
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-orange-500"
                 />
               </div>
               <div>
-                <label className="text-gray-400 text-sm mb-1 block">Nom</label>
+                <label className="text-gray-400 text-sm mb-1 block">Last name</label>
                 <input
                   type="text"
                   value={lastName}
                   maxLength={80}
                   autoComplete="family-name"
-                  placeholder="Dupont"
+                  placeholder="Doe"
                   onChange={(e) => setLastName(e.target.value)}
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-orange-500"
                 />
               </div>
             </div>
             <div>
-              <label className="text-gray-400 text-sm mb-1 block">Pseudo</label>
+              <label className="text-gray-400 text-sm mb-1 block">Username</label>
               <input
                 type="text"
                 value={username}
                 maxLength={20}
                 autoComplete="username"
-                placeholder="3 à 20 caractères"
+                placeholder="3 to 20 characters"
                 onChange={(e) => setUsernameLocal(e.target.value)}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
               />
@@ -227,18 +227,18 @@ const AuthModal = ({ onClose }: Props) => {
                 value={email}
                 maxLength={254}
                 autoComplete="email"
-                placeholder="toi@exemple.com"
+                placeholder="you@example.com"
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
               />
             </div>
             <div>
-              <label className="text-gray-400 text-sm mb-1 block">Adresse</label>
+              <label className="text-gray-400 text-sm mb-1 block">Address</label>
               <textarea
                 value={address}
                 maxLength={250}
                 autoComplete="street-address"
-                placeholder="12 rue de la Paix, 75002 Paris, France"
+                placeholder="221B Baker Street, London, UK"
                 rows={2}
                 onChange={(e) => setAddress(e.target.value)}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500 resize-none"
@@ -247,12 +247,12 @@ const AuthModal = ({ onClose }: Props) => {
           </>
         ) : (
           <div>
-            <label className="text-gray-400 text-sm mb-1 block">Email ou pseudo</label>
+            <label className="text-gray-400 text-sm mb-1 block">Email or username</label>
             <input
               type="text"
               value={identifier}
               autoComplete="username"
-              placeholder="toi@exemple.com ou MonPseudo"
+              placeholder="you@example.com or YourUsername"
               onChange={(e) => setIdentifier(e.target.value)}
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
             />
@@ -260,13 +260,13 @@ const AuthModal = ({ onClose }: Props) => {
         )}
 
         <div>
-          <label className="text-gray-400 text-sm mb-1 block">Mot de passe</label>
+          <label className="text-gray-400 text-sm mb-1 block">Password</label>
           <input
             type="password"
             value={password}
             maxLength={128}
             autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-            placeholder={mode === 'register' ? '8 caractères minimum' : 'Mot de passe'}
+            placeholder={mode === 'register' ? 'At least 8 characters' : 'Password'}
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => mode === 'login' && e.key === 'Enter' && handleSubmit()}
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
@@ -275,13 +275,13 @@ const AuthModal = ({ onClose }: Props) => {
 
         {mode === 'register' && (
           <div>
-            <label className="text-gray-400 text-sm mb-1 block">Confirmer le mot de passe</label>
+            <label className="text-gray-400 text-sm mb-1 block">Confirm password</label>
             <input
               type="password"
               value={passwordConfirm}
               maxLength={128}
               autoComplete="new-password"
-              placeholder="Retape le mot de passe"
+              placeholder="Re-enter your password"
               onChange={(e) => setPasswordConfirm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               className={`w-full bg-gray-800 border rounded-lg px-4 py-2.5 text-white focus:outline-none ${
@@ -291,7 +291,7 @@ const AuthModal = ({ onClose }: Props) => {
               }`}
             />
             {passwordConfirm.length > 0 && password !== passwordConfirm && (
-              <p className="text-red-400 text-xs mt-1">Les mots de passe ne correspondent pas.</p>
+              <p className="text-red-400 text-xs mt-1">Passwords do not match.</p>
             )}
           </div>
         )}
@@ -305,9 +305,9 @@ const AuthModal = ({ onClose }: Props) => {
               className="mt-0.5 w-4 h-4 accent-orange-500 shrink-0"
             />
             <span>
-              Je certifie avoir <b className="text-gray-200">18 ans ou plus</b> et j’accepte les{' '}
-              <a href="/terms" target="_blank" className="underline text-orange-400">CGU</a> et la{' '}
-              <a href="/privacy" target="_blank" className="underline text-orange-400">Politique de confidentialité</a>.
+              I certify that I am <b className="text-gray-200">18 or older</b> and I accept the{' '}
+              <a href="/terms" target="_blank" className="underline text-orange-400">Terms</a> and the{' '}
+              <a href="/privacy" target="_blank" className="underline text-orange-400">Privacy Policy</a>.
             </span>
           </label>
         )}
@@ -318,7 +318,7 @@ const AuthModal = ({ onClose }: Props) => {
             onClick={() => switchMode('forgot')}
             className="block ml-auto -mt-1 text-orange-400 text-xs hover:underline"
           >
-            Mot de passe oublié ?
+            Forgot password?
           </button>
         )}
 
@@ -330,10 +330,10 @@ const AuthModal = ({ onClose }: Props) => {
           className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 disabled:opacity-40 transition active:scale-95"
         >
           {loading
-            ? '⏳ Patiente...'
+            ? '⏳ Please wait...'
             : mode === 'register'
-            ? '✅ Créer mon compte'
-            : '🔑 Connexion'}
+            ? '✅ Create my account'
+            : '🔑 Sign in'}
         </button>
       </div>
     </div>

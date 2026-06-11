@@ -112,10 +112,10 @@ export default function Home() {
       {/* Legal footer */}
       <footer className="shrink-0 px-3 py-2 border-t border-black/40 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-gray-600">
         <span className="font-black text-amber-500">18+</span>
-        <span>Jouer comporte des risques (dépendance, isolement, endettement).</span>
-        <a href="/terms" className="hover:text-gray-400">CGU</a>
-        <a href="/privacy" className="hover:text-gray-400">Confidentialité</a>
-        <a href="/responsible-gambling" className="hover:text-gray-400">Jeu responsable</a>
+        <span>Gambling involves risks (addiction, isolation, debt).</span>
+        <a href="/terms" className="hover:text-gray-400">Terms</a>
+        <a href="/privacy" className="hover:text-gray-400">Privacy</a>
+        <a href="/responsible-gambling" className="hover:text-gray-400">Responsible gambling</a>
       </footer>
     </div>
   );

@@ -1,66 +1,65 @@
 import LegalShell from '@/components/LegalShell';
 
-export const metadata = { title: 'CGU — Aviator' };
+export const metadata = { title: 'Terms — Aviator' };
 
 export default function TermsPage() {
   return (
-    <LegalShell title="Conditions Générales d’Utilisation">
+    <LegalShell title="Terms of Service">
       <p>
-        En accédant à Aviator (« le Service »), vous acceptez les présentes conditions. Si vous ne les
-        acceptez pas, n’utilisez pas le Service.
+        By accessing Aviator (“the Service”), you accept these terms. If you do not accept them, do not use the
+        Service.
       </p>
 
-      <h2>1. Éligibilité</h2>
+      <h2>1. Eligibility</h2>
       <p>
-        Vous devez avoir <b>18 ans révolus</b> (ou l’âge légal pour jouer dans votre juridiction, si supérieur)
-        et résider dans un pays où les jeux d’argent en ligne sont autorisés. Il vous incombe de vérifier la
-        légalité de votre participation. Le Service peut être interdit dans certains territoires.
+        You must be <b>18 or older</b> (or the legal gambling age in your jurisdiction, if higher) and reside in
+        a country where online gambling is permitted. It is your responsibility to verify that your
+        participation is lawful. The Service may be prohibited in some territories.
       </p>
 
-      <h2>2. Compte</h2>
+      <h2>2. Account</h2>
       <p>
-        Un seul compte par personne. Vous êtes responsable de la confidentialité de vos identifiants et de
-        toute activité sur votre compte. Les informations fournies (nom, email, adresse) doivent être exactes ;
-        de fausses informations peuvent entraîner la suspension du compte et le blocage des retraits.
+        One account per person. You are responsible for keeping your credentials confidential and for any
+        activity on your account. The information you provide (name, email, address) must be accurate; false
+        information may lead to account suspension and to withdrawals being blocked.
       </p>
 
-      <h2>3. Dépôts et retraits</h2>
+      <h2>3. Deposits and withdrawals</h2>
       <p>
-        Les dépôts et retraits s’effectuent en crypto-monnaie (USDT et autres). Les transactions sont
-        irréversibles ; vérifiez l’adresse avant tout envoi. Les retraits peuvent faire l’objet d’une
-        vérification de conformité (LCB-FT) avant validation. Des frais de réseau s’appliquent.
+        Deposits and withdrawals are made in cryptocurrency (USDT and others). Transactions are irreversible;
+        check the address before sending anything. Withdrawals may be subject to a compliance check (AML/CFT)
+        before approval. Network fees apply.
       </p>
 
-      <h2>4. Déroulement du jeu</h2>
+      <h2>4. How the game works</h2>
       <p>
-        Le multiplicateur et le point de crash sont déterminés par le serveur. Les mises sont définitives une
-        fois placées ; l’encaissement (« cash out ») doit intervenir avant le crash. Aucune garantie de gain
-        n’est donnée — le jeu comporte un avantage maison.
+        The multiplier and the crash point are determined by the server. Bets are final once placed; the
+        cash-out must happen before the crash. No winnings are guaranteed — the game has a house edge.
       </p>
 
-      <h2>5. Comportements interdits</h2>
+      <h2>5. Prohibited conduct</h2>
       <p>
-        Sont interdits : la fraude, l’utilisation de robots ou d’automatismes, l’exploitation de bugs, le
-        blanchiment de capitaux, et la création de comptes multiples. Toute infraction peut entraîner la
-        clôture du compte et la confiscation des soldes concernés.
+        The following are prohibited: fraud, the use of bots or automation, exploiting bugs, money laundering,
+        and creating multiple accounts. Any breach may lead to account closure and to the forfeiture of the
+        balances concerned.
       </p>
 
-      <h2>6. Limitation de responsabilité</h2>
+      <h2>6. Limitation of liability</h2>
       <p>
-        Le Service est fourni « en l’état ». Nous ne saurions être tenus responsables des pertes liées au jeu,
-        aux interruptions techniques, à la volatilité des crypto-actifs ou à une mauvaise utilisation.
+        The Service is provided “as is”. We cannot be held liable for losses related to gambling, technical
+        interruptions, crypto-asset volatility, or misuse.
       </p>
 
-      <h2>7. Jeu responsable</h2>
+      <h2>7. Responsible gambling</h2>
       <p>
-        Le jeu peut créer une dépendance. Consultez notre page <a href="/responsible-gambling">Jeu responsable</a>{' '}
-        pour les outils d’aide et de limitation.
+        Gambling can be addictive. See our <a href="/responsible-gambling">Responsible gambling</a> page for
+        help and limit-setting tools.
       </p>
 
-      <h2>8. Modifications et droit applicable</h2>
+      <h2>8. Changes and governing law</h2>
       <p>
-        Nous pouvons modifier ces conditions à tout moment. La poursuite de l’utilisation vaut acceptation. Le
-        droit applicable et la juridiction compétente sont ceux du pays de la licence d’exploitation.
+        We may change these terms at any time. Continued use constitutes acceptance. The governing law and
+        competent jurisdiction are those of the country where the operating license is held.
       </p>
     </LegalShell>
   );

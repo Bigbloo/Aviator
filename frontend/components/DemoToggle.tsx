@@ -25,13 +25,13 @@ const DemoToggle = () => {
   const ensureToken = async (): Promise<string | null> => {
     let token = localStorage.getItem(ADMIN_KEY) || '';
     if (!token) {
-      token = (window.prompt('Token admin :') || '').trim();
+      token = (window.prompt('Admin token:') || '').trim();
       if (!token) return null;
     }
     const ok = await adminPing(token).catch(() => false);
     if (!ok) {
       localStorage.removeItem(ADMIN_KEY);
-      showFlash('Token invalide');
+      showFlash('Invalid token');
       return null;
     }
     localStorage.setItem(ADMIN_KEY, token);
@@ -46,7 +46,7 @@ const DemoToggle = () => {
       if (!token) return;
       const next = !isDemoLocal();
       localStorage.setItem(DEMO_FLAG_KEY, next ? 'true' : 'false');
-      showFlash(next ? '🟡 DÉMO admin…' : '🟢 Mode réel…');
+      showFlash(next ? '🟡 Admin DEMO…' : '🟢 Real mode…');
       // Reload so the session (and its balance) swaps cleanly between the
       // isolated demo account and the real account.
       setTimeout(() => window.location.reload(), 600);

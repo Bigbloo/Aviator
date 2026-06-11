@@ -35,9 +35,9 @@ class ErrorBoundary extends Component<Props, State> {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0e0e10] p-6">
           <div className="max-w-md w-full bg-gray-900 border border-red-900/40 rounded-2xl p-6 space-y-4 text-center">
             <div className="text-4xl">⚠️</div>
-            <h2 className="text-white font-bold text-lg">Une erreur est survenue</h2>
+            <h2 className="text-white font-bold text-lg">Something went wrong</h2>
             <p className="text-gray-400 text-sm">
-              Le jeu a rencontré un problème d&apos;affichage. Ton solde et tes paris sont en sécurité côté serveur.
+              The game hit a display error. Your balance and bets are safe on the server.
             </p>
             <pre className="text-left text-[11px] text-red-300/80 bg-black/40 rounded-lg p-3 overflow-x-auto max-h-32">
               {this.state.error.message}
@@ -46,7 +46,7 @@ class ErrorBoundary extends Component<Props, State> {
               onClick={() => window.location.reload()}
               className="w-full py-2.5 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 transition active:scale-95"
             >
-              Recharger
+              Reload
             </button>
           </div>
         </div>
