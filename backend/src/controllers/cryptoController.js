@@ -19,6 +19,7 @@ const db = require('../db/database');
 const { isMock } = require('../config');
 const { isDemoRequest } = require('../middleware/auth');
 const provider = require('../providers');
+const tiktok = require('../tiktok');
 
 // Tunables
 const MIN_DEPOSIT = 1;            // USD (Plisio enforces its own per-currency min)
@@ -90,7 +91,13 @@ const creditDeposit = (depositId, paidInCrypto) => {
     ).run(uuidv4(), dep.user_id, 'deposit', credit, dep.payment_id);
     return { credited: true, userId: dep.user_id, amount: credit };
   });
-  return apply();
+  const result = apply();
+  // Server-side conversion event (fire-and-forget) on a real, first-time credit.
+  if (result.credited) {
+    const u = db.prepare('SELECT email FROM users WHERE id = ?').get(result.userId);
+    tiktok.track({ event: 'CompletePayment', value: result.amount, currency: 'USD', email: u && u.email, eventId: `dep_${depositId}` });
+  }
+  return result;
 };
 
 // ── GET /api/crypto/currencies  (auth) — pay-in options ───────────────────────

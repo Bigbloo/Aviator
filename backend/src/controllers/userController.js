@@ -9,6 +9,7 @@ const bcrypt = require('bcryptjs');
 const db = require('../db/database');
 const { signToken } = require('../middleware/auth');
 const { send } = require('../email');
+const tiktok = require('../tiktok');
 
 const BCRYPT_ROUNDS = 10;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -138,6 +139,7 @@ const register = async (req, res) => {
       ).run(username, email, passwordHash, firstName, lastName, address, userId);
       const u = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
       sendVerificationEmail(u).catch((e) => console.error('[Mail] verify send:', e.message));
+      tiktok.track({ event: 'CompleteRegistration', email: u.email, ip: tiktok.ipOf(req), userAgent: req.headers['user-agent'] });
       return res.json(authPayload(u));
     }
   }
@@ -148,6 +150,7 @@ const register = async (req, res) => {
   ).run(newId, username, email, passwordHash, firstName, lastName, address, 0);
   const u = db.prepare('SELECT * FROM users WHERE id = ?').get(newId);
   sendVerificationEmail(u).catch((e) => console.error('[Mail] verify send:', e.message));
+  tiktok.track({ event: 'CompleteRegistration', email: u.email, ip: tiktok.ipOf(req), userAgent: req.headers['user-agent'] });
   return res.json(authPayload(u));
 };
 
