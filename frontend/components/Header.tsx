@@ -15,6 +15,7 @@ import ProvablyFairModal from './ProvablyFairModal';
 import PromoBanner from './PromoBanner';
 import { setMuted } from '@/lib/sound';
 import { isDemoLocal } from '@/lib/api';
+import { ttqTrack } from '@/lib/tiktokPixel';
 
 const Header = () => {
   const { balance, username } = useGameStore();
@@ -34,7 +35,10 @@ const Header = () => {
   // Real money moves require a registered account (anonymous players must sign
   // up first). Admin demo sessions are exempt.
   const requireAccount = () => !!username || isDemoLocal();
-  const goDeposit = () => (requireAccount() ? setShowDeposit(true) : setShowAuth(true));
+  const goDeposit = () => {
+    ttqTrack('ClickButton', { content_name: 'Deposit' });
+    return requireAccount() ? setShowDeposit(true) : setShowAuth(true);
+  };
   const goWithdraw = () => (requireAccount() ? setShowWithdraw(true) : setShowAuth(true));
 
   return (

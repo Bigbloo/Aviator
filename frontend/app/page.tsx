@@ -16,12 +16,18 @@ import AviatorCanvas from '@/components/AviatorCanvas';
 import BetPanel from '@/components/BetPanel';
 import LiveBets from '@/components/LiveBets';
 import TopWinners from '@/components/TopWinners';
+import { ttqTrack } from '@/lib/tiktokPixel';
 
 export default function Home() {
   const { setUserId, setUsername, setBalance } = useGameStore();
 
   // Connect to backend Socket.IO
   useSocket();
+
+  // TikTok funnel: page/game view.
+  useEffect(() => {
+    ttqTrack('ViewContent', { content_type: 'product', content_name: 'Aviator' });
+  }, []);
 
   // Initialize the session. The session token is the source of truth: with a
   // valid token we resume the account; otherwise (first visit, or a stale token

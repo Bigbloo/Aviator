@@ -18,6 +18,7 @@ import {
   type CryptoDeposit,
   type CryptoCurrency,
 } from '@/lib/api';
+import { ttqTrack } from '@/lib/tiktokPixel';
 
 interface Props {
   onClose: () => void;
@@ -53,6 +54,11 @@ const DepositModal = ({ onClose }: Props) => {
   const [copied, setCopied] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // TikTok funnel: opening the deposit modal = entering checkout.
+  useEffect(() => {
+    ttqTrack('InitiateCheckout', { content_name: 'Deposit' });
+  }, []);
 
   // Load the list of pay-in currencies once; default to the first available.
   useEffect(() => {
@@ -103,6 +109,8 @@ const DepositModal = ({ onClose }: Props) => {
     setError('');
     try {
       const d = await createCryptoDeposit(amount, payCurrency);
+      // TikTok funnel: a payment instrument/address has been generated.
+      ttqTrack('AddPaymentInfo', { value: amount, currency: 'USD', content_name: payCurrency });
       // Hosted-invoice provider (Plisio): redirect to the secure payment page.
       if (d.invoiceUrl) {
         window.location.href = d.invoiceUrl;
