@@ -13,6 +13,7 @@ import WithdrawModal from './WithdrawModal';
 import AuthModal from './AuthModal';
 import ProvablyFairModal from './ProvablyFairModal';
 import PromoBanner from './PromoBanner';
+import WelcomeOfferModal from './WelcomeOfferModal';
 import { setMuted } from '@/lib/sound';
 import { isDemoLocal } from '@/lib/api';
 import { ttqTrack } from '@/lib/tiktokPixel';
@@ -137,6 +138,9 @@ const Header = () => {
       {showWithdraw && <WithdrawModal onClose={() => setShowWithdraw(false)} />}
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
       {showFair && <ProvablyFairModal onClose={() => setShowFair(false)} />}
+
+      {/* First-connection welcome offer (only for visitors who aren't signed in) */}
+      {!username && <WelcomeOfferModal onClaim={() => setShowAuth(true)} />}
     </>
   );
 };
