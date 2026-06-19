@@ -82,6 +82,39 @@ function drawPlane(ctx: CanvasRenderingContext2D, x: number, y: number, s: numbe
 }
 
 /**
+ * Spinning propeller at the plane's nose, drawn side-on (foreshortened) so it
+ * reads as a fast-rotating disc with two visible blades and a motion-blur halo.
+ * `span` is the blade diameter; `angle` advances each frame.
+ */
+function drawSpinningProp(ctx: CanvasRenderingContext2D, cx: number, cy: number, span: number, angle: number) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(0.3, 1); // foreshorten to a side view
+  // Motion-blur halo
+  ctx.fillStyle = 'rgba(205,214,228,0.16)';
+  ctx.beginPath();
+  ctx.arc(0, 0, span * 0.5, 0, Math.PI * 2);
+  ctx.fill();
+  // Two blades
+  ctx.strokeStyle = 'rgba(232,238,247,0.85)';
+  ctx.lineWidth = Math.max(1.5, span * 0.12);
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 2; i++) {
+    const a = angle + i * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(a) * span * 0.5, Math.sin(a) * span * 0.5);
+    ctx.stroke();
+  }
+  // Hub
+  ctx.fillStyle = '#9c0f20';
+  ctx.beginPath();
+  ctx.arc(0, 0, span * 0.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/**
  * Honest "tension" intensity in [0,1], derived purely from the LIVE multiplier
  * the player already sees on screen. It drives presentation only — background
  * warmth and haptic pulses. It never touches the multiplier, the crash point,
@@ -112,6 +145,11 @@ const AviatorCanvas = () => {
   // continuous (no jumps) and can smoothly change speed with tension.
   const spinRef = useRef<number>(0);
   const lastSpinTsRef = useRef<number>(0);
+  // Propeller spin angle, last plane position (for the crash fly-away), and the
+  // timestamp the crash fly-away started.
+  const propRef = useRef<number>(0);
+  const lastPlaneRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const crashStartRef = useRef<number>(0);
 
   useEffect(() => {
     const img = new Image();
@@ -161,23 +199,26 @@ const AviatorCanvas = () => {
       // that the sprite's rear (drawn ~30% below the anchor) stays on-screen.
       const planeFloorY = originY - Math.max(30, H * 0.08);
 
-      // Draw the plane (PNG sprite, vector fallback) at a given anchor point.
-      const renderPlane = (ax: number, ay: number) => {
+      // Draw the plane (PNG sprite, vector fallback) at a given anchor point,
+      // with an optional pitch (nose up/down) and a spinning propeller at the nose.
+      const renderPlane = (ax: number, ay: number, pitch = -0.02) => {
         const img = planeImg.current;
+        ctx.save();
+        ctx.translate(ax, ay);
+        ctx.rotate(pitch);
         if (planeReady.current && img && img.width) {
-          const targetW = Math.min(130, Math.max(70, W * 0.13));
+          const targetW = Math.min(210, Math.max(120, W * 0.21));
           const targetH = targetW * (img.height / img.width);
-          ctx.save();
-          ctx.translate(ax, ay);
-          ctx.rotate(-0.02); // near-level — keep the plane stable, not steeply tilted
           // The curve meets the plane at its REAR (tail, lower-left of the
           // sprite); the plane extends forward (up-right) from there.
           ctx.drawImage(img, -targetW * 0.12, -targetH * 0.70, targetW, targetH);
-          ctx.restore();
+          drawSpinningProp(ctx, targetW * 0.86, -targetH * 0.26, targetH * 0.5, propRef.current);
         } else {
-          const planeScale = Math.min(1.5, Math.max(0.85, Math.min(W, H) / 300));
-          drawPlane(ctx, ax, ay, planeScale);
+          const planeScale = Math.min(2.4, Math.max(1.3, Math.min(W, H) / 230));
+          drawPlane(ctx, 0, 0, planeScale);
+          drawSpinningProp(ctx, 34 * planeScale, 1 * planeScale, 24 * planeScale, propRef.current);
         }
+        ctx.restore();
       };
 
       // Read live state each frame (no effect re-run, no stacked loops)
@@ -190,6 +231,10 @@ const AviatorCanvas = () => {
       }
       const prevPhase = lastPhaseRef.current;
       lastPhaseRef.current = phase;
+      // Start the crash fly-away animation on the flying → crashed transition.
+      if (phase === 'crashed' && prevPhase === 'flying') {
+        crashStartRef.current = performance.now();
+      }
 
       // Honest tension intensity from the live multiplier (presentation only).
       const tension = phase === 'flying' ? tensionFromMultiplier(mult) : 0;
@@ -208,6 +253,8 @@ const AviatorCanvas = () => {
       lastSpinTsRef.current = nowMs;
       const angVel = 0.14 + tension * 0.85; // rad/s — turning at rest, fast as it climbs
       spinRef.current = (spinRef.current + dt * angVel) % (Math.PI * 2);
+      // Propeller spins fast at all times (visual only).
+      propRef.current = (propRef.current + dt * 42) % (Math.PI * 2);
 
       const rayR = Math.hypot(W, H) * 1.2;
       const RAY_COUNT = 26;
@@ -316,8 +363,32 @@ const AviatorCanvas = () => {
         // Airplane at the tip — clamped inside the plot so it never leaves
         if (!crashed) {
           const ax = Math.min(Math.max(tip.x, originX + 20), W - PAD.right - 10);
-          const ay = Math.min(Math.max(tip.y, PAD.top + 14), planeFloorY);
-          renderPlane(ax, ay);
+          let ay = Math.min(Math.max(tip.y, PAD.top + 14), planeFloorY);
+          // "Really flying": once past a threshold the plane gains and loses
+          // altitude in a gentle wave, pitching its nose with the motion.
+          let pitch = -0.02;
+          if (mult > 1.5) {
+            const amp = Math.min(16, H * 0.035);
+            ay = Math.min(Math.max(ay + Math.sin(nowMs / 320) * amp, PAD.top + 14), planeFloorY);
+            pitch = -0.02 - Math.cos(nowMs / 320) * 0.11; // nose up while rising
+          }
+          lastPlaneRef.current = { x: ax, y: ay };
+          renderPlane(ax, ay, pitch);
+        }
+      }
+
+      // ── Crash fly-away: the plane shoots off toward the top-right and fades ──
+      if (crashed && crashStartRef.current) {
+        const tA = (nowMs - crashStartRef.current) / 900; // ~0.9s flight off-screen
+        if (tA < 1.2) {
+          const from = lastPlaneRef.current;
+          const ease = 1 - Math.pow(1 - Math.min(1, tA), 2); // ease-out
+          const fx = from.x + (W + 200 - from.x) * ease;
+          const fy = from.y + (-200 - from.y) * ease;     // climb up and out
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, 1 - tA * 0.85);
+          renderPlane(fx, fy, -0.4); // nose up, climbing away
+          ctx.restore();
         }
       }
 
