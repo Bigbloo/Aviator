@@ -82,39 +82,6 @@ function drawPlane(ctx: CanvasRenderingContext2D, x: number, y: number, s: numbe
 }
 
 /**
- * Spinning propeller at the plane's nose, drawn side-on (foreshortened) so it
- * reads as a fast-rotating disc with two visible blades and a motion-blur halo.
- * `span` is the blade diameter; `angle` advances each frame.
- */
-function drawSpinningProp(ctx: CanvasRenderingContext2D, cx: number, cy: number, span: number, angle: number) {
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.scale(0.3, 1); // foreshorten to a side view
-  // Motion-blur halo
-  ctx.fillStyle = 'rgba(205,214,228,0.16)';
-  ctx.beginPath();
-  ctx.arc(0, 0, span * 0.5, 0, Math.PI * 2);
-  ctx.fill();
-  // Two blades
-  ctx.strokeStyle = 'rgba(232,238,247,0.85)';
-  ctx.lineWidth = Math.max(1.5, span * 0.12);
-  ctx.lineCap = 'round';
-  for (let i = 0; i < 2; i++) {
-    const a = angle + i * Math.PI;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(Math.cos(a) * span * 0.5, Math.sin(a) * span * 0.5);
-    ctx.stroke();
-  }
-  // Hub
-  ctx.fillStyle = '#9c0f20';
-  ctx.beginPath();
-  ctx.arc(0, 0, span * 0.1, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-}
-
-/**
  * Honest "tension" intensity in [0,1], derived purely from the LIVE multiplier
  * the player already sees on screen. It drives presentation only — background
  * warmth and haptic pulses. It never touches the multiplier, the crash point,
@@ -145,9 +112,8 @@ const AviatorCanvas = () => {
   // continuous (no jumps) and can smoothly change speed with tension.
   const spinRef = useRef<number>(0);
   const lastSpinTsRef = useRef<number>(0);
-  // Propeller spin angle, last plane position (for the crash fly-away), and the
-  // timestamp the crash fly-away started.
-  const propRef = useRef<number>(0);
+  // Last plane position (for the crash fly-away) and the timestamp the crash
+  // fly-away started.
   const lastPlaneRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const crashStartRef = useRef<number>(0);
 
@@ -212,11 +178,9 @@ const AviatorCanvas = () => {
           // The curve meets the plane at its REAR (tail, lower-left of the
           // sprite); the plane extends forward (up-right) from there.
           ctx.drawImage(img, -targetW * 0.12, -targetH * 0.70, targetW, targetH);
-          drawSpinningProp(ctx, targetW * 0.86, -targetH * 0.26, targetH * 0.5, propRef.current);
         } else {
           const planeScale = Math.min(2.4, Math.max(1.3, Math.min(W, H) / 230));
           drawPlane(ctx, 0, 0, planeScale);
-          drawSpinningProp(ctx, 34 * planeScale, 1 * planeScale, 24 * planeScale, propRef.current);
         }
         ctx.restore();
       };
@@ -253,8 +217,6 @@ const AviatorCanvas = () => {
       lastSpinTsRef.current = nowMs;
       const angVel = 0.14 + tension * 0.85; // rad/s — turning at rest, fast as it climbs
       spinRef.current = (spinRef.current + dt * angVel) % (Math.PI * 2);
-      // Propeller spins fast at all times (visual only).
-      propRef.current = (propRef.current + dt * 42) % (Math.PI * 2);
 
       const rayR = Math.hypot(W, H) * 1.2;
       const RAY_COUNT = 26;
@@ -330,13 +292,21 @@ const AviatorCanvas = () => {
         // Build the curve from the exponential growth: sample time 0..elapsed.
         // M(t) = exp(k*t) — we invert mToY using the multiplier at each sample.
         const SAMPLES = 60;
+        // "Really flying": past a threshold the flight path itself undulates —
+        // the trailing part of the curve lifts and dips together so the plane
+        // (anchored on the tip) and the trace move as one, never decoupled.
+        const waveOn = flying && mult > 1.5;
+        const waveAmp = waveOn ? Math.min(18, H * 0.04) : 0;
+        const waveY = waveAmp * Math.sin(nowMs / 320);
         const pts: { x: number; y: number }[] = [];
         for (let i = 0; i <= SAMPLES; i++) {
           const t = (elapsed * i) / SAMPLES;
           // reconstruct multiplier at time t from current mult & elapsed
           // (linear-in-log interpolation keeps the curve shape consistent)
           const m = elapsed > 0 ? Math.pow(mult, t / elapsed) : 1;
-          pts.push({ x: tToX(t), y: mToY(m) });
+          const tf = i / SAMPLES;
+          const ramp = Math.max(0, (tf - 0.6) / 0.4); // 0 until 60%, → 1 at the tip
+          pts.push({ x: tToX(t), y: mToY(m) + waveY * ramp });
         }
 
         // Curve stroke
@@ -360,18 +330,12 @@ const AviatorCanvas = () => {
         ctx.fillStyle = crashed ? 'rgba(255,0,0,0.08)' : 'rgba(232,17,45,0.12)';
         ctx.fill();
 
-        // Airplane at the tip — clamped inside the plot so it never leaves
+        // Airplane sits exactly on the (undulating) tip of the trace, so it
+        // always rides the end of the line. Its nose pitches with the wave.
         if (!crashed) {
           const ax = Math.min(Math.max(tip.x, originX + 20), W - PAD.right - 10);
-          let ay = Math.min(Math.max(tip.y, PAD.top + 14), planeFloorY);
-          // "Really flying": once past a threshold the plane gains and loses
-          // altitude in a gentle wave, pitching its nose with the motion.
-          let pitch = -0.02;
-          if (mult > 1.5) {
-            const amp = Math.min(16, H * 0.035);
-            ay = Math.min(Math.max(ay + Math.sin(nowMs / 320) * amp, PAD.top + 14), planeFloorY);
-            pitch = -0.02 - Math.cos(nowMs / 320) * 0.11; // nose up while rising
-          }
+          const ay = Math.min(Math.max(tip.y, PAD.top + 14), planeFloorY);
+          const pitch = waveOn ? -0.02 - Math.cos(nowMs / 320) * 0.11 : -0.02;
           lastPlaneRef.current = { x: ax, y: ay };
           renderPlane(ax, ay, pitch);
         }
