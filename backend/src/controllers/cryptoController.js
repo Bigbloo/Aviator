@@ -59,6 +59,13 @@ const networkOf = (code) => (POPULAR.find((c) => c.code === code) || {}).network
 
 const now = () => Math.floor(Date.now() / 1000);
 
+// Welcome bonus: once the player's total deposits reach the threshold, credit
+// the bonus once. It carries a wagering requirement (must be bet through
+// WAGER_MULTIPLIER× before any withdrawal is allowed).
+const WELCOME_BONUS = 50;            // USDT credited
+const BONUS_DEPOSIT_THRESHOLD = 50;  // cumulative deposits to unlock
+const WAGER_MULTIPLIER = 1;          // bonus must be wagered 1× before withdrawal
+
 // A "registered" account has credentials (email + password). Anonymous sessions
 // don't — they can play but cannot move real money.
 const isRegistered = (userId) => {
@@ -89,7 +96,25 @@ const creditDeposit = (depositId, paidInCrypto) => {
     db.prepare(
       'INSERT INTO transactions (id, user_id, type, amount, stripe_intent) VALUES (?, ?, ?, ?, ?)'
     ).run(uuidv4(), dep.user_id, 'deposit', credit, dep.payment_id);
-    return { credited: true, userId: dep.user_id, amount: credit };
+
+    // Welcome bonus: granted once, when cumulative deposits reach the threshold.
+    let bonus = 0;
+    const u = db.prepare('SELECT welcome_bonus_granted FROM users WHERE id = ?').get(dep.user_id);
+    if (u && !u.welcome_bonus_granted) {
+      const totalDeposited = db.prepare(
+        "SELECT COALESCE(SUM(amount), 0) AS t FROM transactions WHERE user_id = ? AND type = 'deposit'"
+      ).get(dep.user_id).t;
+      if (totalDeposited >= BONUS_DEPOSIT_THRESHOLD) {
+        bonus = WELCOME_BONUS;
+        db.prepare(
+          'UPDATE users SET balance = balance + ?, welcome_bonus_granted = 1, wager_remaining = ? WHERE id = ?'
+        ).run(bonus, bonus * WAGER_MULTIPLIER, dep.user_id);
+        db.prepare(
+          'INSERT INTO transactions (id, user_id, type, amount) VALUES (?, ?, ?, ?)'
+        ).run(uuidv4(), dep.user_id, 'bonus', bonus);
+      }
+    }
+    return { credited: true, userId: dep.user_id, amount: credit, bonus };
   });
   const result = apply();
   // Server-side conversion event (fire-and-forget) on a real, first-time credit.
@@ -236,8 +261,16 @@ const createWithdrawal = async (req, res) => {
     return res.status(403).json({ error: 'Create an account to withdraw.', needAccount: true });
   }
 
-  const user = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
+  const user = db.prepare('SELECT balance, wager_remaining FROM users WHERE id = ?').get(userId);
   if (!user) return res.status(404).json({ error: 'Account not found.' });
+  // Welcome-bonus wagering: block withdrawals until the requirement is cleared.
+  if (!demo && user.wager_remaining > 0) {
+    const remain = Math.ceil(user.wager_remaining * 100) / 100;
+    return res.status(400).json({
+      error: `Welcome bonus: wager ${remain} USDT more before withdrawing.`,
+      wagerRemaining: remain,
+    });
+  }
   if (user.balance < amount) return res.status(400).json({ error: 'Insufficient balance.' });
 
   const id = uuidv4();

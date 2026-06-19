@@ -99,6 +99,9 @@ const placeBet = (req, res) => {
     db.prepare(
       "INSERT INTO bets (id, user_id, round_id, bet_amount, slot, status) VALUES (?, ?, ?, ?, ?, 'pending')"
     ).run(betId, userId, roundId, amount, slot);
+    // Wagering progress for the welcome bonus: each bet counts toward it.
+    db.prepare('UPDATE users SET wager_remaining = MAX(0, wager_remaining - ?) WHERE id = ?')
+      .run(amount, userId);
   });
   runBet();
 

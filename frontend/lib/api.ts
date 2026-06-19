@@ -164,12 +164,17 @@ export const createUser = async (): Promise<{ userId: string; balance: number; t
  * Fetches the current balance + username for the authenticated user.
  * Throws AuthError on 401 so the caller can re-create an anon session.
  */
-export const getBalance = async (): Promise<{ balance: number; username: string | null; userId: string | null }> => {
+export const getBalance = async (): Promise<{ balance: number; username: string | null; userId: string | null; wagerRemaining: number }> => {
   const res = await fetch(`${BASE_URL}/api/balance`, { headers: authHeaders() });
   if (res.status === 401) throw new AuthError('Session expired');
   if (!res.ok) throw new Error('Failed to fetch balance');
   const data = await res.json();
-  return { balance: data.balance, username: data.username ?? null, userId: data.userId ?? null };
+  return {
+    balance: data.balance,
+    username: data.username ?? null,
+    userId: data.userId ?? null,
+    wagerRemaining: data.wagerRemaining ?? 0,
+  };
 };
 
 // ── Crypto (USDT TRC-20) ─────────────────────────────────────────────────────

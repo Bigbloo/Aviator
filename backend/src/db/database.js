@@ -128,6 +128,16 @@ try {
     db.exec('ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0');
     console.log('[DB] Migrated: added users.email_verified');
   }
+  // Welcome bonus: one-time flag + remaining wagering requirement (USDT). While
+  // wager_remaining > 0, withdrawals are blocked.
+  if (!has('welcome_bonus_granted')) {
+    db.exec('ALTER TABLE users ADD COLUMN welcome_bonus_granted INTEGER NOT NULL DEFAULT 0');
+    console.log('[DB] Migrated: added users.welcome_bonus_granted');
+  }
+  if (!has('wager_remaining')) {
+    db.exec('ALTER TABLE users ADD COLUMN wager_remaining REAL NOT NULL DEFAULT 0');
+    console.log('[DB] Migrated: added users.wager_remaining');
+  }
 } catch (e) {
   console.error('[DB] Migration check failed:', e.message);
 }

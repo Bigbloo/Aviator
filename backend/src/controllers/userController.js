@@ -27,6 +27,7 @@ const publicUser = (u) => ({
   address: u.address || null,
   emailVerified: !!u.email_verified,
   balance: u.balance,
+  wagerRemaining: u.wager_remaining || 0,
 });
 
 // ── Email token helpers ───────────────────────────────────────────────────────

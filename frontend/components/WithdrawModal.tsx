@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import { createCryptoWithdrawal, getCryptoCurrencies, type CryptoCurrency } from '@/lib/api';
+import { createCryptoWithdrawal, getCryptoCurrencies, getBalance, type CryptoCurrency } from '@/lib/api';
 
 interface Props {
   onClose: () => void;
@@ -50,6 +50,7 @@ const WithdrawModal = ({ onClose }: Props) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [wagerRemaining, setWagerRemaining] = useState(0);
 
   useEffect(() => {
     getCryptoCurrencies()
@@ -60,11 +61,13 @@ const WithdrawModal = ({ onClose }: Props) => {
         }
       })
       .catch(() => {});
+    // Welcome-bonus wagering gate: withdrawals are blocked until it's cleared.
+    getBalance().then((me) => setWagerRemaining(me.wagerRemaining)).catch(() => {});
   }, []);
 
   const net = NETWORKS[currency];
   const addressValid = net ? net.re.test(address.trim()) : false;
-  const canSubmit = amount >= MIN_WITHDRAW && amount <= balance && addressValid;
+  const canSubmit = wagerRemaining <= 0 && amount >= MIN_WITHDRAW && amount <= balance && addressValid;
 
   const list = currencies.length ? currencies : FALLBACK;
   const selected = list.find((c) => c.code === currency) || list[0];
@@ -108,6 +111,13 @@ const WithdrawModal = ({ onClose }: Props) => {
             <div className="text-gray-400 text-sm">
               Available balance: <span className="text-orange-400 font-bold">{balance.toFixed(2)} USDT</span>
             </div>
+
+            {wagerRemaining > 0 && (
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-300 text-xs">
+                🎁 Welcome bonus active — wager{' '}
+                <span className="font-bold">{wagerRemaining.toFixed(2)} USDT</span> more before you can withdraw.
+              </div>
+            )}
 
             <div>
               <label className="text-gray-400 text-sm mb-2 block">Amount (USDT)</label>
