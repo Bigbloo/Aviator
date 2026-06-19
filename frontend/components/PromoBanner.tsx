@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 
 const SEP = '  •  ';
 const MSG =
-  `🎁 50 USDT FREE on sign-up${SEP}🚀 Welcome bonus: 50 USDT${SEP}🔥 Limited offer — claim your 50 USDT${SEP}`;
+  `🎁 Deposit 50 USDT, get 50 USDT bonus${SEP}🚀 100% welcome bonus${SEP}🔥 Limited offer — double your first 50 USDT${SEP}`;
 
 const KEY = 'aviator_promo_deadline';
 
@@ -49,7 +49,7 @@ const PromoBanner = ({ onClaim }: { onClaim?: () => void }) => {
   return (
     <button
       onClick={onClaim}
-      title="Claim 50 USDT"
+      title="Deposit 50 USDT, get 50 USDT bonus"
       className="group flex items-center gap-2 w-full max-w-md min-w-0 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-black pl-3 pr-1.5 py-1 overflow-hidden ring-1 ring-amber-300/40 active:scale-[0.99] transition"
     >
       {/* Scrolling message */}
