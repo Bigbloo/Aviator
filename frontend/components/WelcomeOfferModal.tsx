@@ -60,23 +60,24 @@ const WelcomeOfferModal = ({ onClaim }: { onClaim?: () => void }) => {
         <div className="text-5xl">🎁</div>
 
         <h2 className="text-white font-black text-2xl leading-tight">
-          Welcome bonus
+          100% deposit bonus
         </h2>
 
         <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 rounded-xl py-3 px-4">
-          <p className="text-black font-black text-3xl tracking-tight">50 USDT</p>
-          <p className="text-black/80 font-bold text-xs uppercase tracking-wide">free on sign-up</p>
+          <p className="text-black font-black text-2xl tracking-tight">Deposit 50 → get 50</p>
+          <p className="text-black/80 font-bold text-xs uppercase tracking-wide">+50 USDT bonus</p>
         </div>
 
         <p className="text-gray-400 text-sm">
-          Create your account to claim your welcome bonus and start playing.
+          Deposit 50 USDT and we&apos;ll add 50 USDT to your balance. Wager the
+          bonus once (50 USDT) before withdrawing.
         </p>
 
         <button
           onClick={claim}
           className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 transition active:scale-95"
         >
-          Claim my 50 USDT
+          Claim the bonus
         </button>
 
         <button
@@ -87,7 +88,8 @@ const WelcomeOfferModal = ({ onClaim }: { onClaim?: () => void }) => {
         </button>
 
         <p className="text-gray-600 text-[10px] leading-snug">
-          18+ · Gambling involves risk. Bonus terms apply.
+          18+ · Gambling involves risk. Bonus credited on a 50 USDT deposit;
+          1× wagering applies before withdrawal.
         </p>
       </div>
     </div>
