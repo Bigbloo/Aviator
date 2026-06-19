@@ -343,9 +343,9 @@ const AviatorCanvas = () => {
         // the canvas width, centered above the progress gauge.
         const ufc = ufcImg.current;
         if (ufcReady.current && ufc && ufc.width) {
-          const logoW = Math.min(W * 0.5, 320);
+          const logoW = Math.min(W * 0.72, 520);
           const logoH = logoW * (ufc.height / ufc.width);
-          ctx.drawImage(ufc, W / 2 - logoW / 2, H / 2 - logoH - 4 * k, logoW, logoH);
+          ctx.drawImage(ufc, W / 2 - logoW / 2, H / 2 - logoH - 2 * k, logoW, logoH);
         }
 
         // Progress gauge that fills as take-off approaches (replaces the
