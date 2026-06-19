@@ -103,6 +103,9 @@ const AviatorCanvas = () => {
   // Optional plane sprite (public/plane.png). Falls back to the vector plane.
   const planeImg = useRef<HTMLImageElement | null>(null);
   const planeReady = useRef(false);
+  // UFC partners logo shown during the betting window (public/ufc-partners.png).
+  const ufcImg = useRef<HTMLImageElement | null>(null);
+  const ufcReady = useRef(false);
   // Throttle for the optional haptic feedback (mobile only, opt-in by browser).
   const lastHapticRef = useRef<number>(0);
   // Accumulated sunburst rotation angle + last frame time, so the spin is
@@ -116,6 +119,12 @@ const AviatorCanvas = () => {
     img.onerror = () => { planeReady.current = false; };
     img.src = '/plane.png';
     planeImg.current = img;
+
+    const ufc = new Image();
+    ufc.onload = () => { ufcReady.current = true; };
+    ufc.onerror = () => { ufcReady.current = false; };
+    ufc.src = '/ufc-partners.png';
+    ufcImg.current = ufc;
   }, []);
 
   useEffect(() => {
@@ -330,9 +339,14 @@ const AviatorCanvas = () => {
         // on-screen — it's the same plane that lifts off from here.
         renderPlane(originX + 24, planeFloorY);
 
-        ctx.font = `bold ${px(28)} monospace`;
-        ctx.fillStyle = '#22c55e';
-        ctx.fillText('Place your bets !', W / 2, H / 2 - 12 * k);
+        // UFC partners logo (replaces the "Place your bets !" text). Scaled to
+        // the canvas width, centered above the progress gauge.
+        const ufc = ufcImg.current;
+        if (ufcReady.current && ufc && ufc.width) {
+          const logoW = Math.min(W * 0.5, 320);
+          const logoH = logoW * (ufc.height / ufc.width);
+          ctx.drawImage(ufc, W / 2 - logoW / 2, H / 2 - logoH - 4 * k, logoW, logoH);
+        }
 
         // Progress gauge that fills as take-off approaches (replaces the
         // textual countdown). Driven purely by the betting-window timing.
@@ -357,11 +371,11 @@ const AviatorCanvas = () => {
         roundRectPath(barX, barY, barW, barH);
         ctx.fill();
 
-        // Fill (green → orange as it nears take-off)
+        // Fill — red gauge as it nears take-off
         if (frac > 0) {
           const grad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
-          grad.addColorStop(0, '#22c55e');
-          grad.addColorStop(1, '#ff7a00');
+          grad.addColorStop(0, '#ff3b3b');
+          grad.addColorStop(1, '#e8112d');
           ctx.fillStyle = grad;
           roundRectPath(barX, barY, Math.max(barH, barW * frac), barH);
           ctx.fill();
