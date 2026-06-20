@@ -19,6 +19,10 @@
 import { useEffect, useRef } from 'react';
 import { useGameStore } from '@/store/gameStore';
 
+// Mirror of the server's growth law (backend src/index.js MULTIPLIER_SPEED) so
+// the client can render the multiplier smoothly at 60fps between socket ticks.
+const MULTIPLIER_SPEED = 0.00006;
+
 /**
  * Draws a stylized red prop-plane silhouette (Aviator-style) with the nose at
  * (x, y), pointing up-right along the flight path. `s` scales it to the canvas.
@@ -188,7 +192,6 @@ const AviatorCanvas = () => {
 
       // Read live state each frame (no effect re-run, no stacked loops)
       const { phase, currentMultiplier, crashPoint } = useGameStore.getState();
-      const mult = currentMultiplier || 1.0;
 
       // Track when flying starts so the time axis is anchored correctly
       if (phase === 'flying' && lastPhaseRef.current !== 'flying') {
@@ -196,6 +199,15 @@ const AviatorCanvas = () => {
       }
       const prevPhase = lastPhaseRef.current;
       lastPhaseRef.current = phase;
+
+      // While flying, drive the multiplier from a local 60fps timer using the
+      // SAME exponential law as the server (mirrors MULTIPLIER_SPEED), instead
+      // of the 100ms socket ticks — this removes the take-off/curve stutter.
+      // The crash outcome stays authoritative (server crashPoint on crash).
+      const mult =
+        phase === 'flying'
+          ? Math.max(1, Math.exp(MULTIPLIER_SPEED * (performance.now() - flyStartRef.current)))
+          : currentMultiplier || 1.0;
       // Start the crash fly-away animation on the flying → crashed transition.
       if (phase === 'crashed' && prevPhase === 'flying') {
         crashStartRef.current = performance.now();
