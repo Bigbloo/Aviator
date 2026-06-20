@@ -161,7 +161,11 @@ const AviatorCanvas = () => {
       fitCanvas();
       const W = canvas.width;
       const H = canvas.height;
-      const plotW = W - PAD.left - PAD.right;
+      // Forward extent of the plane sprite (nose) from its anchor. Reserve this
+      // much on the right so the curve tip — where the plane sits — never pushes
+      // the nose off-screen, while the trace still meets the plane at its REAR.
+      const planeReach = Math.min(210, Math.max(120, W * 0.21)) * 0.9;
+      const plotW = W - PAD.left - PAD.right - planeReach;
       const plotH = H - PAD.top - PAD.bottom;
       const originX = PAD.left;
       const originY = H - PAD.bottom; // bottom-left origin
@@ -339,10 +343,10 @@ const AviatorCanvas = () => {
         // Airplane sits exactly on the tip of the trace, so it always rides the
         // end of the line. Near-level, stable attitude with a tiny drift.
         if (!crashed) {
-          // The sprite's nose extends forward (right) from the anchor by ~0.9×
-          // its width — cap the anchor so the nose never leaves the screen.
-          const planeReach = Math.min(210, Math.max(120, W * 0.21)) * 0.9;
-          const ax = Math.min(Math.max(tip.x, originX + 20), W - PAD.right - planeReach);
+          // Plane sits exactly on the trace tip, so the red line/trail always
+          // meets it at the REAR (the nose extends forward into the reserved
+          // right margin — see planeReach above).
+          const ax = Math.max(tip.x, originX + 20);
           const ay = Math.min(Math.max(tip.y, PAD.top + 14), planeFloorY);
           const pitch = -0.02; // steady, level attitude
           // Heading = direction of travel from the last curve segment (unit),
