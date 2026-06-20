@@ -42,11 +42,11 @@ const WelcomeOfferModal = ({ onClaim }: { onClaim?: () => void }) => {
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 p-4"
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 p-4 overflow-y-auto"
       onClick={dismiss}
     >
       <div
-        className="relative w-full max-w-sm rounded-2xl bg-gray-900 border border-amber-500/40 p-6 text-center space-y-4 shadow-2xl shadow-amber-500/10"
+        className="relative w-full max-w-sm my-8 rounded-2xl bg-gray-900 border border-amber-500/40 p-6 text-center space-y-4 shadow-2xl shadow-amber-500/10"
         onClick={(e) => e.stopPropagation()}
       >
         <button
