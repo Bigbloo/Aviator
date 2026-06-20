@@ -293,21 +293,14 @@ const AviatorCanvas = () => {
         // Build the curve from the exponential growth: sample time 0..elapsed.
         // M(t) = exp(k*t) — we invert mToY using the multiplier at each sample.
         const SAMPLES = 60;
-        // Stable cruise: a very subtle, slow drift on the tip of the trace so
-        // the plane feels alive without looking shaky. Plane stays anchored on
-        // the tip, so plane and trace move as one.
-        const waveOn = flying && mult > 1.5;
-        const waveAmp = waveOn ? Math.min(6, H * 0.014) : 0;
-        const waveY = waveAmp * Math.sin(nowMs / 700);
+        // Perfectly smooth flight: the plane rides the trace tip with no wobble.
         const pts: { x: number; y: number }[] = [];
         for (let i = 0; i <= SAMPLES; i++) {
           const t = (elapsed * i) / SAMPLES;
           // reconstruct multiplier at time t from current mult & elapsed
           // (linear-in-log interpolation keeps the curve shape consistent)
           const m = elapsed > 0 ? Math.pow(mult, t / elapsed) : 1;
-          const tf = i / SAMPLES;
-          const ramp = Math.max(0, (tf - 0.7) / 0.3); // 0 until 70%, → 1 at the tip
-          pts.push({ x: tToX(t), y: mToY(m) + waveY * ramp });
+          pts.push({ x: tToX(t), y: mToY(m) });
         }
 
         // Curve stroke
@@ -336,7 +329,7 @@ const AviatorCanvas = () => {
         if (!crashed) {
           const ax = Math.min(Math.max(tip.x, originX + 20), W - PAD.right - 10);
           const ay = Math.min(Math.max(tip.y, PAD.top + 14), planeFloorY);
-          const pitch = waveOn ? -0.02 - Math.cos(nowMs / 700) * 0.03 : -0.02;
+          const pitch = -0.02; // steady, level attitude
           // Heading = direction of travel from the last curve segment (unit),
           // captured for a realistic straight fly-off at crash.
           const p0 = pts[Math.max(0, pts.length - 4)];
