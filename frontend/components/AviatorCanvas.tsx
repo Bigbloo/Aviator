@@ -112,9 +112,10 @@ const AviatorCanvas = () => {
   // continuous (no jumps) and can smoothly change speed with tension.
   const spinRef = useRef<number>(0);
   const lastSpinTsRef = useRef<number>(0);
-  // Last plane position (for the crash fly-away) and the timestamp the crash
-  // fly-away started.
+  // Last plane position + heading (unit direction of travel) for the crash
+  // fly-away, and the timestamp the crash fly-away started.
   const lastPlaneRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const lastHeadingRef = useRef<{ x: number; y: number }>({ x: 1, y: -0.35 });
   const crashStartRef = useRef<number>(0);
 
   useEffect(() => {
@@ -292,12 +293,12 @@ const AviatorCanvas = () => {
         // Build the curve from the exponential growth: sample time 0..elapsed.
         // M(t) = exp(k*t) — we invert mToY using the multiplier at each sample.
         const SAMPLES = 60;
-        // "Really flying": past a threshold the flight path itself undulates —
-        // the trailing part of the curve lifts and dips together so the plane
-        // (anchored on the tip) and the trace move as one, never decoupled.
+        // Stable cruise: a very subtle, slow drift on the tip of the trace so
+        // the plane feels alive without looking shaky. Plane stays anchored on
+        // the tip, so plane and trace move as one.
         const waveOn = flying && mult > 1.5;
-        const waveAmp = waveOn ? Math.min(18, H * 0.04) : 0;
-        const waveY = waveAmp * Math.sin(nowMs / 320);
+        const waveAmp = waveOn ? Math.min(6, H * 0.014) : 0;
+        const waveY = waveAmp * Math.sin(nowMs / 700);
         const pts: { x: number; y: number }[] = [];
         for (let i = 0; i <= SAMPLES; i++) {
           const t = (elapsed * i) / SAMPLES;
@@ -305,7 +306,7 @@ const AviatorCanvas = () => {
           // (linear-in-log interpolation keeps the curve shape consistent)
           const m = elapsed > 0 ? Math.pow(mult, t / elapsed) : 1;
           const tf = i / SAMPLES;
-          const ramp = Math.max(0, (tf - 0.6) / 0.4); // 0 until 60%, → 1 at the tip
+          const ramp = Math.max(0, (tf - 0.7) / 0.3); // 0 until 70%, → 1 at the tip
           pts.push({ x: tToX(t), y: mToY(m) + waveY * ramp });
         }
 
@@ -330,28 +331,40 @@ const AviatorCanvas = () => {
         ctx.fillStyle = crashed ? 'rgba(255,0,0,0.08)' : 'rgba(232,17,45,0.12)';
         ctx.fill();
 
-        // Airplane sits exactly on the (undulating) tip of the trace, so it
-        // always rides the end of the line. Its nose pitches with the wave.
+        // Airplane sits exactly on the tip of the trace, so it always rides the
+        // end of the line. Near-level, stable attitude with a tiny drift.
         if (!crashed) {
           const ax = Math.min(Math.max(tip.x, originX + 20), W - PAD.right - 10);
           const ay = Math.min(Math.max(tip.y, PAD.top + 14), planeFloorY);
-          const pitch = waveOn ? -0.02 - Math.cos(nowMs / 320) * 0.11 : -0.02;
+          const pitch = waveOn ? -0.02 - Math.cos(nowMs / 700) * 0.03 : -0.02;
+          // Heading = direction of travel from the last curve segment (unit),
+          // captured for a realistic straight fly-off at crash.
+          const p0 = pts[Math.max(0, pts.length - 4)];
+          const hx = tip.x - p0.x;
+          const hy = tip.y - p0.y;
+          const hlen = Math.hypot(hx, hy) || 1;
+          lastHeadingRef.current = { x: hx / hlen, y: hy / hlen };
           lastPlaneRef.current = { x: ax, y: ay };
           renderPlane(ax, ay, pitch);
         }
       }
 
-      // ── Crash fly-away: the plane shoots off toward the top-right and fades ──
+      // ── Crash fly-away: the plane keeps its heading and flies straight off
+      // whichever edge it's pointing at, with a stable attitude, then fades. ──
       if (crashed && crashStartRef.current) {
-        const tA = (nowMs - crashStartRef.current) / 900; // ~0.9s flight off-screen
-        if (tA < 1.2) {
-          const from = lastPlaneRef.current;
-          const ease = 1 - Math.pow(1 - Math.min(1, tA), 2); // ease-out
-          const fx = from.x + (W + 200 - from.x) * ease;
-          const fy = from.y + (-200 - from.y) * ease;     // climb up and out
+        const elapsedA = (nowMs - crashStartRef.current) / 1000; // seconds since crash
+        const from = lastPlaneRef.current;
+        const head = lastHeadingRef.current;
+        const speed = Math.hypot(W, H) * 1.5; // px/s — clears the screen in <1s
+        const fx = from.x + head.x * speed * elapsedA;
+        const fy = from.y + head.y * speed * elapsedA;
+        const margin = 240;
+        const offscreen = fx < -margin || fx > W + margin || fy < -margin || fy > H + margin;
+        if (!offscreen) {
           ctx.save();
-          ctx.globalAlpha = Math.max(0, 1 - tA * 0.85);
-          renderPlane(fx, fy, -0.4); // nose up, climbing away
+          ctx.globalAlpha = Math.max(0, 1 - elapsedA * 0.7);
+          // Stable attitude: nose aligned with the (constant) heading.
+          renderPlane(fx, fy, Math.atan2(head.y, head.x));
           ctx.restore();
         }
       }
