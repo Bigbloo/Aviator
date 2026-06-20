@@ -368,8 +368,8 @@ const AviatorCanvas = () => {
         if (!offscreen) {
           ctx.save();
           ctx.globalAlpha = Math.max(0, 1 - elapsedA * 0.7);
-          // Stable attitude: nose aligned with the (constant) heading.
-          renderPlane(fx, fy, Math.atan2(head.y, head.x));
+          // Level attitude — the plane flies away straight, not nose-tilted.
+          renderPlane(fx, fy, -0.02);
           ctx.restore();
         }
       }
