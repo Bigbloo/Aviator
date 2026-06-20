@@ -98,26 +98,26 @@ const BetPanel = ({ slot = 1 }: BetPanelProps) => {
   }, [currentMultiplier, phase, tab, hasBet, cashedOut, autoTarget]);
 
   return (
-    <div className="bg-[#1b1c1d] rounded-2xl p-2.5 border border-black/30">
+    <div className="bg-[#1b1c1d] rounded-2xl p-2 sm:p-2.5 border border-black/30">
       {/* Bet / Auto tabs */}
-      <div className="flex justify-center mb-2.5">
+      <div className="flex justify-center mb-2 sm:mb-2.5">
         <div className="inline-flex bg-[#101112] rounded-full p-0.5 text-xs font-bold">
           <button
             onClick={() => setTab('bet')}
-            className={`px-5 py-1 rounded-full transition ${tab === 'bet' ? 'bg-[#3a3b3e] text-white' : 'text-gray-400'}`}
+            className={`px-4 sm:px-5 py-1 rounded-full transition ${tab === 'bet' ? 'bg-[#3a3b3e] text-white' : 'text-gray-400'}`}
           >
             Bet
           </button>
           <button
             onClick={() => setTab('auto')}
-            className={`px-5 py-1 rounded-full transition ${tab === 'auto' ? 'bg-[#3a3b3e] text-white' : 'text-gray-400'}`}
+            className={`px-4 sm:px-5 py-1 rounded-full transition ${tab === 'auto' ? 'bg-[#3a3b3e] text-white' : 'text-gray-400'}`}
           >
             Auto
           </button>
         </div>
       </div>
 
-      <div className="flex gap-2 items-stretch">
+      <div className="flex gap-1.5 sm:gap-2 items-stretch">
         {/* Amount + presets */}
         <div className="w-[46%] space-y-1.5">
           <div className="flex items-center justify-between bg-[#101112] rounded-full px-2 py-1.5">

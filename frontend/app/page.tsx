@@ -97,7 +97,8 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 shrink-0">
+          {/* Two bet panels side by side, even on mobile (Aviator standard) */}
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-2 shrink-0">
             <BetPanel slot={1} />
             <BetPanel slot={2} />
           </div>
