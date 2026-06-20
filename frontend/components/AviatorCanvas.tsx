@@ -339,7 +339,10 @@ const AviatorCanvas = () => {
         // Airplane sits exactly on the tip of the trace, so it always rides the
         // end of the line. Near-level, stable attitude with a tiny drift.
         if (!crashed) {
-          const ax = Math.min(Math.max(tip.x, originX + 20), W - PAD.right - 10);
+          // The sprite's nose extends forward (right) from the anchor by ~0.9×
+          // its width — cap the anchor so the nose never leaves the screen.
+          const planeReach = Math.min(210, Math.max(120, W * 0.21)) * 0.9;
+          const ax = Math.min(Math.max(tip.x, originX + 20), W - PAD.right - planeReach);
           const ay = Math.min(Math.max(tip.y, PAD.top + 14), planeFloorY);
           const pitch = -0.02; // steady, level attitude
           // Heading = direction of travel from the last curve segment (unit),
