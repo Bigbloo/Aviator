@@ -121,6 +121,9 @@ const AviatorCanvas = () => {
   const lastPlaneRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const lastHeadingRef = useRef<{ x: number; y: number }>({ x: 1, y: -0.35 });
   const crashStartRef = useRef<number>(0);
+  // Flight time frozen at the crash instant, so the red curve stays drawn
+  // (frozen) during the crashed phase instead of vanishing to a black screen.
+  const crashElapsedRef = useRef<number>(0);
 
   useEffect(() => {
     const img = new Image();
@@ -212,9 +215,11 @@ const AviatorCanvas = () => {
         phase === 'flying'
           ? Math.max(1, Math.exp(MULTIPLIER_SPEED * (performance.now() - flyStartRef.current)))
           : currentMultiplier || 1.0;
-      // Start the crash fly-away animation on the flying → crashed transition.
+      // Start the crash fly-away animation on the flying → crashed transition,
+      // and freeze the flight time so the curve stays drawn during the crash.
       if (phase === 'crashed' && prevPhase === 'flying') {
         crashStartRef.current = performance.now();
+        crashElapsedRef.current = (performance.now() - flyStartRef.current) / 1000;
       }
 
       // Honest tension intensity from the live multiplier (presentation only).
@@ -293,7 +298,12 @@ const AviatorCanvas = () => {
       // (with 20% headroom) so the plane never leaves the top.
       const maxM = Math.max(2, mult * 1.2);
       // Time axis: assume a round visually fills ~10s, but compress as it grows
-      const elapsed = phase === 'flying' ? (performance.now() - flyStartRef.current) / 1000 : 0;
+      const elapsed =
+        phase === 'flying'
+          ? (performance.now() - flyStartRef.current) / 1000
+          : phase === 'crashed'
+            ? crashElapsedRef.current // frozen at the crash instant → curve stays visible
+            : 0;
       const maxT = Math.max(8, elapsed * 1.15); // seconds shown, auto-grows
 
       // map multiplier -> y (1x at bottom, maxM at top)
@@ -453,7 +463,13 @@ const AviatorCanvas = () => {
     };
 
     const loop = () => {
-      draw();
+      // Never let a single bad frame kill the loop (which would freeze the
+      // canvas on a black frame until reload). Always schedule the next frame.
+      try {
+        draw();
+      } catch (e) {
+        console.error('[AviatorCanvas] draw error:', e);
+      }
       animRef.current = requestAnimationFrame(loop);
     };
     animRef.current = requestAnimationFrame(loop);
