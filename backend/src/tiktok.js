@@ -14,7 +14,7 @@ const ENDPOINT = 'https://business-api.tiktok.com/open_api/v1.3/event/track/';
 const TOKEN = process.env.TIKTOK_EVENTS_TOKEN || '';
 // Pixel id is public (it's in the frontend), so a default is fine.
 const PIXEL_ID = process.env.TIKTOK_PIXEL_ID || 'D8LKJLRC77U580P27HUG';
-const SITE_URL = process.env.WEB_URL || 'https://flomingo.sbs';
+const SITE_URL = process.env.WEB_URL || 'https://aviator-gaming.app';
 
 // SHA-256 of a normalized value (trim + lowercase), as TikTok requires for PII.
 const hash = (v) => {

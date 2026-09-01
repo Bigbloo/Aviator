@@ -30,8 +30,6 @@ const server = http.createServer(app);
 const ALLOWED_ORIGINS = [
   'https://aviator-gaming.app',
   'https://www.aviator-gaming.app',
-  'https://flomingo.sbs',
-  'https://www.flomingo.sbs',
   'https://frontend-wine-six-11.vercel.app',
   'http://localhost:3000',
 ];
