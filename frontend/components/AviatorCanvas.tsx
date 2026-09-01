@@ -343,7 +343,7 @@ const AviatorCanvas = () => {
         // (same ~0.9s timing), so the line disappears together with the plane.
         ctx.save();
         if (crashed) {
-          const fade = Math.max(0, 1 - (nowMs - crashStartRef.current) / 900);
+          const fade = Math.max(0, 1 - (nowMs - crashStartRef.current) / 420);
           ctx.globalAlpha = fade;
         }
 
@@ -396,14 +396,14 @@ const AviatorCanvas = () => {
         const elapsedA = (nowMs - crashStartRef.current) / 1000; // seconds since crash
         const from = lastPlaneRef.current;
         const head = lastHeadingRef.current;
-        const speed = Math.hypot(W, H) * 1.5; // px/s — clears the screen in <1s
+        const speed = Math.hypot(W, H) * 3; // px/s — clears the screen fast
         const fx = from.x + head.x * speed * elapsedA;
         const fy = from.y + head.y * speed * elapsedA;
         const margin = 240;
         const offscreen = fx < -margin || fx > W + margin || fy < -margin || fy > H + margin;
         if (!offscreen) {
           ctx.save();
-          ctx.globalAlpha = Math.max(0, 1 - elapsedA * 0.7);
+          ctx.globalAlpha = Math.max(0, 1 - elapsedA * 1.8);
           // Level attitude — the plane flies away straight, not nose-tilted.
           renderPlane(fx, fy, -0.02);
           ctx.restore();
