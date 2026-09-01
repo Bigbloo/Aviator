@@ -28,6 +28,8 @@ const server = http.createServer(app);
 
 // ── Allowed origins ───────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
+  'https://aviator-gaming.app',
+  'https://www.aviator-gaming.app',
   'https://flomingo.sbs',
   'https://www.flomingo.sbs',
   'https://frontend-wine-six-11.vercel.app',
