@@ -339,6 +339,14 @@ const AviatorCanvas = () => {
           pts.push({ x: tToX(t), y: mToY(m) });
         }
 
+        // On crash, fade the whole trace out in sync with the plane flying off
+        // (same ~0.9s timing), so the line disappears together with the plane.
+        ctx.save();
+        if (crashed) {
+          const fade = Math.max(0, 1 - (nowMs - crashStartRef.current) / 900);
+          ctx.globalAlpha = fade;
+        }
+
         // Curve stroke
         const gradient = ctx.createLinearGradient(originX, 0, W, 0);
         gradient.addColorStop(0, crashed ? 'rgba(255,50,50,0.85)' : 'rgba(255,70,90,0.9)');
@@ -359,6 +367,7 @@ const AviatorCanvas = () => {
         ctx.closePath();
         ctx.fillStyle = crashed ? 'rgba(255,0,0,0.08)' : 'rgba(232,17,45,0.12)';
         ctx.fill();
+        ctx.restore(); // end crash fade
 
         // Airplane sits exactly on the tip of the trace, so it always rides the
         // end of the line. Near-level, stable attitude with a tiny drift.
