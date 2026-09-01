@@ -208,13 +208,23 @@ const AviatorCanvas = () => {
       lastPhaseRef.current = phase;
 
       // While flying, drive the multiplier from a local 60fps timer using the
-      // SAME exponential law as the server (mirrors MULTIPLIER_SPEED), instead
-      // of the 100ms socket ticks — this removes the take-off/curve stutter.
-      // The crash outcome stays authoritative (server crashPoint on crash).
-      const mult =
-        phase === 'flying'
-          ? Math.max(1, Math.exp(MULTIPLIER_SPEED * (performance.now() - flyStartRef.current)))
-          : currentMultiplier || 1.0;
+      // SAME exponential law as the server (mirrors MULTIPLIER_SPEED) to remove
+      // the 100ms tick stutter — but ALWAYS reconciled with the last server
+      // tick so a missed crash / dropped socket can never let it run away.
+      let mult = currentMultiplier || 1.0;
+      if (phase === 'flying') {
+        const serverMult = currentMultiplier || 1;
+        let smooth = Math.exp(MULTIPLIER_SPEED * (performance.now() - flyStartRef.current));
+        // Re-anchor the local clock if it has drifted far past the server
+        // (stale flyStartRef after a reconnect / missed round transition).
+        if (smooth > serverMult * 1.5) {
+          flyStartRef.current = performance.now() - Math.log(Math.max(1, serverMult)) / MULTIPLIER_SPEED;
+          smooth = serverMult;
+        }
+        // Cap just above the last tick: smooth between ticks, frozen (not
+        // runaway) if ticks stop coming.
+        mult = Math.max(1, Math.min(smooth, serverMult * 1.05));
+      }
       // Start the crash fly-away animation on the flying → crashed transition,
       // and freeze the flight time so the curve stays drawn during the crash.
       if (phase === 'crashed' && prevPhase === 'flying') {
