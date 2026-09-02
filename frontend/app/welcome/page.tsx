@@ -287,14 +287,55 @@ export default function WelcomePage() {
       <section className="px-4 pb-14">
         <div className="max-w-3xl mx-auto rounded-3xl border border-white/10 bg-gradient-to-br from-[#e50539]/10 via-transparent to-transparent overflow-hidden">
           <div className="grid sm:grid-cols-[auto_1fr] items-end gap-6 p-6 sm:p-8">
-            <Image
-              src="/lp-player.jpeg"
-              alt="A player reacting to a win"
-              width={388}
-              height={640}
-              loading="lazy"
-              className="rounded-2xl w-40 sm:w-52 h-auto justify-self-center ring-1 ring-white/10"
-            />
+            {/* Home-screen mockup — drawn inline (original artwork, no photo,
+                scales perfectly, costs nothing to load). */}
+            <svg
+              viewBox="0 0 200 380"
+              role="img"
+              aria-label="A phone home screen with the Aviator icon installed among the other apps"
+              className="w-36 sm:w-44 h-auto justify-self-center drop-shadow-2xl"
+            >
+              <defs>
+                <radialGradient id="hsGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#e50539" stopOpacity="0.55" />
+                  <stop offset="100%" stopColor="#e50539" stopOpacity="0" />
+                </radialGradient>
+              </defs>
+
+              {/* Phone body + screen */}
+              <rect x="8" y="6" width="184" height="368" rx="30" fill="#0b0c0f" stroke="rgba(255,255,255,0.16)" strokeWidth="2" />
+              <rect x="16" y="22" width="168" height="336" rx="22" fill="#12141a" />
+              <rect x="82" y="28" width="36" height="5" rx="2.5" fill="rgba(255,255,255,0.22)" />
+
+              {/* Dimmed placeholder apps */}
+              {[0, 1, 2, 3].map((row) =>
+                [0, 1, 2, 3].map((col) => {
+                  const x = 30 + col * 36;
+                  const y = 56 + row * 46;
+                  const isAviator = row === 1 && col === 2;
+                  if (isAviator) return null;
+                  return (
+                    <g key={`${row}-${col}`}>
+                      <rect x={x} y={y} width="28" height="28" rx="8" fill="rgba(255,255,255,0.07)" />
+                      <rect x={x + 4} y={y + 32} width="20" height="3" rx="1.5" fill="rgba(255,255,255,0.06)" />
+                    </g>
+                  );
+                })
+              )}
+
+              {/* The installed Aviator icon — glowing, unmistakable */}
+              <circle cx="116" cy="116" r="34" fill="url(#hsGlow)" />
+              <rect x="102" y="102" width="28" height="28" rx="8" fill="#16171c" stroke="#e50539" strokeWidth="1.5" />
+              {/* Small plane mark inside the icon */}
+              <path
+                d="M108 119 L120 112 L118 108 L122 110 L125 106 L124 111 L127 113 L122 115 L116 122 Z"
+                fill="#e50539"
+              />
+              <rect x="106" y="134" width="20" height="3" rx="1.5" fill="rgba(229,5,57,0.65)" />
+
+              {/* Home indicator */}
+              <rect x="78" y="346" width="44" height="4" rx="2" fill="rgba(255,255,255,0.25)" />
+            </svg>
             <div className="pb-2">
               <h2 className="text-2xl sm:text-3xl font-black leading-tight">
                 Put it on your home screen.
