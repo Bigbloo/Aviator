@@ -401,6 +401,36 @@ export const adminPing = async (token: string): Promise<boolean> => {
   return res.ok;
 };
 
+export interface AdminUser {
+  id: string;
+  username: string | null;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  address: string | null;
+  balance: number;
+  emailVerified: boolean;
+  wagerRemaining: number;
+  createdAt: number;
+}
+
+/** Lists registered players (contact details) for the admin console. */
+export const adminListUsers = async (token: string): Promise<{ total: number; users: AdminUser[] }> => {
+  const res = await fetch(`${BASE_URL}/api/admin/users`, { headers: adminHeaders(token) });
+  if (!res.ok) throw new Error('Access denied');
+  return res.json();
+};
+
+/**
+ * Fetches the players CSV (admin token goes in the header, like every other
+ * admin call) and returns it as a Blob for the caller to save client-side.
+ */
+export const adminExportUsersCsv = async (token: string): Promise<Blob> => {
+  const res = await fetch(`${BASE_URL}/api/admin/users/export.csv`, { headers: adminHeaders(token) });
+  if (!res.ok) throw new Error('Access denied');
+  return res.blob();
+};
+
 
 export const adminListWithdrawals = async (
   token: string,

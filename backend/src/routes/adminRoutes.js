@@ -10,6 +10,7 @@ const {
   adminListWithdrawals, adminApproveWithdrawal, adminRejectWithdrawal, adminMarkPaidWithdrawal,
   adminResetBalances,
 } = require('../controllers/cryptoController');
+const { adminListUsers, adminExportUsersCsv } = require('../controllers/userAdminController');
 const { requireAdmin } = require('../middleware/auth');
 const backup = require('../backup');
 
@@ -17,6 +18,10 @@ router.use(requireAdmin);
 
 // Quick auth probe for the admin UI (200 if the token is valid).
 router.get('/ping', (req, res) => res.json({ ok: true }));
+
+// Registered players (contact details) — list + CSV export.
+router.get('/users', adminListUsers);
+router.get('/users/export.csv', adminExportUsersCsv);
 
 router.get('/withdrawals', adminListWithdrawals);
 router.post('/withdrawals/:id/approve', adminApproveWithdrawal);
