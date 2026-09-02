@@ -7,6 +7,9 @@ import PWARegister from '@/components/PWARegister';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 export const metadata: Metadata = {
+  // Absolute base for Open Graph / Twitter images — without it Next resolves
+  // them against localhost and link previews break in ads and messaging apps.
+  metadataBase: new URL('https://aviator-gaming.app'),
   title: 'Aviator — Crash Game',
   description: 'Aviator crash game — bet, take off, cash out before the crash!',
   applicationName: 'Aviator',
