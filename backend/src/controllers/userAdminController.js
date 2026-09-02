@@ -38,8 +38,16 @@ const adminListUsers = (req, res) => {
   });
 };
 
-// Minimal CSV escaping: wrap in quotes, double up any embedded quotes.
-const csvCell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+// CSV escaping: wrap in quotes, double up embedded quotes, and neutralize
+// formula injection — a player-supplied field (address, name) starting with
+// =, +, -, @, tab, or CR could otherwise execute as a formula when the admin
+// opens the export in Excel/Sheets. Prefixing with a single quote is the
+// standard mitigation and is inert once quoted for CSV.
+const csvCell = (v) => {
+  let s = String(v ?? '');
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return `"${s.replace(/"/g, '""')}"`;
+};
 
 // ── GET /api/admin/users/export.csv  (admin) — downloadable CSV ──────────────
 const adminExportUsersCsv = (req, res) => {
