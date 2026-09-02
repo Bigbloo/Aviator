@@ -15,6 +15,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { getFairRounds, type FairRound } from '@/lib/api';
 import { ttqTrack } from '@/lib/tiktokPixel';
 
@@ -132,6 +133,23 @@ export default function WelcomePage() {
             <span>⚡ Auto-credited deposits</span>
             <span>₿ 6 cryptocurrencies</span>
             <span>🔒 No app store needed</span>
+          </div>
+
+          {/* Product visual — placed after the CTAs so the button stays above
+              the fold on phones. Priority-loaded: it is the LCP element. */}
+          <div className="mt-9 relative mx-auto max-w-xl">
+            <div
+              aria-hidden
+              className="absolute -inset-6 rounded-[2rem] bg-[#e50539]/20 blur-3xl"
+            />
+            <Image
+              src="/lp-hero.jpeg"
+              alt="The Aviator game on mobile: the multiplier climbing as the plane takes off"
+              width={675}
+              height={453}
+              priority
+              className="relative rounded-2xl w-full h-auto shadow-2xl shadow-black/60 ring-1 ring-white/10"
+            />
           </div>
         </div>
       </section>
@@ -261,6 +279,37 @@ export default function WelcomePage() {
                 <p className="mt-1.5 text-gray-400 text-sm leading-relaxed">{f.d}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Install pitch, with a human face to lift engagement ────────── */}
+      <section className="px-4 pb-14">
+        <div className="max-w-3xl mx-auto rounded-3xl border border-white/10 bg-gradient-to-br from-[#e50539]/10 via-transparent to-transparent overflow-hidden">
+          <div className="grid sm:grid-cols-[auto_1fr] items-end gap-6 p-6 sm:p-8">
+            <Image
+              src="/lp-player.jpeg"
+              alt="A player reacting to a win"
+              width={388}
+              height={640}
+              loading="lazy"
+              className="rounded-2xl w-40 sm:w-52 h-auto justify-self-center ring-1 ring-white/10"
+            />
+            <div className="pb-2">
+              <h2 className="text-2xl sm:text-3xl font-black leading-tight">
+                Put it on your home screen.
+              </h2>
+              <p className="mt-3 text-gray-400">
+                Install it like an app — full screen, no browser bar, one tap to play. No app store,
+                no APK, nothing to update. It takes about five seconds.
+              </p>
+              <button
+                onClick={handleInstall}
+                className="mt-5 px-6 py-3 rounded-xl font-bold text-white bg-white/10 hover:bg-white/15 border border-white/15 transition active:scale-95"
+              >
+                📲 Install now
+              </button>
+            </div>
           </div>
         </div>
       </section>

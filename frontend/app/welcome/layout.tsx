@@ -13,13 +13,13 @@ export const metadata: Metadata = {
     description:
       'Provably fair crash game. Double your first 50 USDT with only 1× wagering. Six crypto networks, deposits credited automatically. 18+',
     type: 'website',
-    images: ['/icon-512.png'],
+    images: ['/lp-hero.jpeg'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Aviator — Cash out before the plane flies away',
     description: 'Provably fair crash game. 100% welcome bonus, 1× wagering. 18+',
-    images: ['/icon-512.png'],
+    images: ['/lp-hero.jpeg'],
   },
 };
 
