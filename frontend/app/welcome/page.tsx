@@ -76,6 +76,105 @@ function PromoMarquee() {
 // own rectangular backdrop.
 const FADE_MASK = 'radial-gradient(circle at 50% 50%, #000 52%, transparent 76%)';
 
+const RAY_COUNT = 19;
+const RAY_CYCLE = 7; // seconds for the highlight to cross the whole fan
+
+/**
+ * Hero backdrop: a fan of individual rays that light up one after another.
+ *
+ * A repeating-conic-gradient cannot do this — it is one paint, so there is no
+ * way to address a single ray. Hence real elements: 19 wedges radiating from
+ * the bottom centre, each running rayWake offset by cycle/19, which reads as a
+ * highlight travelling across the fan.
+ *
+ * The shared gradient fill is brightest at the origin and fades out before the
+ * top of the section, so the background gains light where there is no text and
+ * stays dark behind the headline.
+ */
+function HeroSunburst() {
+  const ORIGIN = { x: 50, y: 56 };
+  const SPREAD = 180; // fans from horizontal-left to horizontal-right
+  const HALF_W = 2.7; // half-width of one wedge, in degrees
+  const LENGTH = 130; // long enough to leave the viewBox on every angle
+
+  const tip = (deg: number) => {
+    const r = (deg * Math.PI) / 180;
+    // 0deg points straight up; positive angles swing right.
+    const x = ORIGIN.x + Math.sin(r) * LENGTH;
+    const y = ORIGIN.y - Math.cos(r) * LENGTH;
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  };
+
+  const rays = Array.from({ length: RAY_COUNT }, (_, i) => {
+    const angle = -SPREAD / 2 + (SPREAD / (RAY_COUNT - 1)) * i;
+    return {
+      i,
+      points: `${ORIGIN.x},${ORIGIN.y} ${tip(angle - HALF_W)} ${tip(angle + HALF_W)}`,
+    };
+  });
+
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      {/* Two stacked glows at the origin — the main lift in overall brightness:
+          a red core for the brand, over a cool wash that lights the whole band
+          so the rays have something to sit on rather than pure black. */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse 80% 68% at 50% 86%, rgba(229,5,57,0.46) 0%, rgba(229,5,57,0.18) 40%, rgba(14,14,16,0) 74%),' +
+            'radial-gradient(ellipse 105% 80% at 50% 100%, rgba(63,94,140,0.40) 0%, rgba(40,60,92,0.16) 48%, rgba(14,14,16,0) 80%)',
+        }}
+      />
+      <svg
+        className="absolute inset-0 h-full w-full"
+        viewBox="0 0 100 56"
+        preserveAspectRatio="xMidYMax slice"
+      >
+        <defs>
+          <linearGradient id="rayFill" x1="0" y1="56" x2="0" y2="-10" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#a8c8f0" stopOpacity="0.95" />
+            <stop offset="30%" stopColor="#6d92c4" stopOpacity="0.78" />
+            <stop offset="62%" stopColor="#3f5a82" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#1a2536" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <g>
+          {rays.map((r) => (
+            <polygon
+              key={r.i}
+              points={r.points}
+              fill="url(#rayFill)"
+              className="animate-[rayWake_var(--ray-cycle)_ease-in-out_infinite] motion-reduce:animate-none motion-reduce:opacity-50"
+              style={
+                {
+                  '--ray-cycle': `${RAY_CYCLE}s`,
+                  // Negative delays start every ray mid-animation, so there is
+                  // no first-cycle artefact where undelayed rays sit at their
+                  // pre-animation opacity. Ray 0 gets the largest offset, which
+                  // makes the highlight travel left to right.
+                  animationDelay: `-${((RAY_CYCLE / RAY_COUNT) * (RAY_COUNT - 1 - r.i)).toFixed(3)}s`,
+                } as React.CSSProperties
+              }
+            />
+          ))}
+        </g>
+      </svg>
+      {/* Scrim under the copy. Without it the brightened rays cut the trust
+          strip's contrast to 2.8:1 — under the 4.5:1 AA floor for small text.
+          It has to reach far enough down to cover that strip, not just the
+          headline, while leaving the sides and the base of the fan bright. */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse 60% 50% at 50% 30%, rgba(14,14,16,0.78) 0%, rgba(14,14,16,0.5) 52%, rgba(14,14,16,0) 100%)',
+        }}
+      />
+    </div>
+  );
+}
+
 // Networks actually enabled on the payment account — mirrors backend POPULAR.
 const CHAINS = [
   { name: 'Bitcoin', net: 'BTC', symbol: '₿', color: '#F7931A' },
@@ -229,14 +328,7 @@ export default function WelcomePage() {
       {/* ── Hero ───────────────────────────────────────────────────────── */}
       <section className="relative px-4 pt-10 pb-12 text-center overflow-hidden">
         {/* Sunburst backdrop, echoing the in-game canvas */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-40"
-          style={{
-            background:
-              'radial-gradient(ellipse at 50% 30%, rgba(229,5,57,0.25) 0%, rgba(14,14,16,0) 65%), repeating-conic-gradient(from 0deg at 50% 120%, #141d2a 0deg 6deg, transparent 6deg 14deg)',
-          }}
-        />
+        <HeroSunburst />
         <div className="relative max-w-2xl mx-auto">
           <span className="inline-flex items-center gap-2 bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-bold uppercase tracking-wide px-3 py-1.5 rounded-full">
             🎁 100% welcome bonus
@@ -273,7 +365,7 @@ export default function WelcomePage() {
           </div>
 
           {/* Trust strip — each item is factually true of the product */}
-          <div className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-gray-500">
+          <div className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-gray-300">
             <span>🛡️ Provably fair</span>
             <span>⚡ Auto-credited deposits</span>
             <span>₿ 6 cryptocurrencies</span>
