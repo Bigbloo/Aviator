@@ -388,7 +388,32 @@ export default function WelcomePage() {
               height={675}
               preload
               sizes="(min-width: 640px) 36rem, 100vw"
-              className="relative rounded-2xl w-full h-auto shadow-2xl shadow-black/60 ring-1 ring-white/10"
+              className="relative rounded-2xl w-full h-auto shadow-2xl shadow-black/60"
+            />
+            {/* Vignette. The art carries its own light grey backdrop, which
+                reads as a pale box on a near-black page. The hairline ring is
+                gone too: an outline would just redraw the boundary this is
+                dissolving.
+
+                Four edge gradients rather than one radial — a radial vignette
+                darkens the corners hard but barely touches the middle of each
+                edge, which is exactly where the boundary stayed visible. The
+                bottom ramp is the shallowest of the four because the Aviator
+                logo sits low in the frame. Painting the page colour rather
+                than masking keeps this to plain CSS with no mask-composite
+                fallbacks, and is indistinguishable here since the page
+                background is this exact colour. */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-2xl"
+              style={{
+                background: [
+                  'linear-gradient(to bottom, rgba(14,14,16,0.96) 0%, rgba(14,14,16,0) 21%)',
+                  'linear-gradient(to top, rgba(14,14,16,0.88) 0%, rgba(14,14,16,0) 13%)',
+                  'linear-gradient(to right, rgba(14,14,16,0.96) 0%, rgba(14,14,16,0) 14%)',
+                  'linear-gradient(to left, rgba(14,14,16,0.96) 0%, rgba(14,14,16,0) 14%)',
+                ].join(','),
+              }}
             />
           </div>
         </div>
