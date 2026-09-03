@@ -262,7 +262,7 @@ export default function WelcomePage() {
         <aside
           key={side}
           aria-label="Welcome offer"
-          className={`hidden xl:flex pointer-events-none fixed top-0 bottom-0 z-20 w-[232px] min-[1440px]:w-[300px] min-[1600px]:w-[360px] min-[1800px]:w-[420px] flex-col items-center justify-center overflow-hidden px-1 ${
+          className={`hidden xl:flex pointer-events-none fixed top-0 bottom-0 z-20 w-[232px] min-[1440px]:w-[296px] min-[1600px]:w-[328px] min-[1800px]:w-[360px] flex-col items-center justify-center overflow-hidden px-2 ${
             side === 'left' ? 'left-0' : 'right-0'
           }`}
         >
@@ -281,7 +281,7 @@ export default function WelcomePage() {
                 width={720}
                 height={1284}
                 loading="lazy"
-                sizes="26rem"
+                sizes="22rem"
                 className="w-full h-auto max-h-[calc(100dvh-15rem)] object-cover object-top"
               />
               {/* Fades toward the middle of the page: the artwork is far more
