@@ -76,6 +76,18 @@ function PromoMarquee() {
 // own rectangular backdrop.
 const FADE_MASK = 'radial-gradient(circle at 50% 50%, #000 52%, transparent 76%)';
 
+/**
+ * Rail artwork frame. The height at each breakpoint is what the art already
+ * rendered at; only the width steps down. Holding the height means the frame
+ * crops the sides of the art instead of scaling the whole thing smaller —
+ * which is why this is an explicit box rather than `w-full h-auto`.
+ */
+const RAIL_ART_BOX =
+  'h-[385px] w-[180px] ' +
+  'min-[1440px]:h-[499px] min-[1440px]:w-[232px] ' +
+  'min-[1600px]:h-[556px] min-[1600px]:w-[256px] ' +
+  'min-[1800px]:h-[613px] min-[1800px]:w-[284px]';
+
 const RAY_COUNT = 19;
 const RAY_CYCLE = 7; // seconds for the highlight to cross the whole fan
 
@@ -273,7 +285,9 @@ export default function WelcomePage() {
           >
             {/* Dropped on very short viewports so the CTA is never pushed off
                 screen; between those, max-h crops it rather than overflowing. */}
-            <div className="relative hidden w-full overflow-hidden rounded-2xl ring-1 ring-white/10 shadow-2xl shadow-black/70 transition group-hover:ring-[#e50539]/50 [@media(min-height:620px)]:block">
+            <div
+              className={`relative hidden ${RAIL_ART_BOX} max-h-[calc(100dvh-15rem)] overflow-hidden rounded-2xl ring-1 ring-white/10 shadow-2xl shadow-black/70 transition group-hover:ring-[#e50539]/50 [@media(min-height:620px)]:block`}
+            >
               <Image
                 src="/lp-rail.webp"
                 alt=""
@@ -281,8 +295,8 @@ export default function WelcomePage() {
                 width={720}
                 height={1284}
                 loading="lazy"
-                sizes="22rem"
-                className="w-full h-auto max-h-[calc(100dvh-15rem)] object-cover object-top"
+                sizes="18rem"
+                className="h-full w-full object-cover object-top"
               />
               {/* Fades toward the middle of the page: the artwork is far more
                   saturated than the page, and would pull the eye off the copy.
