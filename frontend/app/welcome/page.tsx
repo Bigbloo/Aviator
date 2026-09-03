@@ -153,6 +153,67 @@ export default function WelcomePage() {
         </header>
       </div>
 
+      {/* ── Side rails: artwork + a repeat of the offer CTA ──────────────
+          Only from xl up: below 1280px the centred column leaves no margin to
+          put them in, so they are hidden rather than squeezed over the copy.
+          Fixed, so they stay in view all the way to the bottom of the page.
+          The <aside> box itself is click-through; only the CTA takes clicks. */}
+      {(['left', 'right'] as const).map((side) => (
+        <aside
+          key={side}
+          aria-label="Welcome offer"
+          className={`hidden xl:flex pointer-events-none fixed top-0 bottom-0 z-20 w-44 2xl:w-52 flex-col items-center justify-center gap-3 overflow-hidden px-2 ${
+            side === 'left' ? 'left-0' : 'right-0'
+          }`}
+        >
+          {/* Dropped on short viewports so the CTA is never pushed off screen. */}
+          <div className="relative hidden w-full [@media(min-height:660px)]:block">
+            <Image
+              src="/lp-rail.jpeg"
+              alt=""
+              aria-hidden
+              width={400}
+              height={713}
+              loading="lazy"
+              sizes="13rem"
+              className="w-full h-auto rounded-2xl ring-1 ring-white/10 shadow-2xl shadow-black/70"
+            />
+            {/* Fades toward the middle of the page: the artwork is far more
+                saturated than the page, and would pull the eye off the copy. */}
+            <div
+              aria-hidden
+              className={`absolute inset-0 rounded-2xl ${
+                side === 'left'
+                  ? 'bg-gradient-to-r from-transparent via-[#0e0e10]/20 to-[#0e0e10]/80'
+                  : 'bg-gradient-to-l from-transparent via-[#0e0e10]/20 to-[#0e0e10]/80'
+              }`}
+            />
+            <div
+              aria-hidden
+              className="absolute inset-x-0 bottom-0 h-1/3 rounded-b-2xl bg-gradient-to-t from-[#0e0e10] to-transparent"
+            />
+          </div>
+
+          <Link
+            href={PLAY_URL}
+            onClick={() => trackPlay(side === 'left' ? 'RailLeft' : 'RailRight')}
+            className="group pointer-events-auto w-full rounded-2xl border border-white/15 bg-[#0e0e10]/85 backdrop-blur px-3 py-4 text-center shadow-2xl shadow-black/70 transition hover:border-[#e50539]/60"
+          >
+            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400">
+              Welcome offer
+            </p>
+            <p className="mt-1.5 text-2xl font-black leading-none">
+              50 <span className="text-amber-400">+</span> 50
+            </p>
+            <p className="mt-1 text-[11px] text-gray-400">USDT · only 1× wagering</p>
+            <span className="mt-3 block rounded-full bg-gradient-to-b from-[#5bbf1c] to-[#28a909] py-2 text-sm font-black transition group-active:scale-95">
+              Play now
+            </span>
+            <p className="mt-2 text-[10px] text-gray-600">18+</p>
+          </Link>
+        </aside>
+      ))}
+
       {/* ── Hero ───────────────────────────────────────────────────────── */}
       <section className="relative px-4 pt-10 pb-12 text-center overflow-hidden">
         {/* Sunburst backdrop, echoing the in-game canvas */}
