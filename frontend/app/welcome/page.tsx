@@ -162,27 +162,28 @@ export default function WelcomePage() {
         <aside
           key={side}
           aria-label="Welcome offer"
-          className={`hidden xl:flex pointer-events-none fixed top-0 bottom-0 z-20 w-44 2xl:w-52 flex-col items-center justify-center gap-3 overflow-hidden px-2 ${
+          className={`hidden xl:flex pointer-events-none fixed top-0 bottom-0 z-20 w-56 min-[1536px]:w-72 min-[1800px]:w-80 flex-col items-center justify-center gap-3 overflow-hidden px-2 ${
             side === 'left' ? 'left-0' : 'right-0'
           }`}
         >
-          {/* Dropped on short viewports so the CTA is never pushed off screen. */}
-          <div className="relative hidden w-full [@media(min-height:660px)]:block">
+          {/* Dropped on very short viewports so the CTA is never pushed off
+              screen; between those, max-h crops it rather than overflowing. */}
+          <div className="relative hidden w-full overflow-hidden rounded-2xl ring-1 ring-white/10 shadow-2xl shadow-black/70 [@media(min-height:620px)]:block">
             <Image
-              src="/lp-rail.jpeg"
+              src="/lp-rail.webp"
               alt=""
               aria-hidden
-              width={400}
-              height={713}
+              width={520}
+              height={927}
               loading="lazy"
-              sizes="13rem"
-              className="w-full h-auto rounded-2xl ring-1 ring-white/10 shadow-2xl shadow-black/70"
+              sizes="20rem"
+              className="w-full h-auto max-h-[calc(100dvh-13rem)] object-cover object-top"
             />
             {/* Fades toward the middle of the page: the artwork is far more
                 saturated than the page, and would pull the eye off the copy. */}
             <div
               aria-hidden
-              className={`absolute inset-0 rounded-2xl ${
+              className={`absolute inset-0 ${
                 side === 'left'
                   ? 'bg-gradient-to-r from-transparent via-[#0e0e10]/20 to-[#0e0e10]/80'
                   : 'bg-gradient-to-l from-transparent via-[#0e0e10]/20 to-[#0e0e10]/80'
@@ -190,7 +191,7 @@ export default function WelcomePage() {
             />
             <div
               aria-hidden
-              className="absolute inset-x-0 bottom-0 h-1/3 rounded-b-2xl bg-gradient-to-t from-[#0e0e10] to-transparent"
+              className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#0e0e10] to-transparent"
             />
           </div>
 
