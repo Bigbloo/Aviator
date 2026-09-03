@@ -157,60 +157,71 @@ export default function WelcomePage() {
           Only from xl up: below 1280px the centred column leaves no margin to
           put them in, so they are hidden rather than squeezed over the copy.
           Fixed, so they stay in view all the way to the bottom of the page.
-          The <aside> box itself is click-through; only the CTA takes clicks. */}
+          The <aside> box itself is click-through; the link inside takes clicks —
+          artwork included, so the whole rail is one large target. */}
       {(['left', 'right'] as const).map((side) => (
         <aside
           key={side}
           aria-label="Welcome offer"
-          className={`hidden xl:flex pointer-events-none fixed top-0 bottom-0 z-20 w-56 min-[1536px]:w-72 min-[1800px]:w-80 flex-col items-center justify-center gap-3 overflow-hidden px-2 ${
+          className={`hidden xl:flex pointer-events-none fixed top-0 bottom-0 z-20 w-56 min-[1536px]:w-72 min-[1800px]:w-80 flex-col items-center justify-center overflow-hidden px-2 ${
             side === 'left' ? 'left-0' : 'right-0'
           }`}
         >
-          {/* Dropped on very short viewports so the CTA is never pushed off
-              screen; between those, max-h crops it rather than overflowing. */}
-          <div className="relative hidden w-full overflow-hidden rounded-2xl ring-1 ring-white/10 shadow-2xl shadow-black/70 [@media(min-height:620px)]:block">
-            <Image
-              src="/lp-rail.webp"
-              alt=""
-              aria-hidden
-              width={520}
-              height={927}
-              loading="lazy"
-              sizes="20rem"
-              className="w-full h-auto max-h-[calc(100dvh-13rem)] object-cover object-top"
-            />
-            {/* Fades toward the middle of the page: the artwork is far more
-                saturated than the page, and would pull the eye off the copy. */}
-            <div
-              aria-hidden
-              className={`absolute inset-0 ${
-                side === 'left'
-                  ? 'bg-gradient-to-r from-transparent via-[#0e0e10]/20 to-[#0e0e10]/80'
-                  : 'bg-gradient-to-l from-transparent via-[#0e0e10]/20 to-[#0e0e10]/80'
-              }`}
-            />
-            <div
-              aria-hidden
-              className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#0e0e10] to-transparent"
-            />
-          </div>
-
           <Link
             href={PLAY_URL}
             onClick={() => trackPlay(side === 'left' ? 'RailLeft' : 'RailRight')}
-            className="group pointer-events-auto w-full rounded-2xl border border-white/15 bg-[#0e0e10]/85 backdrop-blur px-3 py-4 text-center shadow-2xl shadow-black/70 transition hover:border-[#e50539]/60"
+            className="group pointer-events-auto flex w-full flex-col items-center gap-3 transition-transform duration-300 hover:scale-[1.03] active:scale-100 motion-reduce:transition-none motion-reduce:hover:scale-100"
           >
-            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400">
-              Welcome offer
-            </p>
-            <p className="mt-1.5 text-2xl font-black leading-none">
-              50 <span className="text-amber-400">+</span> 50
-            </p>
-            <p className="mt-1 text-[11px] text-gray-400">USDT · only 1× wagering</p>
-            <span className="mt-3 block rounded-full bg-gradient-to-b from-[#5bbf1c] to-[#28a909] py-2 text-sm font-black transition group-active:scale-95">
-              Play now
-            </span>
-            <p className="mt-2 text-[10px] text-gray-600">18+</p>
+            {/* Dropped on very short viewports so the CTA is never pushed off
+                screen; between those, max-h crops it rather than overflowing. */}
+            <div className="relative hidden w-full overflow-hidden rounded-2xl ring-1 ring-white/10 shadow-2xl shadow-black/70 transition group-hover:ring-[#e50539]/50 [@media(min-height:620px)]:block">
+              <Image
+                src="/lp-rail.webp"
+                alt=""
+                aria-hidden
+                width={520}
+                height={927}
+                loading="lazy"
+                sizes="20rem"
+                className="w-full h-auto max-h-[calc(100dvh-13rem)] object-cover object-top"
+              />
+              {/* Fades toward the middle of the page: the artwork is far more
+                  saturated than the page, and would pull the eye off the copy.
+                  Hovering the rail lifts the veil, so the artwork itself reads
+                  as part of the button. */}
+              <div
+                aria-hidden
+                className={`absolute inset-0 transition-opacity duration-300 group-hover:opacity-40 ${
+                  side === 'left'
+                    ? 'bg-gradient-to-r from-transparent via-[#0e0e10]/20 to-[#0e0e10]/80'
+                    : 'bg-gradient-to-l from-transparent via-[#0e0e10]/20 to-[#0e0e10]/80'
+                }`}
+              />
+              <div
+                aria-hidden
+                className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#0e0e10] to-transparent"
+              />
+            </div>
+
+            {/* railPulse breathes the red halo — see globals.css for why this is
+                a slow fade and not an on/off blink. */}
+            <div className="w-full rounded-2xl border border-white/15 bg-[#0e0e10]/85 px-3 py-4 text-center backdrop-blur animate-[railPulse_2.6s_ease-in-out_infinite] motion-reduce:animate-none">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400">
+                Welcome offer
+              </p>
+              <p className="mt-1.5 text-2xl font-black leading-none">
+                50 <span className="text-amber-400">+</span> 50
+              </p>
+              <p className="mt-1 text-[11px] text-gray-400">USDT · only 1× wagering</p>
+              <span className="relative mt-3 block overflow-hidden rounded-full bg-gradient-to-b from-[#5bbf1c] to-[#28a909] py-2 text-sm font-black transition group-hover:from-[#69d122] group-hover:to-[#2fbf0c] group-active:scale-95">
+                Play now
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent animate-[railSheen_3.4s_ease-in-out_infinite] motion-reduce:hidden"
+                />
+              </span>
+              <p className="mt-2 text-[10px] text-gray-600">18+</p>
+            </div>
           </Link>
         </aside>
       ))}
