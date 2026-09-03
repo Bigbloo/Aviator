@@ -27,11 +27,71 @@ interface InstallPromptEvent extends Event {
 
 const PLAY_URL = '/';
 
+/**
+ * Scrolling top banner. Every line is a factual product claim, so the banner
+ * doubles as the offer summary for visitors who never scroll.
+ */
+const MARQUEE_ITEMS = [
+  '🎁 Deposit 50 → get 50 USDT',
+  '✓ Only 1× wagering',
+  '🛡️ Provably fair — verify every round yourself',
+  '⚡ Deposits credited automatically',
+  '₿ Bitcoin · Solana · TON · BNB · Litecoin · Monero',
+  '📲 Install in one tap — no app store',
+  '🔒 Withdraw on the chain you choose',
+];
+
+function PromoMarquee() {
+  return (
+    <div className="relative overflow-hidden bg-gradient-to-r from-[#e50539] via-[#a3042a] to-[#e50539]">
+      {/* Two identical copies: the track slides exactly one copy (-50%) and loops seamlessly. */}
+      <div className="flex w-max animate-[marquee_40s_linear_infinite] motion-reduce:animate-none">
+        {[0, 1].map((copy) => (
+          <ul key={copy} aria-hidden={copy === 1} className="flex shrink-0 items-center">
+            {MARQUEE_ITEMS.map((t) => (
+              <li
+                key={t}
+                className="flex items-center gap-4 whitespace-nowrap px-4 py-1.5 text-[11px] sm:text-xs font-bold text-white/95"
+              >
+                {t}
+                <span aria-hidden className="text-white/35">✦</span>
+              </li>
+            ))}
+          </ul>
+        ))}
+      </div>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-[#0e0e10]/60 to-transparent"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[#0e0e10]/60 to-transparent"
+      />
+    </div>
+  );
+}
+
+// Blends an isolated 3D render into the page background instead of showing its
+// own rectangular backdrop.
+const FADE_MASK = 'radial-gradient(circle at 50% 50%, #000 52%, transparent 76%)';
+
+// Networks actually enabled on the payment account — mirrors backend POPULAR.
+const CHAINS = [
+  { name: 'Bitcoin', net: 'BTC', symbol: '₿', color: '#F7931A' },
+  { name: 'Solana', net: 'SOL', symbol: '◎', color: '#9945FF' },
+  { name: 'Toncoin', net: 'TON', symbol: '◈', color: '#0098EA' },
+  { name: 'BNB', net: 'BEP-20', symbol: '◆', color: '#F3BA2F' },
+  { name: 'Litecoin', net: 'LTC', symbol: 'Ł', color: '#345D9D' },
+  { name: 'Monero', net: 'XMR', symbol: 'ɱ', color: '#FF6600' },
+];
+
 export default function WelcomePage() {
   const [rounds, setRounds] = useState<FairRound[]>([]);
   const [installEvt, setInstallEvt] = useState<InstallPromptEvent | null>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSHelp, setShowIOSHelp] = useState(false);
+  const [showStickyCta, setShowStickyCta] = useState(false);
 
   // Real recent crash multipliers — live proof the game is running.
   useEffect(() => {
@@ -51,6 +111,15 @@ export default function WelcomePage() {
     return () => window.removeEventListener('beforeinstallprompt', onPrompt);
   }, []);
 
+  // Mobile sticky CTA — held back until the hero button has scrolled away, so
+  // it never competes with the primary call to action.
+  useEffect(() => {
+    const onScroll = () => setShowStickyCta(window.scrollY > 640);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const handleInstall = async () => {
     ttqTrack('ClickButton', { content_name: 'LP_Install' });
     if (installEvt) {
@@ -67,19 +136,22 @@ export default function WelcomePage() {
 
   return (
     <div className="min-h-[100dvh] bg-[#0e0e10] text-white overflow-x-hidden">
-      {/* ── Sticky top bar ─────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-[#0e0e10]/90 backdrop-blur border-b border-white/5">
-        <span className="text-[#e50539] font-black italic text-xl tracking-tight drop-shadow-[0_0_8px_rgba(229,5,57,0.5)]">
-          Aviator
-        </span>
-        <Link
-          href={PLAY_URL}
-          onClick={() => trackPlay('Header')}
-          className="bg-[#28a909] hover:bg-[#23950a] text-white text-sm font-bold px-4 py-2 rounded-full transition active:scale-95"
-        >
-          Play now
-        </Link>
-      </header>
+      {/* ── Sticky top bar: scrolling offer banner + header ────────────── */}
+      <div className="sticky top-0 z-40">
+        <PromoMarquee />
+        <header className="flex items-center justify-between px-4 py-3 bg-[#0e0e10]/90 backdrop-blur border-b border-white/5">
+          <span className="text-[#e50539] font-black italic text-xl tracking-tight drop-shadow-[0_0_8px_rgba(229,5,57,0.5)]">
+            Aviator
+          </span>
+          <Link
+            href={PLAY_URL}
+            onClick={() => trackPlay('Header')}
+            className="bg-[#28a909] hover:bg-[#23950a] text-white text-sm font-bold px-4 py-2 rounded-full transition active:scale-95"
+          >
+            Play now
+          </Link>
+        </header>
+      </div>
 
       {/* ── Hero ───────────────────────────────────────────────────────── */}
       <section className="relative px-4 pt-10 pb-12 text-center overflow-hidden">
@@ -226,16 +298,54 @@ export default function WelcomePage() {
           <h2 className="text-center text-2xl sm:text-3xl font-black mb-8">Three steps. That&apos;s it.</h2>
           <div className="grid gap-4 sm:grid-cols-3">
             {[
-              { n: '1', t: 'Place your bet', d: 'Pick your stake before take-off. You can run two bets at once.' },
-              { n: '2', t: 'Watch it climb', d: 'The multiplier rises every second the plane stays in the air.' },
-              { n: '3', t: 'Cash out in time', d: 'Hit cash out before the crash and the multiplier is yours.' },
+              {
+                n: '1',
+                img: '/lp-step-bet.jpeg',
+                alt: 'A stack of glowing casino chips beside a green button light',
+                t: 'Place your bet',
+                d: 'Pick your stake before take-off. You can run two bets at once.',
+              },
+              {
+                n: '2',
+                img: '/lp-step-climb.jpeg',
+                alt: 'A red glowing curve arcing upward with a small plane at its tip',
+                t: 'Watch it climb',
+                d: 'The multiplier rises every second the plane stays in the air.',
+              },
+              {
+                n: '3',
+                img: '/lp-step-cash.jpeg',
+                alt: 'Golden coins cascading into an open wallet',
+                t: 'Cash out in time',
+                d: 'Hit cash out before the crash and the multiplier is yours.',
+              },
             ].map((s) => (
-              <div key={s.n} className="rounded-2xl bg-white/5 border border-white/10 p-5">
-                <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-[#e50539] font-black">
-                  {s.n}
-                </span>
-                <h3 className="mt-3 font-bold text-lg">{s.t}</h3>
-                <p className="mt-1 text-gray-400 text-sm">{s.d}</p>
+              <div
+                key={s.n}
+                className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden"
+              >
+                <div className="relative">
+                  <Image
+                    src={s.img}
+                    alt={s.alt}
+                    width={440}
+                    height={440}
+                    loading="lazy"
+                    sizes="(min-width: 640px) 20rem, 100vw"
+                    className="w-full h-36 sm:h-40 object-cover"
+                  />
+                  <div
+                    aria-hidden
+                    className="absolute inset-0 bg-gradient-to-t from-[#141416] to-transparent"
+                  />
+                  <span className="absolute bottom-3 left-4 inline-flex items-center justify-center w-9 h-9 rounded-full bg-[#e50539] font-black shadow-lg shadow-black/50">
+                    {s.n}
+                  </span>
+                </div>
+                <div className="p-5 pt-4">
+                  <h3 className="font-bold text-lg">{s.t}</h3>
+                  <p className="mt-1 text-gray-400 text-sm">{s.d}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -251,6 +361,10 @@ export default function WelcomePage() {
             width={600}
             height={600}
             loading="lazy"
+            sizes="10rem"
+            /* Radial mask: the render's own near-black backdrop is not exactly the
+               page colour, so without this it reads as a visible grey rectangle. */
+            style={{ maskImage: FADE_MASK, WebkitMaskImage: FADE_MASK }}
             className="mx-auto w-32 sm:w-40 h-auto mb-4"
           />
           <h2 className="text-center text-2xl sm:text-3xl font-black mb-2">Why players trust it</h2>
@@ -291,6 +405,63 @@ export default function WelcomePage() {
         </div>
       </section>
 
+      {/* ── Payments band — the "can I actually get paid?" reassurance ─── */}
+      <section className="px-4 pb-14">
+        <div className="max-w-3xl mx-auto rounded-3xl border border-white/10 overflow-hidden bg-black/25">
+          <div className="relative">
+            <Image
+              src="/lp-crypto.jpeg"
+              alt="Six metallic coins hovering in a constellation, linked by faint light filaments"
+              width={1200}
+              height={686}
+              loading="lazy"
+              sizes="(min-width: 768px) 48rem, 100vw"
+              /* Coins sit slightly above centre in the render — pulling the crop
+                 up keeps them clear of the headline overlay. */
+              className="w-full h-52 sm:h-64 object-cover object-[center_38%]"
+            />
+            <div
+              aria-hidden
+              className="absolute inset-0 bg-gradient-to-t from-[#0e0e10] via-[#0e0e10]/45 to-transparent"
+            />
+            <div className="absolute inset-x-0 bottom-0 px-5 sm:px-7 pb-4">
+              <h2 className="text-2xl sm:text-3xl font-black leading-tight">
+                Six chains. No bank involved.
+              </h2>
+            </div>
+          </div>
+
+          <div className="px-5 sm:px-7 pt-4 pb-6">
+            <p className="text-gray-400 text-sm sm:text-base">
+              Deposit from any of these networks and withdraw to the one you prefer — you pick the
+              chain, we send to the address you give us. No card, no IBAN, no third-party wallet
+              to connect.
+            </p>
+
+            <ul className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              {CHAINS.map((c) => (
+                <li
+                  key={c.net}
+                  className="flex items-center gap-2.5 rounded-xl bg-white/5 border border-white/10 px-3 py-2.5"
+                >
+                  <span
+                    className="flex items-center justify-center w-8 h-8 shrink-0 rounded-full text-base font-black"
+                    style={{ background: `${c.color}22`, color: c.color }}
+                    aria-hidden
+                  >
+                    {c.symbol}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold truncate">{c.name}</span>
+                    <span className="block text-[11px] text-gray-500">{c.net}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* ── Install pitch, with a human face to lift engagement ────────── */}
       <section className="px-4 pb-14">
         <div className="max-w-3xl mx-auto rounded-3xl border border-white/10 bg-gradient-to-br from-[#e50539]/10 via-transparent to-transparent overflow-hidden">
@@ -325,6 +496,16 @@ export default function WelcomePage() {
       {/* ── FAQ — the objections that block a first deposit ────────────── */}
       <section className="px-4 pb-14">
         <div className="max-w-2xl mx-auto">
+          <Image
+            src="/lp-fair.jpeg"
+            alt="A dark crystal lit from within, splitting open along a seam of red light"
+            width={440}
+            height={440}
+            loading="lazy"
+            sizes="9rem"
+            style={{ maskImage: FADE_MASK, WebkitMaskImage: FADE_MASK }}
+            className="mx-auto w-28 sm:w-36 h-auto"
+          />
           <h2 className="text-center text-2xl sm:text-3xl font-black mb-8">Before you deposit</h2>
           <div className="space-y-3">
             {[
@@ -363,27 +544,46 @@ export default function WelcomePage() {
 
       {/* ── Final CTA ──────────────────────────────────────────────────── */}
       <section className="px-4 pb-16">
-        <div className="max-w-xl mx-auto text-center rounded-3xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent p-8">
-          <h2 className="text-3xl font-black">Ready for take-off?</h2>
-          <p className="mt-2 text-gray-400">A new round starts every few seconds.</p>
-          <Link
-            href={PLAY_URL}
-            onClick={() => trackPlay('Final')}
-            className="mt-6 block w-full py-4 rounded-2xl font-black text-lg text-white bg-gradient-to-b from-[#5bbf1c] to-[#28a909] hover:from-[#69d122] hover:to-[#2fbf0c] shadow-lg shadow-green-900/40 transition active:scale-95"
-          >
-            Play now
-          </Link>
-          <button
-            onClick={handleInstall}
-            className="mt-3 w-full py-3 rounded-2xl font-bold text-gray-300 bg-white/5 hover:bg-white/10 border border-white/10 transition"
-          >
-            📲 Install the app instead
-          </button>
+        <div className="relative max-w-xl mx-auto overflow-hidden rounded-3xl border border-white/10">
+          <Image
+            src="/lp-cta.jpeg"
+            alt=""
+            aria-hidden
+            fill
+            loading="lazy"
+            sizes="(min-width: 640px) 36rem, 100vw"
+            /* Frame the lit cloud layer rather than the empty dark sky above it,
+               otherwise the crop reads as a black rectangle. */
+            className="object-cover object-[center_62%]"
+          />
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-gradient-to-t from-[#0e0e10] via-[#0e0e10]/75 to-[#0e0e10]/20"
+          />
+          <div className="relative p-8 text-center">
+            <h2 className="text-3xl font-black drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
+              Ready for take-off?
+            </h2>
+            <p className="mt-2 text-gray-300">A new round starts every few seconds.</p>
+            <Link
+              href={PLAY_URL}
+              onClick={() => trackPlay('Final')}
+              className="mt-6 block w-full py-4 rounded-2xl font-black text-lg text-white bg-gradient-to-b from-[#5bbf1c] to-[#28a909] hover:from-[#69d122] hover:to-[#2fbf0c] shadow-lg shadow-green-900/40 transition active:scale-95"
+            >
+              Play now
+            </Link>
+            <button
+              onClick={handleInstall}
+              className="mt-3 w-full py-3 rounded-2xl font-bold text-gray-200 bg-white/10 hover:bg-white/15 border border-white/15 backdrop-blur transition"
+            >
+              📲 Install the app instead
+            </button>
+          </div>
         </div>
       </section>
 
       {/* ── Responsible-gambling footer (legally required, not decoration) ─ */}
-      <footer className="px-4 py-8 border-t border-white/10 text-center space-y-3">
+      <footer className="px-4 pt-8 pb-28 sm:pb-8 border-t border-white/10 text-center space-y-3">
         <p className="text-amber-500 font-black text-lg">18+</p>
         <p className="text-gray-500 text-xs max-w-xl mx-auto leading-relaxed">
           Gambling involves real financial risk and can be addictive. Never bet money you cannot
@@ -396,6 +596,29 @@ export default function WelcomePage() {
           <Link href="/responsible-gambling" className="hover:text-gray-300">Responsible gambling</Link>
         </div>
       </footer>
+
+      {/* ── Mobile sticky CTA — slides in once the hero button is gone ─── */}
+      <div
+        className={`sm:hidden fixed inset-x-0 bottom-0 z-40 transition-transform duration-300 ${
+          showStickyCta ? 'translate-y-0' : 'translate-y-full'
+        }`}
+      >
+        <div className="flex items-center gap-3 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-[#0e0e10]/95 backdrop-blur border-t border-white/10">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold truncate">
+              Deposit 50 <span className="text-amber-400">→</span> get 50 USDT
+            </p>
+            <p className="text-[10px] text-gray-500">1× wagering · 18+</p>
+          </div>
+          <Link
+            href={PLAY_URL}
+            onClick={() => trackPlay('StickyBar')}
+            className="shrink-0 px-5 py-2.5 rounded-full font-black text-sm text-white bg-gradient-to-b from-[#5bbf1c] to-[#28a909] shadow-lg shadow-green-900/40 transition active:scale-95"
+          >
+            Play now
+          </Link>
+        </div>
+      </div>
 
       {/* ── iOS install instructions (no beforeinstallprompt on Safari) ── */}
       {showIOSHelp && (
