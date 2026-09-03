@@ -373,7 +373,9 @@ export default function WelcomePage() {
           </div>
 
           {/* Product visual — placed after the CTAs so the button stays above
-              the fold on phones. Priority-loaded: it is the LCP element. */}
+              the fold on phones. Preloaded because it is the LCP element:
+              `priority` is deprecated in Next 16 and was emitting no hint at
+              all, so this image was being discovered late in the body. */}
           <div className="mt-9 relative mx-auto max-w-xl">
             <div
               aria-hidden
@@ -381,10 +383,11 @@ export default function WelcomePage() {
             />
             <Image
               src="/lp-hero.jpeg"
-              alt="The Aviator game on mobile: the multiplier climbing as the plane takes off"
-              width={675}
-              height={453}
-              priority
+              alt="The game running side by side on a phone at 5.30x and a laptop at 3.16x"
+              width={1200}
+              height={675}
+              preload
+              sizes="(min-width: 640px) 36rem, 100vw"
               className="relative rounded-2xl w-full h-auto shadow-2xl shadow-black/60 ring-1 ring-white/10"
             />
           </div>
