@@ -262,7 +262,7 @@ export default function WelcomePage() {
         <aside
           key={side}
           aria-label="Welcome offer"
-          className={`hidden xl:flex pointer-events-none fixed top-0 bottom-0 z-20 w-56 min-[1536px]:w-72 min-[1800px]:w-80 flex-col items-center justify-center overflow-hidden px-2 ${
+          className={`hidden xl:flex pointer-events-none fixed top-0 bottom-0 z-20 w-[232px] min-[1440px]:w-[300px] min-[1600px]:w-[360px] min-[1800px]:w-[420px] flex-col items-center justify-center overflow-hidden px-1 ${
             side === 'left' ? 'left-0' : 'right-0'
           }`}
         >
@@ -278,11 +278,11 @@ export default function WelcomePage() {
                 src="/lp-rail.webp"
                 alt=""
                 aria-hidden
-                width={520}
-                height={927}
+                width={720}
+                height={1284}
                 loading="lazy"
-                sizes="20rem"
-                className="w-full h-auto max-h-[calc(100dvh-13rem)] object-cover object-top"
+                sizes="26rem"
+                className="w-full h-auto max-h-[calc(100dvh-15rem)] object-cover object-top"
               />
               {/* Fades toward the middle of the page: the artwork is far more
                   saturated than the page, and would pull the eye off the copy.
@@ -308,10 +308,16 @@ export default function WelcomePage() {
               <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400">
                 Welcome offer
               </p>
-              <p className="mt-1.5 text-2xl font-black leading-none">
-                50 <span className="text-amber-400">+</span> 50
+              {/* "50 USDT free" alone would be a false claim — the bonus only
+                  lands once 50 USDT is deposited. The condition sits right
+                  under it rather than in small print somewhere else. */}
+              <p className="mt-1.5 text-xl min-[1600px]:text-2xl font-black leading-tight">
+                <span className="text-amber-400">50 USDT</span> free
               </p>
-              <p className="mt-1 text-[11px] text-gray-400">USDT · only 1× wagering</p>
+              <p className="mt-1.5 text-[11px] leading-snug text-gray-400">
+                on your first 50 USDT deposit
+              </p>
+              <p className="mt-1 text-[11px] font-bold text-emerald-400">only 1× wagering</p>
               <span className="relative mt-3 block overflow-hidden rounded-full bg-gradient-to-b from-[#5bbf1c] to-[#28a909] py-2 text-sm font-black transition group-hover:from-[#69d122] group-hover:to-[#2fbf0c] group-active:scale-95">
                 Play now
                 <span
