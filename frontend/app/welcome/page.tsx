@@ -292,8 +292,8 @@ export default function WelcomePage() {
                 src="/lp-rail.webp"
                 alt=""
                 aria-hidden
-                width={720}
-                height={1284}
+                width={580}
+                height={1253}
                 loading="lazy"
                 sizes="18rem"
                 className="h-full w-full object-cover object-top"
