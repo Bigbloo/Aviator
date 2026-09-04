@@ -7,6 +7,8 @@
  */
 
 const jwt = require('jsonwebtoken');
+const db = require('../db/database');
+const { mailEnabled } = require('../email');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const TOKEN_TTL = '30d';
@@ -92,4 +94,58 @@ const requireAdmin = (req, res, next) => {
  */
 const isDemoRequest = (req) => checkAdminToken(req.headers['x-demo-token']);
 
-module.exports = { signToken, requireAuth, optionalAuth, requireAdmin, isDemoRequest };
+/**
+ * Money endpoints require a confirmed email address. It ties the account to a
+ * mailbox its owner controls, so a stolen session cannot cash out to an
+ * attacker's address, and it stops one person farming the welcome bonus across
+ * throwaway signups.
+ *
+ * Gated on mailEnabled, and that is not a convenience: with no SMTP configured
+ * the verification mail is only written to the log, so nobody *can* verify.
+ * Enforcing then would lock every player out of deposits and withdrawals at
+ * once. The gate therefore switches itself on the moment SMTP is configured,
+ * and stays off — loudly — until then.
+ */
+let mailWarningShown = false;
+const requireVerifiedEmail = (req, res, next) => {
+  if (!mailEnabled) {
+    if (!mailWarningShown) {
+      mailWarningShown = true;
+      console.warn(
+        '[Auth] SMTP is not configured, so the verified-email requirement on ' +
+          'deposits and withdrawals is INACTIVE. Set SMTP_HOST/SMTP_USER/SMTP_PASS ' +
+          'to enforce it.'
+      );
+    }
+    return next();
+  }
+  // Admin demo requests bypass the money layer entirely; keep them working.
+  if (isDemoRequest(req)) return next();
+
+  const user = db
+    .prepare('SELECT email, email_verified FROM users WHERE id = ?')
+    .get(req.userId);
+  if (!user) return res.status(401).json({ error: 'Account not found.' });
+  if (!user.email) {
+    return res.status(403).json({
+      error: 'Add an email address to your account before depositing or withdrawing.',
+      code: 'EMAIL_REQUIRED',
+    });
+  }
+  if (!user.email_verified) {
+    return res.status(403).json({
+      error: 'Confirm your email address before depositing or withdrawing. Check your inbox for the verification link.',
+      code: 'EMAIL_UNVERIFIED',
+    });
+  }
+  return next();
+};
+
+module.exports = {
+  signToken,
+  requireAuth,
+  optionalAuth,
+  requireAdmin,
+  requireVerifiedEmail,
+  isDemoRequest,
+};
