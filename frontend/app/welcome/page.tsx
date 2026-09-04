@@ -687,15 +687,24 @@ export default function WelcomePage() {
               and 593px wide, so at ~340px per column it renders at close to 1:1
               on a 2x screen. A full-width band would stretch it 2.6x. */}
           <div className="grid sm:grid-cols-2 items-center gap-6 p-6 sm:p-8">
-            <Image
-              src="/lp-install.webp"
-              alt="The game running on an Android phone at 8.09x and an iPhone at 1.26x, beside the Android and Apple logos"
-              width={593}
-              height={337}
-              loading="lazy"
-              sizes="(min-width: 640px) 22rem, 100vw"
-              className="rounded-2xl w-full h-auto ring-1 ring-white/10 shadow-2xl shadow-black/50"
-            />
+            <div>
+              <Image
+                src="/lp-install.webp"
+                alt="The game running on an Android phone at 8.09x and an iPhone at 1.26x, beside the Android and Apple logos"
+                width={593}
+                height={337}
+                loading="lazy"
+                sizes="(min-width: 640px) 22rem, 100vw"
+                className="rounded-2xl w-full h-auto ring-1 ring-white/10 shadow-2xl shadow-black/50"
+              />
+              {/* The Android and Apple logos in the art can be read as "on the
+                  Play Store and the App Store", which is not true and would
+                  disappoint at the click. This says which of the two readings
+                  is the right one, next to the logos rather than further down. */}
+              <p className="mt-2.5 text-center text-[11px] leading-snug text-gray-400">
+                Works on Android and iPhone — installed from your browser, not from a store.
+              </p>
+            </div>
             <div>
               <h2 className="text-2xl sm:text-3xl font-black leading-tight">
                 Put it on your home screen.
