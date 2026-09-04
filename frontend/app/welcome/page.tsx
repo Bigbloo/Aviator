@@ -190,29 +190,35 @@ function HeroSunburst() {
 /**
  * Networks actually enabled on the payment account — mirrors backend POPULAR.
  *
- * Logos are the official marks from github.com/Pymmdrza/Cryptocurrency_Logos
- * (ISC), copied into public/chains rather than hotlinked. They stay as separate
- * files instead of inlined SVG on purpose: each one ships its own `.st0` style
- * classes, which would collide the moment two were inlined into one document.
+ * Logos are the official marks, copied into public/chains rather than hotlinked:
+ * five from github.com/Pymmdrza/Cryptocurrency_Logos (ISC), and Toncoin from
+ * the TON brand assets since that repo carries no TON logo under any name.
  *
- * Toncoin has no logo in that repo (checked both its SVG and PNG sets), so it
- * keeps the geometric glyph. `symbol` is the fallback for any chain without a
- * `logo`.
+ * They stay as separate files instead of inlined SVG on purpose: each one ships
+ * its own `.st0` style classes, which would collide the moment two were inlined
+ * into one document.
+ *
+ * `symbol` remains as the fallback for any chain added later without a `logo`.
  */
-const CHAINS = [
-  { name: 'Bitcoin', net: 'BTC', logo: '/chains/btc.svg', color: '#F7931A' },
-  { name: 'Solana', net: 'SOL', logo: '/chains/sol.svg', color: '#9945FF' },
-  { name: 'Toncoin', net: 'TON', symbol: '◈', color: '#0098EA' },
-  { name: 'BNB', net: 'BEP-20', logo: '/chains/bnb.svg', color: '#F3BA2F' },
-  { name: 'Litecoin', net: 'LTC', logo: '/chains/ltc.svg', color: '#345D9D' },
-  { name: 'Monero', net: 'XMR', logo: '/chains/xmr.svg', color: '#FF6600' },
-] as const satisfies readonly {
+type Chain = {
   name: string;
   net: string;
   color: string;
   logo?: string;
   symbol?: string;
-}[];
+};
+
+// Annotated rather than `as const satisfies`: with every entry now carrying a
+// logo, const-narrowing collapsed the symbol fallback branch to `never` and
+// broke the type check.
+const CHAINS: readonly Chain[] = [
+  { name: 'Bitcoin', net: 'BTC', logo: '/chains/btc.svg', color: '#F7931A' },
+  { name: 'Solana', net: 'SOL', logo: '/chains/sol.svg', color: '#9945FF' },
+  { name: 'Toncoin', net: 'TON', logo: '/chains/ton.svg', color: '#0098EA' },
+  { name: 'BNB', net: 'BEP-20', logo: '/chains/bnb.svg', color: '#F3BA2F' },
+  { name: 'Litecoin', net: 'LTC', logo: '/chains/ltc.svg', color: '#345D9D' },
+  { name: 'Monero', net: 'XMR', logo: '/chains/xmr.svg', color: '#FF6600' },
+];
 
 export default function WelcomePage() {
   const [rounds, setRounds] = useState<FairRound[]>([]);
@@ -684,7 +690,7 @@ export default function WelcomePage() {
                     style={{ background: `${c.color}22`, color: c.color }}
                     aria-hidden
                   >
-                    {'logo' in c && c.logo ? (
+                    {c.logo ? (
                       <Image
                         src={c.logo}
                         alt=""
