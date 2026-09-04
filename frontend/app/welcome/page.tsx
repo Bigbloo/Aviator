@@ -187,15 +187,32 @@ function HeroSunburst() {
   );
 }
 
-// Networks actually enabled on the payment account — mirrors backend POPULAR.
+/**
+ * Networks actually enabled on the payment account — mirrors backend POPULAR.
+ *
+ * Logos are the official marks from github.com/Pymmdrza/Cryptocurrency_Logos
+ * (ISC), copied into public/chains rather than hotlinked. They stay as separate
+ * files instead of inlined SVG on purpose: each one ships its own `.st0` style
+ * classes, which would collide the moment two were inlined into one document.
+ *
+ * Toncoin has no logo in that repo (checked both its SVG and PNG sets), so it
+ * keeps the geometric glyph. `symbol` is the fallback for any chain without a
+ * `logo`.
+ */
 const CHAINS = [
-  { name: 'Bitcoin', net: 'BTC', symbol: '₿', color: '#F7931A' },
-  { name: 'Solana', net: 'SOL', symbol: '◎', color: '#9945FF' },
+  { name: 'Bitcoin', net: 'BTC', logo: '/chains/btc.svg', color: '#F7931A' },
+  { name: 'Solana', net: 'SOL', logo: '/chains/sol.svg', color: '#9945FF' },
   { name: 'Toncoin', net: 'TON', symbol: '◈', color: '#0098EA' },
-  { name: 'BNB', net: 'BEP-20', symbol: '◆', color: '#F3BA2F' },
-  { name: 'Litecoin', net: 'LTC', symbol: 'Ł', color: '#345D9D' },
-  { name: 'Monero', net: 'XMR', symbol: 'ɱ', color: '#FF6600' },
-];
+  { name: 'BNB', net: 'BEP-20', logo: '/chains/bnb.svg', color: '#F3BA2F' },
+  { name: 'Litecoin', net: 'LTC', logo: '/chains/ltc.svg', color: '#345D9D' },
+  { name: 'Monero', net: 'XMR', logo: '/chains/xmr.svg', color: '#FF6600' },
+] as const satisfies readonly {
+  name: string;
+  net: string;
+  color: string;
+  logo?: string;
+  symbol?: string;
+}[];
 
 export default function WelcomePage() {
   const [rounds, setRounds] = useState<FairRound[]>([]);
@@ -663,15 +680,29 @@ export default function WelcomePage() {
                   className="flex items-center gap-2.5 rounded-xl bg-white/5 border border-white/10 px-3 py-2.5"
                 >
                   <span
-                    className="flex items-center justify-center w-8 h-8 shrink-0 rounded-full text-base font-black"
+                    className="flex items-center justify-center w-8 h-8 shrink-0 rounded-full"
                     style={{ background: `${c.color}22`, color: c.color }}
                     aria-hidden
                   >
-                    {c.symbol}
+                    {'logo' in c && c.logo ? (
+                      <Image
+                        src={c.logo}
+                        alt=""
+                        width={32}
+                        height={32}
+                        loading="lazy"
+                        /* Most of these marks ship their own coloured disc, so
+                           they sit tight in the tinted circle rather than small
+                           inside it — otherwise it reads as a double ring. */
+                        className="w-[22px] h-[22px]"
+                      />
+                    ) : (
+                      <span className="text-base font-black">{c.symbol}</span>
+                    )}
                   </span>
                   <span className="min-w-0">
                     <span className="block text-sm font-bold truncate">{c.name}</span>
-                    <span className="block text-[11px] text-gray-500">{c.net}</span>
+                    <span className="block text-[11px] text-gray-400">{c.net}</span>
                   </span>
                 </li>
               ))}
