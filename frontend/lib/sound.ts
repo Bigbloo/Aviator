@@ -6,13 +6,47 @@
 
 let ctx: AudioContext | null = null;
 let muted = false;
+let lifecycleBound = false;
+
+/**
+ * Nothing should be audible from a page the player is not looking at.
+ *
+ * Rounds keep arriving over the socket while a tab sits in the background or
+ * the installed PWA is behind another window, so an auto-cashout could fire
+ * its chime from a page that to the player looks closed. Suspending on hide
+ * also releases the audio device, instead of holding it open for the life of
+ * the tab as an idle resumed context does.
+ */
+const bindLifecycle = () => {
+  if (lifecycleBound || typeof document === 'undefined') return;
+  lifecycleBound = true;
+
+  document.addEventListener('visibilitychange', () => {
+    if (!ctx) return;
+    if (document.hidden) ctx.suspend().catch(() => {});
+    else if (!muted) ctx.resume().catch(() => {});
+  });
+
+  // pagehide, not beforeunload: it is the one that fires reliably on Safari
+  // and on mobile, and it also covers entering the back/forward cache.
+  window.addEventListener('pagehide', () => {
+    if (!ctx) return;
+    ctx.close().catch(() => {});
+    ctx = null;
+  });
+};
 
 const getCtx = (): AudioContext | null => {
   if (typeof window === 'undefined') return null;
+  // Stay silent while hidden rather than resuming a suspended context. This
+  // also drops the second note of a two-note chime if the page is hidden
+  // mid-sequence, which is the wanted behaviour.
+  if (typeof document !== 'undefined' && document.hidden) return null;
   if (!ctx) {
     const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
     if (!AC) return null;
     ctx = new AC();
+    bindLifecycle();
   }
   const c = ctx;
   if (c && c.state === 'suspended') c.resume().catch(() => {});
@@ -21,6 +55,11 @@ const getCtx = (): AudioContext | null => {
 
 export const setMuted = (v: boolean) => {
   muted = v;
+  if (!ctx) return;
+  // Muting releases the audio device too, rather than leaving a live context
+  // running silently.
+  if (v) ctx.suspend().catch(() => {});
+  else if (typeof document !== 'undefined' && !document.hidden) ctx.resume().catch(() => {});
 };
 export const isMuted = () => muted;
 

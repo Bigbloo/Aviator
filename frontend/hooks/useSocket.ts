@@ -77,8 +77,15 @@ export const useSocket = () => {
       setMultiplier(data.crashPoint);
       playCrash();
 
-      // Always resync the real balance from the server (source of truth).
+      // Resync the real balance from the server (source of truth).
       // Each BetPanel tracks its own win/lost state via the phase change.
+      //
+      // Skipped while the page is hidden: rounds keep crashing every 10-20s
+      // whether or not anyone is watching, so this was firing an authenticated
+      // request per round, forever, from every backgrounded tab. The listener
+      // below refetches once on return, so the figure is still correct when the
+      // player actually looks at it.
+      if (typeof document !== 'undefined' && document.hidden) return;
       const s = useGameStore.getState();
       if (s.userId) {
         try {
@@ -99,7 +106,23 @@ export const useSocket = () => {
     socket.on('disconnect', () => console.log('[Socket] Disconnected'));
     socket.on('connect_error', (err) => console.error('[Socket] Error:', err.message));
 
+    // Coming back to the page: pull the balance once, covering every round
+    // whose refetch was skipped while hidden.
+    const onVisible = async () => {
+      if (document.hidden) return;
+      const s = useGameStore.getState();
+      if (!s.userId) return;
+      try {
+        const { balance } = await getBalance();
+        s.setBalance(balance);
+      } catch {
+        /* keep local balance if fetch fails */
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
     return () => {
+      document.removeEventListener('visibilitychange', onVisible);
       socket.disconnect();
     };
   }, []);

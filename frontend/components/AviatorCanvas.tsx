@@ -289,7 +289,14 @@ const AviatorCanvas = () => {
       // ── Haptic feedback (optional, mobile browsers that support it) ──
       // Tied strictly to the visible multiplier; intensity and cadence rise
       // with tension. Crash fires one distinct buzz. No-op where unsupported.
-      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      // Same rule as the sound: a page the player is not looking at must not
+      // buzz their phone while rounds keep arriving in the background.
+      if (
+        typeof navigator !== 'undefined' &&
+        'vibrate' in navigator &&
+        typeof document !== 'undefined' &&
+        !document.hidden
+      ) {
         const now = performance.now();
         if (phase === 'flying') {
           // Pulse every 600ms→260ms as tension rises; pulse length 6→26ms.
@@ -484,8 +491,12 @@ const AviatorCanvas = () => {
     const loop = () => {
       // Never let a single bad frame kill the loop (which would freeze the
       // canvas on a black frame until reload). Always schedule the next frame.
+      //
+      // Browsers throttle rAF to a standstill in a hidden tab, but an app
+      // window merely sitting behind another one is not always "hidden" to
+      // rAF, so skip the work explicitly rather than relying on that.
       try {
-        draw();
+        if (typeof document === 'undefined' || !document.hidden) draw();
       } catch (e) {
         console.error('[AviatorCanvas] draw error:', e);
       }
