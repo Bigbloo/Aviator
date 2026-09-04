@@ -683,16 +683,20 @@ export default function WelcomePage() {
       {/* ── Install pitch, with a human face to lift engagement ────────── */}
       <section className="px-4 pb-14">
         <div className="max-w-3xl mx-auto rounded-3xl border border-white/10 bg-gradient-to-br from-[#e50539]/10 via-transparent to-transparent overflow-hidden">
-          <div className="grid sm:grid-cols-[auto_1fr] items-end gap-6 p-6 sm:p-8">
+          {/* Two equal columns rather than a narrow image slot: the art is 16:9
+              and 593px wide, so at ~340px per column it renders at close to 1:1
+              on a 2x screen. A full-width band would stretch it 2.6x. */}
+          <div className="grid sm:grid-cols-2 items-center gap-6 p-6 sm:p-8">
             <Image
-              src="/lp-hand.jpeg"
-              alt="The Aviator app open on a phone, the red multiplier curve climbing"
-              width={800}
-              height={800}
+              src="/lp-install.webp"
+              alt="The game running on an Android phone at 8.09x and an iPhone at 1.26x, beside the Android and Apple logos"
+              width={593}
+              height={337}
               loading="lazy"
-              className="rounded-2xl w-40 sm:w-52 h-auto justify-self-center ring-1 ring-white/10 shadow-2xl shadow-black/50"
+              sizes="(min-width: 640px) 22rem, 100vw"
+              className="rounded-2xl w-full h-auto ring-1 ring-white/10 shadow-2xl shadow-black/50"
             />
-            <div className="pb-2">
+            <div>
               <h2 className="text-2xl sm:text-3xl font-black leading-tight">
                 Put it on your home screen.
               </h2>
