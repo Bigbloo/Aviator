@@ -409,7 +409,7 @@ export default function WelcomePage() {
             <Image
               src="/lp-hero.jpeg"
               alt="The game running side by side on a phone at 5.30x and a laptop at 3.16x"
-              width={1344}
+              width={1365}
               height={768}
               preload
               sizes="(min-width: 1600px) 48rem, (min-width: 704px) 42rem, 100vw"
