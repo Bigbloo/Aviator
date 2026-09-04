@@ -395,8 +395,13 @@ export default function WelcomePage() {
           {/* Product visual — placed after the CTAs so the button stays above
               the fold on phones. Preloaded because it is the LCP element:
               `priority` is deprecated in Next 16 and was emitting no hint at
-              all, so this image was being discovered late in the body. */}
-          <div className="mt-9 relative mx-auto max-w-xl">
+              all, so this image was being discovered late in the body.
+
+              Wider than the copy above it, hence the negative margins: the
+              headline reads best at max-w-2xl, so the image breaks out of that
+              column rather than dragging the text wider with it. The wide step
+              stops at 768px — beyond that it would start crowding the rails. */}
+          <div className="mt-9 relative mx-auto max-w-2xl min-[1600px]:-mx-12 min-[1600px]:max-w-3xl">
             <div
               aria-hidden
               className="absolute -inset-6 rounded-[2rem] bg-[#e50539]/20 blur-3xl"
@@ -404,10 +409,10 @@ export default function WelcomePage() {
             <Image
               src="/lp-hero.jpeg"
               alt="The game running side by side on a phone at 5.30x and a laptop at 3.16x"
-              width={1200}
-              height={675}
+              width={1344}
+              height={768}
               preload
-              sizes="(min-width: 640px) 36rem, 100vw"
+              sizes="(min-width: 1600px) 48rem, (min-width: 704px) 42rem, 100vw"
               className="relative rounded-2xl w-full h-auto shadow-2xl shadow-black/60"
             />
             {/* Vignette. The art carries its own light grey backdrop, which
